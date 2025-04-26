@@ -1,8 +1,8 @@
 import React from 'react';
 
 import { ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-// 아이콘 추가 (선택 사항)
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -37,6 +37,8 @@ const CalendarDay: React.FC<CalendarDayProps> = ({
   isCurrentMonth,
   today,
 }) => {
+  const navigate = useNavigate();
+
   const cellDate = new Date(year, month - 1, day);
   const isToday = isSameDate(cellDate, today);
   const isPast = isBeforeDate(cellDate, today);
@@ -63,8 +65,8 @@ const CalendarDay: React.FC<CalendarDayProps> = ({
   }
   const hasData = waitingCount + successCount + failCount > 0;
 
-  const handleDetailClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleDetailClick = (dayId: string) => {
+    navigate(`/scheduler-monitoring/${dayId}`);
   };
 
   return (
@@ -110,7 +112,7 @@ const CalendarDay: React.FC<CalendarDayProps> = ({
           variant='ghost'
           size='icon'
           className='absolute right-1 bottom-1 h-6 w-6 text-gray-400 hover:text-gray-700'
-          onClick={handleDetailClick}
+          onClick={() => handleDetailClick(`${year}-${month}-${day}`)}
           aria-label={`${year}년 ${month}월 ${day}일 상세 보기`}
         >
           <ArrowRight className='h-4 w-4' />
