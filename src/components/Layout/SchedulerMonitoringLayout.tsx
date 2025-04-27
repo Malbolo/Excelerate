@@ -4,17 +4,11 @@ import React from 'react';
 import { ArrowLeftIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-// 뒤로가기 아이콘
 import { Button } from '@/components/ui/button';
 
-// shadcn/ui 버튼 사용 가정
-
 interface SchedulerMonitoringLayoutProps {
-  /** 페이지 상단에 표시될 제목 */
   title: string;
-  /** 뒤로가기 버튼 클릭 시 이동할 경로 */
   backPath: string;
-  /** 레이아웃 내부에 렌더링될 페이지 컨텐츠 */
   children: React.ReactNode;
 }
 
