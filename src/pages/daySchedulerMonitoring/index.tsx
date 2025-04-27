@@ -1,4 +1,7 @@
+import { useParams } from 'react-router-dom';
+
 import DateNavigator from '@/components/DateNavigator';
+import SchedulerMonitoringLayout from '@/components/Layout/SchedulerMonitoringLayout';
 import { DaySchedule } from '@/types/scheduler';
 
 import ScheduleList from './components/ScheduleList';
@@ -81,9 +84,19 @@ const mockData: DaySchedule = {
   ],
 };
 
-export default function DaySchedulePage() {
+const DaySchedulePage = () => {
+  const { dayId } = useParams() as { dayId: string };
+
+  const day = new Date(dayId);
+  const year = day.getFullYear();
+  const month = day.getMonth() + 1;
+  const date = day.getDate();
+
   return (
-    <div className='container mx-auto min-h-screen bg-gray-50 px-4 py-8'>
+    <SchedulerMonitoringLayout
+      title={`${year}년 ${month}월 ${date}일 스케줄 모니터링`}
+      backPath={`/scheduler-monitoring/month/${year}-${month}`}
+    >
       <DateNavigator />
       <div className='mt-8 grid grid-cols-1 gap-6 md:grid-cols-3'>
         <div className='overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm'>
@@ -111,6 +124,8 @@ export default function DaySchedulePage() {
           </div>
         </div>
       </div>
-    </div>
+    </SchedulerMonitoringLayout>
   );
-}
+};
+
+export default DaySchedulePage;

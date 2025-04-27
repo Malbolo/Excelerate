@@ -1,3 +1,6 @@
+import { useParams } from 'react-router-dom';
+
+import SchedulerMonitoringLayout from '@/components/Layout/SchedulerMonitoringLayout';
 import { Batch } from '@/types/scheduler';
 
 import DebugMode from './components/DebugMode';
@@ -80,13 +83,14 @@ const dummySchedule: Batch = {
 
 const ScheduleDetail = () => {
   const scheduleData = dummySchedule;
+  const { dayId } = useParams();
 
   return (
-    <div className='container mx-auto min-h-screen bg-gray-100 px-4 py-8 md:px-6 lg:px-8'>
+    <SchedulerMonitoringLayout
+      title={scheduleData.title}
+      backPath={`/scheduler-monitoring/day/${dayId}`}
+    >
       <div className='mb-8 rounded-lg bg-white p-6 shadow'>
-        <h1 className='text-2xl font-bold text-gray-800'>
-          {scheduleData.title}
-        </h1>
         <p className='mt-1 text-sm text-gray-500'>{scheduleData.description}</p>
         <div className='mt-2 text-xs text-gray-400'>
           <span>ID: {scheduleData.batchId} | </span>
@@ -94,7 +98,7 @@ const ScheduleDetail = () => {
             Created: {new Date(scheduleData.createdAt).toLocaleString()} |{' '}
           </span>
           <span>
-            Status:{' '}
+            Status:
             <span
               className={`font-medium ${scheduleData.status === 'error' ? 'text-red-500' : 'text-green-500'}`}
             >
@@ -121,7 +125,7 @@ const ScheduleDetail = () => {
           <DebugMode schedule={scheduleData} />
         </div>
       </div>
-    </div>
+    </SchedulerMonitoringLayout>
   );
 };
 

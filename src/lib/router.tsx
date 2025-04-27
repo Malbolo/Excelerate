@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 
 import MainPage from '@/pages';
+import CreateSchedulerPage from '@/pages/createScheduler';
 import DaySchedulePage from '@/pages/daySchedulerMonitoring';
 import ScheduleDetail from '@/pages/scheduleDetail';
 
@@ -93,6 +94,17 @@ const routes = [
       </Layout>
     ),
     name: 'SchedulerMonitoring',
+  },
+  {
+    path: '/scheduler-monitoring/create',
+    element: (
+      <Layout>
+        <Suspense fallback={<div>로딩중...</div>}>
+          <CreateSchedulerPage />
+        </Suspense>
+      </Layout>
+    ),
+    name: 'CreateScheduler',
   },
 ];
 

@@ -15,7 +15,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ year, month, today }) => {
   const matrix = getCalendarMatrix(year, month);
 
   return (
-    <div className='w-full'>
+    <div className='mx-auto w-[70%]'>
       <div className='grid grid-cols-7 border-b bg-gray-50'>
         {daysOfWeek.map(d => (
           <div key={d} className='py-2 text-center font-semibold'>

@@ -1,19 +1,29 @@
-import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import DateNavigator from '@/components/DateNavigator';
+import SchedulerMonitoringLayout from '@/components/Layout/SchedulerMonitoringLayout';
+import { Button } from '@/components/ui/button';
 
 import CalendarGrid from './components/CalendarGrid';
 
-const SchedulerMonitoringPage: React.FC = () => {
-  const [year] = useState(2025);
-  const [month] = useState(4);
+const SchedulerMonitoringPage = () => {
   const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth() + 1;
 
   return (
-    <div className='mx-auto mt-8 w-full rounded-lg bg-white p-2 shadow'>
+    <SchedulerMonitoringLayout
+      title={`${year}년 ${month}월 스케줄 모니터링`}
+      backPath='/'
+    >
       <DateNavigator />
       <CalendarGrid year={year} month={month} today={today} />
-    </div>
+      <div className='absolute right-0 bottom-0 mt-4 rounded-lg'>
+        <Link to={`/scheduler-monitoring/create`}>
+          <Button>Create Schedule</Button>
+        </Link>
+      </div>
+    </SchedulerMonitoringLayout>
   );
 };
 

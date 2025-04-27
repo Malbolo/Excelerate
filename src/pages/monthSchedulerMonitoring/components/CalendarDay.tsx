@@ -72,7 +72,7 @@ const CalendarDay: React.FC<CalendarDayProps> = ({
   return (
     <div
       className={cn(
-        'relative flex min-h-32 flex-col border p-2',
+        'relative flex min-h-20 flex-col border p-2',
         isCurrentMonth ? 'bg-white text-gray-900' : 'bg-gray-100 text-gray-400',
         isToday && 'border-2 border-blue-500 ring-1 ring-blue-500',
       )}
@@ -88,7 +88,7 @@ const CalendarDay: React.FC<CalendarDayProps> = ({
       </span>
 
       {isCurrentMonth && hasData && (
-        <div className='flex w-full flex-grow flex-col items-start justify-center gap-0.5 pl-1'>
+        <div className='flex w-full flex-grow flex-col items-start justify-center gap-0.5 pl-1 text-sm'>
           {waitingCount > 0 && (
             <div className='flex items-center gap-1.5 text-orange-600'>
               <span>{waitingCount} 건 대기</span>
