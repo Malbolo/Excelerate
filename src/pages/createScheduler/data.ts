@@ -1,7 +1,5 @@
 import { Job, Status } from '@/types/scheduler';
 
-// Job 타입 임포트 가정
-
 const generateDummyJobs = (count: number): Job[] => {
   const jobs: Job[] = [];
   for (let i = 1; i <= count; i++) {
@@ -13,7 +11,7 @@ const generateDummyJobs = (count: number): Job[] => {
       description: `매일 ${i}시 실행되는 데이터 분석 및 보고서 자동 생성 스케줄 ${i}`,
       createdAt: new Date(
         Date.now() - Math.random() * 1000000000,
-      ).toISOString(), // 무작위 생성 시간
+      ).toISOString(),
       commandList: [
         {
           commandId: `cmd-${i}-1`,
@@ -33,7 +31,6 @@ const generateDummyJobs = (count: number): Job[] => {
       ],
     });
   }
-  // 검색 테스트를 위한 데이터 추가
   jobs.push({
     jobId: 'job-kpi',
     title: 'KPI 데이터 집계',
@@ -51,4 +48,4 @@ const generateDummyJobs = (count: number): Job[] => {
   return jobs;
 };
 
-export const allDummyJobs = generateDummyJobs(20); // 총 22개 생성
+export const allDummyJobs = generateDummyJobs(20);
