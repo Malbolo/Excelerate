@@ -12,7 +12,7 @@ const ScheduleList = ({ items }: ScheduleListProps) => {
   const { dayId } = useParams<{ dayId: string }>();
 
   const handleViewDetails = (scheduleId: string) => {
-    const url = `/scheduler-monitoring/${dayId}/${scheduleId}`;
+    const url = `/scheduler-monitoring/detail/${dayId}/${scheduleId}`;
     navigate(url);
   };
 

@@ -66,7 +66,7 @@ const CalendarDay: React.FC<CalendarDayProps> = ({
   const hasData = waitingCount + successCount + failCount > 0;
 
   const handleDetailClick = (dayId: string) => {
-    navigate(`/scheduler-monitoring/${dayId}`);
+    navigate(`/scheduler-monitoring/day/${dayId}`);
   };
 
   return (

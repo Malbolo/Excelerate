@@ -1,8 +1,6 @@
-import { useParams } from 'react-router-dom';
-
+import DateNavigator from '@/components/DateNavigator';
 import { DaySchedule } from '@/types/scheduler';
 
-import { DateNavigator } from './components/DateNavigator';
 import ScheduleList from './components/ScheduleList';
 
 const mockData: DaySchedule = {
@@ -84,13 +82,9 @@ const mockData: DaySchedule = {
 };
 
 export default function DaySchedulePage() {
-  const { dayId } = useParams<{ dayId: string }>();
-  const currentDate =
-    dayId && !isNaN(new Date(dayId).getTime()) ? new Date(dayId) : new Date();
-
   return (
     <div className='container mx-auto min-h-screen bg-gray-50 px-4 py-8'>
-      <DateNavigator currentDate={currentDate} />
+      <DateNavigator />
       <div className='mt-8 grid grid-cols-1 gap-6 md:grid-cols-3'>
         <div className='overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm'>
           <div className='border-b border-gray-200 bg-yellow-600 px-4 py-3'>

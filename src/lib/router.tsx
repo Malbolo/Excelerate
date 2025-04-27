@@ -9,7 +9,7 @@ import ScheduleDetail from '@/pages/scheduleDetail';
 import Layout from '../components/Layout/Layout';
 import AgentMonitoringPage from '../pages/agentMonitoring';
 import JobManagementPage from '../pages/jobManagement';
-import SchedulerMonitoringPage from '../pages/monthSchedulerMonitoring';
+import MonthSchedulePage from '../pages/monthSchedulerMonitoring';
 import PlayGroundPage from '../pages/playGround';
 
 const routes = [
@@ -61,7 +61,7 @@ const routes = [
     path: '/',
     children: [
       {
-        path: 'scheduler-monitoring/:dayId',
+        path: 'scheduler-monitoring/day/:dayId',
         element: (
           <Layout>
             <Suspense fallback={<div>로딩중...</div>}>
@@ -73,18 +73,18 @@ const routes = [
     ],
   },
   {
-    path: '/scheduler-monitoring',
+    path: '/scheduler-monitoring/month/:monthId',
     element: (
       <Layout>
         <Suspense fallback={<div>로딩중...</div>}>
-          <SchedulerMonitoringPage />
+          <MonthSchedulePage />
         </Suspense>
       </Layout>
     ),
     name: 'SchedulerMonitoring',
   },
   {
-    path: '/scheduler-monitoring/:dayId/:scheduleId',
+    path: '/scheduler-monitoring/detail/:dayId/:scheduleId',
     element: (
       <Layout>
         <Suspense fallback={<div>로딩중...</div>}>
