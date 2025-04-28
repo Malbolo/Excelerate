@@ -9,7 +9,7 @@ import ScheduleList from './components/ScheduleList';
 const mockData: DaySchedule = {
   pending: [
     {
-      batchId: 'batch1',
+      scheduleId: 'schedule1',
       createdAt: '2025-04-24T09:00:00',
       title: 'KPI Report',
       description: 'Create April KPI report',
@@ -34,7 +34,7 @@ const mockData: DaySchedule = {
   ],
   success: [
     {
-      batchId: 'batch2',
+      scheduleId: 'schedule2',
       createdAt: '2025-04-24T11:00:00',
       title: 'CNC Equipment Performance Rate',
       description: 'Equipment performance measurement complete',
@@ -59,7 +59,7 @@ const mockData: DaySchedule = {
   ],
   error: [
     {
-      batchId: 'batch3',
+      scheduleId: 'schedule3',
       createdAt: '2025-04-24T12:00:00',
       title: 'Product A Defect Rate',
       description: 'Failed to measure defect rate',

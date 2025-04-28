@@ -39,8 +39,8 @@ import { Job } from '@/types/scheduler';
 
 const formSchema = z
   .object({
-    batchTitle: z.string().min(1, '스케줄 제목을 입력해주세요.'),
-    batchDescription: z.string().min(1, '설명을 입력해주세요.'),
+    scheduleTitle: z.string().min(1, '스케줄 제목을 입력해주세요.'),
+    scheduleDescription: z.string().min(1, '설명을 입력해주세요.'),
     successEmail: z
       .string()
       .min(1, '성공 알림 이메일을 입력해주세요.')
@@ -91,8 +91,8 @@ const CreateScheduleModal = ({
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      batchTitle: '',
-      batchDescription: '',
+      scheduleTitle: '',
+      scheduleDescription: '',
       successEmail: '',
       failEmail: '',
       interval: undefined,
@@ -147,7 +147,7 @@ const CreateScheduleModal = ({
                 <div className='space-y-6'>
                   <FormField
                     control={form.control}
-                    name='batchTitle'
+                    name='scheduleTitle'
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
@@ -166,7 +166,7 @@ const CreateScheduleModal = ({
                   />
                   <FormField
                     control={form.control}
-                    name='batchDescription'
+                    name='scheduleDescription'
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>

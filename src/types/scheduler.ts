@@ -14,8 +14,8 @@ export interface Job {
   commandList: Command[];
 }
 
-export interface Batch {
-  batchId: string;
+export interface Schedule {
+  scheduleId: string;
   createdAt: string;
   title: string;
   description: string;
@@ -25,7 +25,7 @@ export interface Batch {
 }
 
 export interface DaySchedule {
-  pending: Batch[];
-  success: Batch[];
-  error: Batch[];
+  pending: Schedule[];
+  success: Schedule[];
+  error: Schedule[];
 }

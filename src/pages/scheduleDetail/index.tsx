@@ -1,13 +1,13 @@
 import { useParams } from 'react-router-dom';
 
 import SchedulerMonitoringLayout from '@/components/Layout/SchedulerMonitoringLayout';
-import { Batch } from '@/types/scheduler';
+import { Schedule } from '@/types/scheduler';
 
 import DebugMode from './components/DebugMode';
 import JobDisplay from './components/JobDisplay';
 
-const dummySchedule: Batch = {
-  batchId: 'batch-123',
+const dummySchedule: Schedule = {
+  scheduleId: 'schedule-123',
   createdAt: '2025-04-27T00:00:00Z',
   title: '일일 데이터 동기화 스케줄',
   description: '매일 자정 실행되는 데이터 동기화 및 처리 작업',
@@ -93,7 +93,7 @@ const ScheduleDetail = () => {
       <div className='mb-8 rounded-lg bg-white p-6 shadow'>
         <p className='mt-1 text-sm text-gray-500'>{scheduleData.description}</p>
         <div className='mt-2 text-xs text-gray-400'>
-          <span>ID: {scheduleData.batchId} | </span>
+          <span>ID: {scheduleData.scheduleId} | </span>
           <span>
             Created: {new Date(scheduleData.createdAt).toLocaleString()} |{' '}
           </span>
