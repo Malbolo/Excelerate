@@ -3,10 +3,9 @@ import { Link, useParams } from 'react-router-dom';
 import DateNavigator from '@/components/DateNavigator';
 import SchedulerMonitoringLayout from '@/components/Layout/SchedulerMonitoringLayout';
 import { Button } from '@/components/ui/button';
+import { MONTH_LIST } from '@/constant/month';
 
 import CalendarGrid from './components/CalendarGrid';
-
-// Info : monthId 형식: YYYY-MM
 
 const SchedulerMonitoringPage = () => {
   const { monthId } = useParams() as { monthId: string };
@@ -14,7 +13,7 @@ const SchedulerMonitoringPage = () => {
 
   return (
     <SchedulerMonitoringLayout
-      title={`${year}년 ${month}월 스케줄 모니터링`}
+      title={`${year} ${MONTH_LIST[month]} Scheduler Monitoring`}
       backPath='/'
     >
       <DateNavigator />

@@ -1,6 +1,8 @@
 import cn from 'clsx';
 import { Link, useLocation } from 'react-router-dom';
 
+import LanguageSelector from './LanguageSelector';
+
 const navItems = [
   { label: 'Main', to: '/' },
   { label: 'Job Management', to: '/job-management' },
@@ -19,7 +21,7 @@ const NavigationBar: React.FC = () => {
   return (
     <nav className='flex h-full w-60 flex-col bg-[#F5F5F5] py-6'>
       <div className='mt-9 mb-15 text-center text-2xl'>Samsung</div>
-      <ul className='flex flex-col'>
+      <ul className='flex grow flex-col'>
         {navItems.map(({ label, to, basePath }) => {
           let isActive;
           if (label === 'Scheduler Monitoring') {
@@ -47,6 +49,9 @@ const NavigationBar: React.FC = () => {
           );
         })}
       </ul>
+      {/* <div className='flex w-full justify-center'>
+        <LanguageSelector />
+      </div> */}
     </nav>
   );
 };
