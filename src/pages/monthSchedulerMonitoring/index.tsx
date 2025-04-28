@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 
 import DateNavigator from '@/components/DateNavigator';
 import SchedulerMonitoringLayout from '@/components/Layout/SchedulerMonitoringLayout';
@@ -7,9 +7,9 @@ import { Button } from '@/components/ui/button';
 import CalendarGrid from './components/CalendarGrid';
 
 const SchedulerMonitoringPage = () => {
+  const { monthId } = useParams() as { monthId: string };
+  const [year, month] = monthId.split('-').map(Number);
   const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth() + 1;
 
   return (
     <SchedulerMonitoringLayout
