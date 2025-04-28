@@ -1,5 +1,7 @@
 import { Job, Status } from '@/types/scheduler';
 
+// Delete : 더미데이터를 위한 변수, 추후 삭제 예정, 실제 데이터로 변경 필요
+
 const generateDummyJobs = (count: number): Job[] => {
   const jobs: Job[] = [];
   for (let i = 1; i <= count; i++) {

@@ -1,25 +1,22 @@
-import React from 'react';
-
 import { getCalendarMatrix } from '../utils/getCalendarMatrix';
 import CalendarDay from './CalendarDay';
 
 interface CalendarGridProps {
   year: number;
   month: number;
-  today: Date;
 }
 
-const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-const CalendarGrid: React.FC<CalendarGridProps> = ({ year, month, today }) => {
+const CalendarGrid = ({ year, month }: CalendarGridProps) => {
   const matrix = getCalendarMatrix(year, month);
 
   return (
     <div className='mx-auto w-[70%]'>
       <div className='grid grid-cols-7 border-b bg-gray-50'>
-        {daysOfWeek.map(d => (
-          <div key={d} className='py-2 text-center font-semibold'>
-            {d}
+        {DAYS_OF_WEEK.map(day => (
+          <div key={day} className='py-2 text-center font-semibold'>
+            {day}
           </div>
         ))}
       </div>
@@ -30,7 +27,6 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ year, month, today }) => {
             day={cell.day}
             month={month}
             year={year}
-            today={today}
             isCurrentMonth={cell.isCurrentMonth}
           />
         ))}

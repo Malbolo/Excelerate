@@ -1,6 +1,7 @@
 import { format } from 'date-fns';
 import { useNavigate, useParams } from 'react-router-dom';
 
+import { Button } from '@/components/ui/button';
 import { Schedule } from '@/types/scheduler';
 
 interface ScheduleListProps {
@@ -35,13 +36,20 @@ const ScheduleList = ({ items }: ScheduleListProps) => {
             </p>
           </div>
 
-          <button
-            className='invisible absolute top-2 right-0 rounded bg-blue-500 px-2 py-1 text-xs text-white opacity-0 shadow-sm transition-opacity group-hover:visible group-hover:opacity-100 hover:bg-blue-600'
+          <Button
+            className='absolute top-2 right-0 rounded bg-blue-500 px-2 py-1 text-xs text-white opacity-0 shadow-sm transition-opacity group-hover:visible group-hover:opacity-100 hover:bg-blue-600'
             onClick={() => handleViewDetails(item.scheduleId)}
             aria-label={`${item.title} 상세보기`}
           >
             상세보기
-          </button>
+          </Button>
+          {/* <Button
+            className='absolute top-2 right-0 rounded bg-blue-500 px-2 py-1 text-xs text-white shadow-sm transition-opacity group-hover:visible group-hover:opacity-100 hover:bg-blue-600'
+            onClick={() => handleViewDetails(item.scheduleId)}
+            aria-label={`${item.title} 상세보기`}
+          >
+            상세보기
+          </Button> */}
         </div>
       ))}
     </div>

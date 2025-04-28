@@ -6,6 +6,7 @@ interface JobDisplayProps {
   job: Job;
 }
 
+// todo: 더미데이터이기에 실제 변경 예정
 const JobDisplay = ({ job }: JobDisplayProps) => {
   return (
     <div className='rounded-lg border border-gray-300 bg-white p-6 shadow'>

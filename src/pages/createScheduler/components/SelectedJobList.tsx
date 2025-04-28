@@ -27,11 +27,13 @@ interface SelectedJobListProps {
   onOrderChange: (newOrder: Job[]) => void;
 }
 
-export function SelectedJobList({
+// 모든 로직을 zustand로 이동 예정
+
+const SelectedJobList = ({
   selectedJobs,
   onJobDeselect,
   onOrderChange,
-}: SelectedJobListProps) {
+}: SelectedJobListProps) => {
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -92,4 +94,6 @@ export function SelectedJobList({
       </ScrollArea>
     </>
   );
-}
+};
+
+export default SelectedJobList;

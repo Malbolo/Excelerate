@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { ChangeEvent, KeyboardEvent, useEffect, useState } from 'react';
 
 import { SearchIcon } from 'lucide-react';
 
@@ -10,17 +10,16 @@ interface JobSearchInputProps {
   onSearch: (keyword: string) => void;
 }
 
-export function JobSearchInput({
-  initialKeyword,
-  onSearch,
-}: JobSearchInputProps) {
+// todo: tanstack query로 invalidate 처리 예정
+// 쿼리파라미터만 변경하여 쿼리 재호출 예정
+const JobSearchInput = ({ initialKeyword, onSearch }: JobSearchInputProps) => {
   const [localKeyword, setLocalKeyword] = useState(initialKeyword);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setLocalKeyword(initialKeyword);
   }, [initialKeyword]);
 
-  const handleKeywordChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleKeywordChange = (event: ChangeEvent<HTMLInputElement>) => {
     setLocalKeyword(event.target.value);
   };
 
@@ -28,7 +27,7 @@ export function JobSearchInput({
     onSearch(localKeyword);
   };
 
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
       executeSearch();
     }
@@ -49,4 +48,6 @@ export function JobSearchInput({
       </Button>
     </div>
   );
-}
+};
+
+export default JobSearchInput;

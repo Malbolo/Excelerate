@@ -8,6 +8,7 @@ interface AvailableJobListProps {
   onJobSelect: (job: Job, checked: boolean) => void;
 }
 
+// tanstack query로 데이터 가져오기 예정
 const AvailableJobList = ({
   jobs,
   selectedJobIds,

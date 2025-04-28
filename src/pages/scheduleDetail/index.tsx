@@ -81,6 +81,7 @@ const dummySchedule: Schedule = {
   ],
 };
 
+// todo: 더미데이터이기에 실제 변경 예정
 const ScheduleDetail = () => {
   const scheduleData = dummySchedule;
   const { dayId } = useParams();

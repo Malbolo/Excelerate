@@ -1,3 +1,5 @@
+// command -> job -> schedule
+
 export type Status = 'pending' | 'success' | 'error';
 
 export interface Command {

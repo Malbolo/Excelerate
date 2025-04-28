@@ -1,6 +1,3 @@
-// src/layouts/SchedulerMonitoringLayout.tsx (또는 원하는 경로)
-import React from 'react';
-
 import { ArrowLeftIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -26,6 +23,7 @@ const SchedulerMonitoringLayout = ({
   return (
     <div className='relative container mx-auto h-full'>
       <header className='mb-6 flex items-center gap-3 border-b border-gray-200 pb-4 md:mb-8 md:gap-4'>
+        {/* Info : month에서는 뒤로가기 버튼이 없어야 함 */}
         {backPath !== '/' && (
           <Button
             variant='outline'
@@ -37,9 +35,7 @@ const SchedulerMonitoringLayout = ({
             <ArrowLeftIcon className='h-5 w-5' />
           </Button>
         )}
-        <h1 className='flex-1 text-xl font-bold text-gray-800 md:text-2xl'>
-          {title}
-        </h1>
+        <h1 className='flex-1 text-xl font-bold text-gray-800'>{title}</h1>
       </header>
       <main>{children}</main>
     </div>

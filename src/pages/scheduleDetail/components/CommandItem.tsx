@@ -9,6 +9,7 @@ interface CommandItemProps {
   isLast: boolean;
 }
 
+// todo: 더미데이터이기에 실제 변경 예정
 const CommandItem: React.FC<CommandItemProps> = ({
   command,
   isFirst,

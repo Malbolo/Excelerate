@@ -6,6 +6,7 @@ interface DebugModeProps {
   schedule: Schedule;
 }
 
+// todo: 더미데이터이기에 실제 변경 예정
 const DebugMode = ({ schedule }: DebugModeProps) => {
   let firstError: { job: Job; command: Command } | null = null;
 

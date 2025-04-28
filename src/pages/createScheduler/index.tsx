@@ -10,8 +10,8 @@ import { Job } from '@/types/scheduler';
 import AvailableJobList from './components/AvailableJobList';
 import CreateScheduleModal from './components/CreateScheduleModal';
 import JobPagination from './components/JobPagination';
-import { JobSearchInput } from './components/JobSearchInput';
-import { SelectedJobList } from './components/SelectedJobList';
+import JobSearchInput from './components/JobSearchInput';
+import SelectedJobList from './components/SelectedJobList';
 import { allDummyJobs } from './data';
 
 const ITEMS_PER_PAGE = 6;
@@ -19,16 +19,18 @@ const ITEMS_PER_PAGE = 6;
 const CreateSchedulerPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // todo: zustand로 선택된 작업 상태 관리 예정
   const [selectedJobs, setSelectedJobs] = useState<Job[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const { keyword, currentPage } = useMemo(() => {
-    const kw = searchParams.get('keyword') || '';
+    const keyword = searchParams.get('keyword') || '';
     const page = parseInt(searchParams.get('page') || '1', 10);
     const validPage = Math.max(1, isNaN(page) ? 1 : page);
-    return { keyword: kw, currentPage: validPage };
+    return { keyword, currentPage: validPage };
   }, [searchParams]);
 
+  // Info : 검색 기능 함수
   const handleSearch = useCallback(
     (newKeyword: string) => {
       setSearchParams(
@@ -43,6 +45,7 @@ const CreateSchedulerPage = () => {
     [setSearchParams],
   );
 
+  // Delete : 더미데이터를 위한 변수, 추후 삭제 예정, 실제 데이터로 변경 필요
   const filteredJobs = useMemo(() => {
     if (!keyword) return allDummyJobs;
     const lowerCaseKeyword = keyword.toLowerCase();
@@ -53,6 +56,7 @@ const CreateSchedulerPage = () => {
     );
   }, [keyword]);
 
+  // Delete : 더미데이터를 위한 변수, 추후 삭제 예정, 실제 데이터로 변경 필요
   const { paginatedJobs, totalPages } = useMemo(() => {
     const total = Math.ceil(filteredJobs.length / ITEMS_PER_PAGE);
     const adjustedPage = Math.min(currentPage, total > 0 ? total : 1);
@@ -62,6 +66,7 @@ const CreateSchedulerPage = () => {
     return { paginatedJobs: jobs, totalPages: total };
   }, [filteredJobs, currentPage]);
 
+  // Info : 페이지 변경 기능 함수
   const handlePageChange = useCallback(
     (page: number) => {
       if (page >= 1 && page <= totalPages) {
@@ -77,6 +82,7 @@ const CreateSchedulerPage = () => {
     [totalPages, setSearchParams],
   );
 
+  // Info : 작업 선택 기능 함수
   const handleJobSelect = useCallback((job: Job, checked: boolean) => {
     setSelectedJobs(prev =>
       checked
@@ -87,14 +93,20 @@ const CreateSchedulerPage = () => {
     );
   }, []);
 
+  // Info : 작업 순서 변경 기능 함수
+  // todo: 작업 순서 변경 기능 zustand로 이동 예정
   const handleJobOrderChange = useCallback((newOrder: Job[]) => {
     setSelectedJobs(newOrder);
   }, []);
 
+  // Info : 작업 선택 해제 기능 함수
+  // todo: 작업 선택 해제 기능 zustand로 이동 예정
   const handleJobDeselect = useCallback((jobId: string) => {
     setSelectedJobs(prev => prev.filter(job => job.jobId !== jobId));
   }, []);
 
+  // Info : 선택된 작업 ID 목록 생성 기능 함수
+  // Delete : 더미데이터를 위해 사용, 추후에는 실제 jobId 사용 필요
   const selectedJobIds = useMemo(
     () => new Set(selectedJobs.map(job => job.jobId)),
     [selectedJobs],
@@ -102,7 +114,7 @@ const CreateSchedulerPage = () => {
 
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
-  const layoutTitle = `${currentYear}년 ${String(currentMonth).padStart(2, '0')}월 스케줄 생성`;
+  const layoutTitle = `스케줄 생성`;
   const backPath = `/scheduler-monitoring/month/${currentYear}-${String(currentMonth).padStart(2, '0')}`;
 
   return (

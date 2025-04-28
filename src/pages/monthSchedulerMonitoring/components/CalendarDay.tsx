@@ -6,48 +6,36 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
+import { isBeforeDate, isSameDate } from '../utils/getCalendarMatrix';
+
 interface CalendarDayProps {
   day: number;
   month: number;
   year: number;
   isCurrentMonth: boolean;
-  today: Date;
 }
-
-const isSameDate = (date1: Date, date2: Date): boolean => {
-  if (!date1 || !date2) return false;
-  return (
-    date1.getFullYear() === date2.getFullYear() &&
-    date1.getMonth() === date2.getMonth() &&
-    date1.getDate() === date2.getDate()
-  );
-};
-
-const isBeforeDate = (date1: Date, date2: Date): boolean => {
-  if (!date1 || !date2) return false;
-  const d1 = new Date(date1.getFullYear(), date1.getMonth(), date1.getDate());
-  const d2 = new Date(date2.getFullYear(), date2.getMonth(), date2.getDate());
-  return d1 < d2;
-};
 
 const CalendarDay: React.FC<CalendarDayProps> = ({
   day,
   month,
   year,
   isCurrentMonth,
-  today,
 }) => {
+  const today = new Date();
   const navigate = useNavigate();
 
   const cellDate = new Date(year, month - 1, day);
   const isToday = isSameDate(cellDate, today);
+  // Delete : 오늘날짜를 기준으로, 이전날짜이면 Pending 상태를 포함하지 않는 UI를 위한 함수 추후 삭제 예정, 실제 데이터로 변경 필요
   const isPast = isBeforeDate(cellDate, today);
   const isFuture = !isToday && !isPast;
 
+  // Delete : 더미데이터를 위한 변수, 추후 삭제 예정, 실제 데이터로 변경 필요
   let waitingCount = 0;
   let successCount = 0;
   let failCount = 0;
 
+  // Delete : 더미데이터를 위한 변수, 추후 삭제 예정, 실제 데이터로 변경 필요
   if (isCurrentMonth) {
     if (isPast) {
       waitingCount = Math.random() < 0.1 ? Math.floor(Math.random() * 2) : 0;
@@ -63,6 +51,7 @@ const CalendarDay: React.FC<CalendarDayProps> = ({
       failCount = Math.floor(Math.random() * 3);
     }
   }
+
   const hasData = waitingCount + successCount + failCount > 0;
 
   const handleDetailClick = (dayId: string) => {

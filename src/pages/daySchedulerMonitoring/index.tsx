@@ -6,6 +6,7 @@ import { DaySchedule } from '@/types/scheduler';
 
 import ScheduleList from './components/ScheduleList';
 
+// Delete : 더미데이터를 위한 변수, 추후 삭제 예정, 실제 데이터로 변경 필요
 const mockData: DaySchedule = {
   pending: [
     {
@@ -87,10 +88,11 @@ const mockData: DaySchedule = {
 const DaySchedulePage = () => {
   const { dayId } = useParams() as { dayId: string };
 
-  const day = new Date(dayId);
-  const year = day.getFullYear();
-  const month = day.getMonth() + 1;
-  const date = day.getDate();
+  // Info : params에서 받아온 dayId를 파싱하여 년, 월, 일을 구함
+  const [year, month, date] = dayId.split('-').map(Number);
+
+  // year, month, date를 기준으로 데이터를 가져옴
+  // const data = await getDaySchedule(year, month, date);
 
   return (
     <SchedulerMonitoringLayout

@@ -22,6 +22,8 @@ const JobPagination = ({
     return null;
   }
 
+  // Delete : 더미데이터를 위해 사용, 추후에는 실제 페이지 번호 사용 필요
+  // Info : Response로 Spring의 Pageable 타입을 사용하여 페이지 번호를 받아오므로, 페이지 번호를 변경할 때 주의 필요
   const renderPageNumbers = () => {
     const pages = [];
     for (let i = 1; i <= totalPages; i++) {
