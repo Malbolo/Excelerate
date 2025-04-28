@@ -43,7 +43,7 @@ const SortableJobItem = ({
       <div className='flex flex-grow items-center space-x-2 overflow-hidden'>
         <button
           {...listeners}
-          aria-label='드래그하여 순서 변경'
+          aria-label='Drag to change order'
           className='-ml-1 cursor-grab touch-none p-1 active:cursor-grabbing'
         >
           <svg
@@ -69,7 +69,7 @@ const SortableJobItem = ({
         size='icon'
         className='ml-2 h-7 w-7 flex-shrink-0 text-gray-400 hover:text-red-500' // flex-shrink-0 추가
         onClick={() => onJobDeselect(job.jobId)}
-        aria-label='선택 해제'
+        aria-label='Deselect'
       >
         <XIcon className='h-4 w-4' />
       </Button>

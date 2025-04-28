@@ -1,8 +1,6 @@
 import cn from 'clsx';
 import { Link, useLocation } from 'react-router-dom';
 
-import LanguageSelector from './LanguageSelector';
-
 const navItems = [
   { label: 'Main', to: '/' },
   { label: 'Job Management', to: '/job-management' },

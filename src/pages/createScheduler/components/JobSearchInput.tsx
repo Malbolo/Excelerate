@@ -37,14 +37,14 @@ const JobSearchInput = ({ initialKeyword, onSearch }: JobSearchInputProps) => {
     <div className='mb-4 flex gap-2'>
       <Input
         type='text'
-        placeholder='JOB 제목 또는 설명 검색...'
+        placeholder='Search by job title or description...'
         value={localKeyword}
         onChange={handleKeywordChange}
         onKeyDown={handleKeyDown}
         className='flex-grow'
       />
       <Button onClick={executeSearch}>
-        <SearchIcon className='mr-2 h-4 w-4' /> 검색
+        <SearchIcon className='mr-2 h-4 w-4' /> Search
       </Button>
     </div>
   );

@@ -10,7 +10,7 @@ import {
   subDays,
   subMonths,
 } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { enUS } from 'date-fns/locale';
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/popover';
 
 import DayPicker from './DayPicker';
-import { MonthYearSelector } from './MonthYearSelector';
+import MonthYearSelector from './MonthYearSelector';
 
 function SchedulerNavigator() {
   const { dayId, monthId } = useParams<{ dayId?: string; monthId?: string }>();
@@ -43,16 +43,18 @@ function SchedulerNavigator() {
       return {
         viewType: 'day' as const,
         currentDate: today,
-        displayDate: format(today, 'yyyy.MM.dd', { locale: ko }),
+        displayDate: format(today, 'MM/dd/yyyy', { locale: enUS }),
         isValidDate: true,
       };
     }
+
     if (type === 'day') {
       date = parse(value, 'yyyy-MM-dd', new Date());
       valid = isValid(date);
       display = valid
-        ? format(date, 'yyyy.MM.dd', { locale: ko })
-        : format(new Date(), 'yyyy.MM.dd', { locale: ko }) + ' (잘못된 값)';
+        ? format(date, 'MM/dd/yyyy', { locale: enUS })
+        : format(new Date(), 'MM/dd/yyyy', { locale: enUS }) +
+          ' (Invalid Value)';
       if (!valid) {
         console.error(`Invalid dayId: ${value}`);
         date = new Date();
@@ -61,8 +63,9 @@ function SchedulerNavigator() {
       date = parse(`${value}-01`, 'yyyy-MM-dd', new Date());
       valid = isValid(date);
       display = valid
-        ? format(date, 'yyyy년 MMMM', { locale: ko })
-        : format(new Date(), 'yyyy년 MMMM', { locale: ko }) + ' (잘못된 값)';
+        ? format(date, 'MMMM yyyy', { locale: enUS })
+        : format(new Date(), 'MMMM yyyy', { locale: enUS }) +
+          ' (Invalid Value)';
       if (!valid) {
         console.error(`Invalid monthId: ${value}`);
         date = startOfMonth(new Date());
@@ -72,10 +75,11 @@ function SchedulerNavigator() {
       return {
         viewType: 'day' as const,
         currentDate: today,
-        displayDate: format(today, 'yyyy.MM.dd', { locale: ko }),
+        displayDate: format(today, 'MM/dd/yyyy', { locale: enUS }),
         isValidDate: true,
       };
     }
+
     return {
       viewType: type,
       currentDate: date,
@@ -86,27 +90,25 @@ function SchedulerNavigator() {
 
   const handlePrevious = useCallback(() => {
     if (!isValidDate) return;
+    const pathPrefix = '/scheduler-monitoring';
     if (viewType === 'day') {
-      navigate(
-        `/scheduler-monitoring/day/${format(subDays(currentDate, 1), 'yyyy-MM-dd')}`,
-      );
+      const previousDay = subDays(currentDate, 1);
+      navigate(`${pathPrefix}/day/${format(previousDay, 'yyyy-MM-dd')}`);
     } else if (viewType === 'month') {
-      navigate(
-        `/scheduler-monitoring/month/${format(subMonths(currentDate, 1), 'yyyy-MM')}`,
-      );
+      const previousMonth = subMonths(currentDate, 1);
+      navigate(`${pathPrefix}/month/${format(previousMonth, 'yyyy-MM')}`);
     }
   }, [navigate, viewType, currentDate, isValidDate]);
 
   const handleNext = useCallback(() => {
     if (!isValidDate) return;
+    const pathPrefix = '/scheduler-monitoring';
     if (viewType === 'day') {
-      navigate(
-        `/scheduler-monitoring/day/${format(addDays(currentDate, 1), 'yyyy-MM-dd')}`,
-      );
+      const nextDay = addDays(currentDate, 1);
+      navigate(`${pathPrefix}/day/${format(nextDay, 'yyyy-MM-dd')}`);
     } else if (viewType === 'month') {
-      navigate(
-        `/scheduler-monitoring/month/${format(addMonths(currentDate, 1), 'yyyy-MM')}`,
-      );
+      const nextMonth = addMonths(currentDate, 1);
+      navigate(`${pathPrefix}/month/${format(nextMonth, 'yyyy-MM')}`);
     }
   }, [navigate, viewType, currentDate, isValidDate]);
 
@@ -138,7 +140,7 @@ function SchedulerNavigator() {
         variant='outline'
         size='icon'
         onClick={handlePrevious}
-        aria-label={viewType === 'day' ? '이전 날짜' : '이전 달'}
+        aria-label={viewType === 'day' ? 'Previous Day' : 'Previous Month'}
         className='h-9 w-9'
         disabled={!isValidDate}
       >
@@ -151,7 +153,7 @@ function SchedulerNavigator() {
             <Button
               variant='ghost'
               className='min-w-[150px] rounded px-2 py-1 text-lg font-bold hover:bg-gray-100 disabled:opacity-50 md:text-xl'
-              aria-label='날짜 선택'
+              aria-label='Select Date'
             >
               {displayDate}
               <CalendarIcon className='ml-1 h-4 w-4 opacity-70 md:ml-2 md:h-5 md:w-5' />
@@ -169,9 +171,9 @@ function SchedulerNavigator() {
             <Button
               variant='ghost'
               className={`min-w-[150px] rounded px-2 py-1 text-lg font-bold hover:bg-gray-100 disabled:opacity-50 md:min-w-[180px] md:text-xl ${!isValidDate ? 'text-red-500' : ''}`}
-              aria-label='월 선택'
+              aria-label='Select Month'
             >
-              {displayDate}{' '}
+              {displayDate}
               <CalendarIcon className='ml-1 h-4 w-4 opacity-70 md:ml-2 md:h-5 md:w-5' />
             </Button>
           </PopoverTrigger>
@@ -185,11 +187,12 @@ function SchedulerNavigator() {
           )}
         </Popover>
       )}
+
       <Button
         variant='outline'
         size='icon'
         onClick={handleNext}
-        aria-label={viewType === 'day' ? '다음 날짜' : '다음 달'}
+        aria-label={viewType === 'day' ? 'Next Day' : 'Next Month'}
         className='h-9 w-9'
         disabled={!isValidDate}
       >

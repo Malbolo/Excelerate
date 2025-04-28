@@ -61,7 +61,7 @@ const SelectedJobList = ({
   return (
     <>
       <h2 className='mb-4 text-lg font-semibold'>
-        선택된 JOB 목록 ({selectedJobs.length})
+        Selected JOB List ({selectedJobs.length})
       </h2>
       <ScrollArea className='h-0 flex-1 rounded-md border p-2'>
         <DndContext
@@ -85,7 +85,7 @@ const SelectedJobList = ({
                 ))
               ) : (
                 <div className='py-6 text-center text-gray-400'>
-                  왼쪽 목록에서 JOB을 선택하세요.
+                  Select JOBs from the left list.
                 </div>
               )}
             </div>

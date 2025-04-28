@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format as formatDate } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { enUS } from 'date-fns/locale';
 import { CalendarIcon } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -19,6 +19,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -39,27 +40,25 @@ import { Job } from '@/types/scheduler';
 
 const formSchema = z
   .object({
-    scheduleTitle: z.string().min(1, '스케줄 제목을 입력해주세요.'),
-    scheduleDescription: z.string().min(1, '설명을 입력해주세요.'),
+    scheduleTitle: z.string().min(1, 'Please enter a schedule title.'),
+    scheduleDescription: z.string().min(1, 'Please enter a description.'),
     successEmail: z
       .string()
-      .min(1, '성공 알림 이메일을 입력해주세요.')
-      .email({ message: '유효한 이메일 주소를 입력해주세요.' }),
+      .min(1, 'Please enter a success notification email.')
+      .email({ message: 'Please enter a valid email address.' }),
     failEmail: z
       .string()
-      .min(1, '실패 알림 이메일을 입력해주세요.')
-      .email({ message: '유효한 이메일 주소를 입력해주세요.' }),
+      .min(1, 'Please enter a failure notification email.')
+      .email({ message: 'Please enter a valid email address.' }),
     interval: z.enum(['daily', 'weekly', 'monthly'], {
-      required_error: '실행 주기를 선택해주세요.',
+      required_error: 'Please select an execution interval.',
     }),
     startDate: z.date({
-      required_error: '시작일을 선택해주세요.',
+      required_error: 'Please select a start date.',
     }),
-    endDate: z.date({
-      required_error: '종료일을 선택해주세요.',
-    }),
+    endDate: z.date().optional(),
     executionTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, {
-      message: '시간을 HH:MM 형식으로 입력해주세요. (예: 09:00, 14:30)',
+      message: 'Please enter the time in HH:MM format (e.g., 09:00, 14:30).',
     }),
   })
   .refine(
@@ -72,7 +71,7 @@ const formSchema = z
       return true;
     },
     {
-      message: '종료일은 시작일보다 같거나 이후여야 합니다.',
+      message: 'End date must be the same as or later than the start date.',
       path: ['endDate'],
     },
   );
@@ -103,8 +102,16 @@ const CreateScheduleModal = ({
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log('Form Data Submitted:', values);
-    console.log('Selected Jobs Submitted:', selectedJobs);
+    const finalEndDate =
+      values.endDate instanceof Date ? values.endDate : new Date(2099, 11, 31);
+
+    const submissionData = {
+      ...values,
+      endDate: finalEndDate,
+    };
+
+    console.log('Form Data Submitted:', submissionData);
+
     await new Promise(resolve => setTimeout(resolve, 1000));
     onOpenChange(false);
     form.reset();
@@ -121,16 +128,17 @@ const CreateScheduleModal = ({
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className='flex max-h-[85vh] flex-col sm:max-w-3xl'>
         <DialogHeader>
-          <DialogTitle>새 스케줄 생성</DialogTitle>
+          <DialogTitle>Create New Schedule</DialogTitle>
           <DialogDescription>
-            선택된 {selectedJobs.length}개의 JOB으로 새 스케줄을 설정합니다.
+            Configure the new schedule for the selected {selectedJobs.length}{' '}
+            JOBs. (All fields required)
           </DialogDescription>
         </DialogHeader>
 
         <ScrollArea className='flex-grow pr-6'>
           <div className='mb-4 rounded-md border bg-gray-50 p-3'>
             <h4 className='mb-2 text-sm font-medium text-gray-700'>
-              선택된 JOB ({selectedJobs.length}):
+              Selected JOBs ({selectedJobs.length}):
             </h4>
             <ul className='max-h-24 list-inside list-decimal space-y-1 overflow-y-auto text-xs text-gray-600'>
               {selectedJobs.map(job => (
@@ -138,7 +146,6 @@ const CreateScheduleModal = ({
               ))}
             </ul>
           </div>
-
           <Separator className='my-4' />
 
           <Form {...form}>
@@ -151,12 +158,11 @@ const CreateScheduleModal = ({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          스케줄 제목
-                          <span className='text-red-500'>*</span>
+                          Schedule Title <span className='text-red-500'>*</span>
                         </FormLabel>
                         <FormControl>
                           <Input
-                            placeholder='예: 일일 판매 데이터 집계'
+                            placeholder='e.g., Daily Sales Data Aggregation'
                             {...field}
                           />
                         </FormControl>
@@ -170,11 +176,11 @@ const CreateScheduleModal = ({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          설명 <span className='text-red-500'>*</span>
+                          Description <span className='text-red-500'>*</span>
                         </FormLabel>
                         <FormControl>
                           <Textarea
-                            placeholder='스케줄에 대한 설명을 입력하세요.'
+                            placeholder='Enter a description for the schedule.'
                             className='resize-none'
                             {...field}
                           />
@@ -190,13 +196,13 @@ const CreateScheduleModal = ({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          성공 알림 이메일
+                          Success Notification Email{' '}
                           <span className='text-red-500'>*</span>
                         </FormLabel>
                         <FormControl>
                           <Input
                             type='email'
-                            placeholder='성공 시 알림받을 이메일'
+                            placeholder='Email address for success notification'
                             {...field}
                           />
                         </FormControl>
@@ -210,13 +216,13 @@ const CreateScheduleModal = ({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          실패 알림 이메일
+                          Failure Notification Email{' '}
                           <span className='text-red-500'>*</span>
                         </FormLabel>
                         <FormControl>
                           <Input
                             type='email'
-                            placeholder='실패 시 알림받을 이메일'
+                            placeholder='Email address for failure notification'
                             {...field}
                           />
                         </FormControl>
@@ -225,7 +231,6 @@ const CreateScheduleModal = ({
                     )}
                   />
                 </div>
-
                 <div className='space-y-6'>
                   <FormField
                     control={form.control}
@@ -233,7 +238,7 @@ const CreateScheduleModal = ({
                     render={({ field }) => (
                       <FormItem className='space-y-3'>
                         <FormLabel>
-                          실행 주기
+                          Execution Interval{' '}
                           <span className='text-red-500'>*</span>
                         </FormLabel>
                         <FormControl>
@@ -247,7 +252,7 @@ const CreateScheduleModal = ({
                                 <RadioGroupItem value='daily' />
                               </FormControl>
                               <FormLabel className='font-normal'>
-                                매일
+                                Daily
                               </FormLabel>
                             </FormItem>
                             <FormItem className='flex items-center space-y-0 space-x-2'>
@@ -255,7 +260,7 @@ const CreateScheduleModal = ({
                                 <RadioGroupItem value='weekly' />
                               </FormControl>
                               <FormLabel className='font-normal'>
-                                매주
+                                Weekly
                               </FormLabel>
                             </FormItem>
                             <FormItem className='flex items-center space-y-0 space-x-2'>
@@ -263,7 +268,7 @@ const CreateScheduleModal = ({
                                 <RadioGroupItem value='monthly' />
                               </FormControl>
                               <FormLabel className='font-normal'>
-                                매월
+                                Monthly
                               </FormLabel>
                             </FormItem>
                           </RadioGroup>
@@ -272,20 +277,19 @@ const CreateScheduleModal = ({
                       </FormItem>
                     )}
                   />
-
                   <FormField
                     control={form.control}
                     name='startDate'
                     render={({ field }) => (
                       <FormItem className='flex flex-col'>
                         <FormLabel>
-                          시작일
-                          <span className='text-red-500'>*</span>
+                          Start Date <span className='text-red-500'>*</span>
                         </FormLabel>
                         <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
+                          <FormControl>
+                            <PopoverTrigger asChild={false}>
                               <Button
+                                type='button'
                                 variant={'outline'}
                                 className={cn(
                                   'w-full pl-3 text-left font-normal',
@@ -293,14 +297,16 @@ const CreateScheduleModal = ({
                                 )}
                               >
                                 {field.value ? (
-                                  formatDate(field.value, 'yyyy년 MM월 dd일')
+                                  formatDate(field.value, 'MMM d, yyyy', {
+                                    locale: enUS,
+                                  })
                                 ) : (
-                                  <span>날짜 선택</span>
+                                  <span>Select date</span>
                                 )}
                                 <CalendarIcon className='ml-auto h-4 w-4 opacity-50' />
                               </Button>
-                            </FormControl>
-                          </PopoverTrigger>
+                            </PopoverTrigger>
+                          </FormControl>
                           <PopoverContent className='w-auto p-0' align='start'>
                             <Calendar
                               mode='single'
@@ -310,7 +316,7 @@ const CreateScheduleModal = ({
                                 date < new Date(new Date().setHours(0, 0, 0, 0))
                               }
                               initialFocus
-                              locale={ko}
+                              locale={enUS}
                             />
                           </PopoverContent>
                         </Popover>
@@ -318,20 +324,19 @@ const CreateScheduleModal = ({
                       </FormItem>
                     )}
                   />
-
                   <FormField
                     control={form.control}
                     name='endDate'
                     render={({ field }) => (
                       <FormItem className='flex flex-col'>
                         <FormLabel>
-                          종료일
-                          <span className='text-red-500'>*</span>
+                          End Date <span className='text-red-500'>*</span>
                         </FormLabel>
                         <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
+                          <FormControl>
+                            <PopoverTrigger asChild={false}>
                               <Button
+                                type='button'
                                 variant={'outline'}
                                 className={cn(
                                   'w-full pl-3 text-left font-normal',
@@ -339,24 +344,32 @@ const CreateScheduleModal = ({
                                 )}
                               >
                                 {field.value ? (
-                                  formatDate(field.value, 'yyyy년 MM월 dd일')
+                                  formatDate(field.value, 'MMM d, yyyy', {
+                                    locale: enUS,
+                                  })
                                 ) : (
-                                  <span>날짜 선택</span>
+                                  <span>Select date</span>
                                 )}
                                 <CalendarIcon className='ml-auto h-4 w-4 opacity-50' />
                               </Button>
-                            </FormControl>
-                          </PopoverTrigger>
+                            </PopoverTrigger>
+                          </FormControl>
                           <PopoverContent className='w-auto p-0' align='start'>
                             <Calendar
                               mode='single'
                               selected={field.value}
                               onSelect={field.onChange}
-                              disabled={date =>
-                                date < new Date(new Date().setHours(0, 0, 0, 0))
-                              }
+                              disabled={date => {
+                                const start = form.getValues('startDate');
+                                const today = new Date(
+                                  new Date().setHours(0, 0, 0, 0),
+                                );
+                                if (start && date < start) return true;
+                                if (date < today) return true;
+                                return false;
+                              }}
                               initialFocus
-                              locale={ko}
+                              locale={enUS}
                             />
                           </PopoverContent>
                         </Popover>
@@ -364,25 +377,24 @@ const CreateScheduleModal = ({
                       </FormItem>
                     )}
                   />
-
                   <FormField
                     control={form.control}
                     name='executionTime'
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          실행 시간
-                          <span className='text-red-500'>*</span>
+                          Execution Time <span className='text-red-500'>*</span>
                         </FormLabel>
                         <FormControl>
-                          <div className='relative'>
-                            <Input
-                              type='time'
-                              placeholder='HH:MM (예: 09:00)'
-                              {...field}
-                            />
-                          </div>
+                          <Input
+                            type='time'
+                            placeholder='HH:MM (e.g., 09:00)'
+                            {...field}
+                          />
                         </FormControl>
+                        <FormDescription>
+                          Time the schedule will run (HH:MM format).
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -396,7 +408,7 @@ const CreateScheduleModal = ({
         <DialogFooter className='mt-4 border-t pt-4'>
           <DialogClose asChild>
             <Button variant='outline' type='button'>
-              취소
+              Cancel
             </Button>
           </DialogClose>
           <Button
@@ -404,7 +416,7 @@ const CreateScheduleModal = ({
             onClick={form.handleSubmit(onSubmit)}
             disabled={form.formState.isSubmitting}
           >
-            {form.formState.isSubmitting ? '생성 중...' : '생성하기'}
+            {form.formState.isSubmitting ? 'Creating...' : 'Create'}
           </Button>
         </DialogFooter>
       </DialogContent>

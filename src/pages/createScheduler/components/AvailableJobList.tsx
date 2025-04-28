@@ -8,7 +8,6 @@ interface AvailableJobListProps {
   onJobSelect: (job: Job, checked: boolean) => void;
 }
 
-// tanstack query로 데이터 가져오기 예정
 const AvailableJobList = ({
   jobs,
   selectedJobIds,
@@ -23,7 +22,7 @@ const AvailableJobList = ({
               key={job.jobId}
               className='flex items-center justify-between rounded-md border p-3 transition-colors hover:bg-gray-50'
             >
-              <div className='flex items-center space-x-3'>
+              <div className='flex items-center space-x-3 overflow-hidden'>
                 <Checkbox
                   id={`avail-${job.jobId}`}
                   checked={selectedJobIds.has(job.jobId)}
@@ -33,7 +32,7 @@ const AvailableJobList = ({
                   htmlFor={`avail-${job.jobId}`}
                   className='flex cursor-pointer flex-col'
                 >
-                  <span className='font-medium'>{job.title}</span>
+                  <span className='truncate font-medium'>{job.title}</span>
                   <span className='text-sm text-gray-500'>
                     {job.description.length > 50
                       ? job.description.substring(0, 50) + '...'
@@ -45,7 +44,7 @@ const AvailableJobList = ({
           ))
         ) : (
           <div className='py-6 text-center text-gray-500'>
-            표시할 JOB이 없습니다.
+            No available JOBs to display.
           </div>
         )}
       </div>

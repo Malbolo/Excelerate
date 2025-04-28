@@ -1,4 +1,5 @@
 import { format } from 'date-fns';
+import { enUS } from 'date-fns/locale';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
@@ -18,7 +19,9 @@ const ScheduleList = ({ items }: ScheduleListProps) => {
   };
 
   if (!items || items.length === 0) {
-    return <p className='px-1 py-3 text-sm text-gray-500'>항목이 없습니다.</p>;
+    return (
+      <p className='px-1 py-3 text-sm text-gray-500'>No items available.</p>
+    );
   }
 
   return (
@@ -30,26 +33,23 @@ const ScheduleList = ({ items }: ScheduleListProps) => {
         >
           <h3 className='mb-1 text-base font-semibold'>{item.title}</h3>
           <p className='text-sm text-gray-600'>{item.description}</p>
+
           <div className='mt-2'>
             <p className='text-xs text-gray-500'>
-              생성일: {format(new Date(item.createdAt), 'yyyy-MM-dd HH:mm')}
+              Created:
+              {format(new Date(item.createdAt), 'MMM d, yyyy h:mm a', {
+                locale: enUS,
+              })}
             </p>
           </div>
 
           <Button
             className='absolute top-2 right-0 rounded bg-blue-500 px-2 py-1 text-xs text-white opacity-0 shadow-sm transition-opacity group-hover:visible group-hover:opacity-100 hover:bg-blue-600'
             onClick={() => handleViewDetails(item.scheduleId)}
-            aria-label={`${item.title} 상세보기`}
+            aria-label={`View details for ${item.title}`}
           >
-            상세보기
+            View Details
           </Button>
-          {/* <Button
-            className='absolute top-2 right-0 rounded bg-blue-500 px-2 py-1 text-xs text-white shadow-sm transition-opacity group-hover:visible group-hover:opacity-100 hover:bg-blue-600'
-            onClick={() => handleViewDetails(item.scheduleId)}
-            aria-label={`${item.title} 상세보기`}
-          >
-            상세보기
-          </Button> */}
         </div>
       ))}
     </div>

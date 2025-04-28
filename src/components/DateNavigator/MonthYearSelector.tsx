@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 import { format, getMonth, getYear, setMonth, setYear } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { enUS } from 'date-fns/locale';
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -18,10 +18,10 @@ interface MonthYearSelectorProps {
   onSelect: (date: Date) => void;
 }
 
-export function MonthYearSelector({
+const MonthYearSelector = ({
   currentDate,
   onSelect,
-}: MonthYearSelectorProps) {
+}: MonthYearSelectorProps) => {
   const initialYear = getYear(currentDate);
   const initialMonth = getMonth(currentDate);
 
@@ -56,35 +56,38 @@ export function MonthYearSelector({
           size='icon'
           onClick={() => handlePickerYearChange('prev')}
           className='h-7 w-7'
+          aria-label='Previous year'
         >
           <ChevronLeftIcon className='h-4 w-4' />
         </Button>
+
         <Select
           value={displayYear.toString()}
           onValueChange={handlePickerYearSelect}
         >
           <SelectTrigger className='w-[100px] text-center font-semibold'>
-            {' '}
-            <SelectValue placeholder='년도 선택' />{' '}
+            <SelectValue placeholder='Select year' />
           </SelectTrigger>
           <SelectContent>
-            {' '}
             {yearOptions.map(year => (
               <SelectItem key={year} value={year.toString()}>
-                {year}년
+                {year}
               </SelectItem>
-            ))}{' '}
+            ))}
           </SelectContent>
         </Select>
+
         <Button
           variant='ghost'
           size='icon'
           onClick={() => handlePickerYearChange('next')}
           className='h-7 w-7'
+          aria-label='Next year'
         >
           <ChevronRightIcon className='h-4 w-4' />
         </Button>
       </div>
+
       <div className='grid grid-cols-3 gap-2'>
         {Array.from({ length: 12 }).map((_, index) => (
           <Button
@@ -98,12 +101,12 @@ export function MonthYearSelector({
             className='text-sm'
             onClick={() => handleMonthSelect(index)}
           >
-            {format(new Date(displayYear, index), 'MMM', { locale: ko })}
+            {format(new Date(displayYear, index), 'MMM', { locale: enUS })}
           </Button>
         ))}
       </div>
     </div>
   );
-}
+};
 
 export default MonthYearSelector;

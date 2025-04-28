@@ -1,3 +1,5 @@
+import { format, parse } from 'date-fns';
+import { enUS } from 'date-fns/locale';
 import { useParams } from 'react-router-dom';
 
 import DateNavigator from '@/components/DateNavigator';
@@ -86,19 +88,25 @@ const mockData: DaySchedule = {
 };
 
 const DaySchedulePage = () => {
-  const { dayId } = useParams() as { dayId: string };
+  const { dayId = format(new Date(), 'yyyy-MM-dd') } = useParams<{
+    dayId?: string;
+  }>();
 
   // Info : params에서 받아온 dayId를 파싱하여 년, 월, 일을 구함
-  const [year, month, date] = dayId.split('-').map(Number);
+
+  const parsedDate = parse(dayId, 'yyyy-MM-dd', new Date());
+  const year = parsedDate.getFullYear();
+  const monthString = String(parsedDate.getMonth() + 1).padStart(2, '0');
+
+  const title = `Daily Schedule - ${format(parsedDate, 'MM/dd/yyyy', { locale: enUS })}`;
+
+  const backPath = `/scheduler-monitoring/month/${year}-${monthString}`;
 
   // year, month, date를 기준으로 데이터를 가져옴
   // const data = await getDaySchedule(year, month, date);
 
   return (
-    <SchedulerMonitoringLayout
-      title={`${year}년 ${month}월 ${date}일 스케줄 모니터링`}
-      backPath={`/scheduler-monitoring/month/${year}-${month}`}
-    >
+    <SchedulerMonitoringLayout title={title} backPath={backPath}>
       <DateNavigator />
       <div className='mt-8 grid grid-cols-1 gap-6 md:grid-cols-3'>
         <div className='overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm'>

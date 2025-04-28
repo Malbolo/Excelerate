@@ -13,7 +13,7 @@ const SchedulerMonitoringPage = () => {
 
   return (
     <SchedulerMonitoringLayout
-      title={`${year} ${MONTH_LIST[month]} Scheduler Monitoring`}
+      title={`${MONTH_LIST[month]} ${year} Scheduler Monitoring`}
       backPath='/'
     >
       <DateNavigator />

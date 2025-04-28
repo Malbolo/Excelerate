@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { format } from 'date-fns';
+import { enUS } from 'date-fns/locale';
 import { ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -26,16 +28,14 @@ const CalendarDay: React.FC<CalendarDayProps> = ({
 
   const cellDate = new Date(year, month - 1, day);
   const isToday = isSameDate(cellDate, today);
-  // Delete : 오늘날짜를 기준으로, 이전날짜이면 Pending 상태를 포함하지 않는 UI를 위한 함수 추후 삭제 예정, 실제 데이터로 변경 필요
+
   const isPast = isBeforeDate(cellDate, today);
   const isFuture = !isToday && !isPast;
 
-  // Delete : 더미데이터를 위한 변수, 추후 삭제 예정, 실제 데이터로 변경 필요
   let waitingCount = 0;
   let successCount = 0;
   let failCount = 0;
 
-  // Delete : 더미데이터를 위한 변수, 추후 삭제 예정, 실제 데이터로 변경 필요
   if (isCurrentMonth) {
     if (isPast) {
       waitingCount = Math.random() < 0.1 ? Math.floor(Math.random() * 2) : 0;
@@ -58,6 +58,8 @@ const CalendarDay: React.FC<CalendarDayProps> = ({
     navigate(`/scheduler-monitoring/day/${dayId}`);
   };
 
+  const formattedDayId = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
   return (
     <div
       className={cn(
@@ -77,20 +79,20 @@ const CalendarDay: React.FC<CalendarDayProps> = ({
       </span>
 
       {isCurrentMonth && hasData && (
-        <div className='flex w-full flex-grow flex-col items-start justify-center gap-0.5 pl-1 text-sm'>
+        <div className='flex w-full flex-grow flex-col items-start justify-center gap-0.5 pl-1 text-xs md:text-sm'>
           {waitingCount > 0 && (
             <div className='flex items-center gap-1.5 text-orange-600'>
-              <span>{waitingCount} 건 대기</span>
+              <span>{waitingCount} Pending</span>
             </div>
           )}
           {successCount > 0 && (
             <div className='flex items-center gap-1.5 text-green-600'>
-              <span>{successCount} 건 성공</span>
+              <span>{successCount} Success</span>
             </div>
           )}
           {failCount > 0 && (
             <div className='flex items-center gap-1.5 text-red-600'>
-              <span>{failCount} 건 실패</span>
+              <span>{failCount} Failed</span>
             </div>
           )}
         </div>
@@ -101,8 +103,8 @@ const CalendarDay: React.FC<CalendarDayProps> = ({
           variant='ghost'
           size='icon'
           className='absolute right-1 bottom-1 h-6 w-6 text-gray-400 hover:text-gray-700'
-          onClick={() => handleDetailClick(`${year}-${month}-${day}`)}
-          aria-label={`${year}년 ${month}월 ${day}일 상세 보기`}
+          onClick={() => handleDetailClick(formattedDayId)}
+          aria-label={`View details for ${format(cellDate, 'MMMM d, yyyy', { locale: enUS })}`}
         >
           <ArrowRight className='h-4 w-4' />
         </Button>
