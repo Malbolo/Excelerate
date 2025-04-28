@@ -42,9 +42,18 @@ class CodeGenerator:
 각 요청에 대해 주석에 번호를 붙여 구분해주세요.
 주어진 DataFrame은 다음과 같습니다:
 {df}
-
-함수는 df_manipulate(df)라는 이름으로 작성되어야 하며, df를 인자로 받아야 합니다.
-반환값은 필터된 DataFrame이어야 합니다.
+""" +
+# """ 
+# 함수는 df_manipulate(df)라는 이름으로 작성되어야 하며, df를 인자로 받아야 합니다.
+# 반환값은 필터된 DataFrame이어야 합니다.
+# """ +
+"""
+함수는 df_manipulate(df)라는 이름으로 작성되어야 합니다.
+각 필터/변환 단계마다 `intermediate.append(…)` 로 DataFrame을 수집하고,
+마지막에는 `return intermediate` 로 리스트를 반환해주세요.
+"""
++
+"""
 설명 없이 오직 코드만 작성해 주세요.
 
 사용자의 요청은 다음과 같습니다:
@@ -89,9 +98,18 @@ class CodeGenerator:
             """
 사용자 요청에 따라 DataFrame을 조작하는 함수 코드가 생성되었습니다.
 생성된 파이썬 함수 코드가 적절한 지 확인하세요.
-df는 이미 주어져 있습니다.
-함수는 df_manipulate(df)라는 이름이고, df를 인자로 받습니다.
-반환값은 필터된 DataFrame이어야 합니다.
+""" + 
+# """
+# 함수는 df_manipulate(df)라는 이름이고, df를 인자로 받습니다.
+# 반환값은 필터된 DataFrame이어야 합니다.
+# """ +
+"""
+함수는 df_manipulate(df)라는 이름으로 작성되어야 합니다.
+각 필터/변환 단계마다 `intermediate.append(…)` 로 DataFrame을 수집하고,
+마지막에는 `return intermediate` 로 리스트를 반환해주세요.
+"""
++
+"""
 주어진 요청을 정확하게 수행하는 코드라면 good, 아니라면 bad를 반환하세요.
             """
         )
@@ -165,14 +183,21 @@ df는 이미 주어져 있습니다.
         if "df_manipulate" not in namespace:
             raise RuntimeError("생성된 코드 안에 df_manipulate 함수가 없습니다.")
 
-        # 이제 방금 정의된 함수 호출
-        result_df = namespace["df_manipulate"](df)
+        # # 이제 방금 정의된 함수 호출
+        # result_df = namespace["df_manipulate"](df)
 
-        # 새 DataFrame을 반환하도록 state 업데이트
+        # # 새 DataFrame을 반환하도록 state 업데이트
+        # return {
+        #     "dataframe": [df, result_df],
+        #     # messages, python_code, command_list, retry_count 등
+        #     # 다른 필드는 그대로 유지됩니다.
+        # }
+        # 함수 호출 → 중간/최종 DataFrame들이 담긴 리스트를 받음
+        dfs: list[pd.DataFrame] = namespace["df_manipulate"](df)
+
+        # 원본 df 뒤에 중간 단계들을 모두 붙여서 state에 저장
         return {
-            "dataframe": [df, result_df],
-            # messages, python_code, command_list, retry_count 등
-            # 다른 필드는 그대로 유지됩니다.
+            "dataframe": [df, *dfs],
         }
 
     def build(self):

@@ -39,6 +39,7 @@ async def command_code(
         # 1) 레코드 목록 리스트로 직렬화
         serialized = [
             single_df.to_dict(orient="records")
+            # single_df.to_dict()
             for single_df in df_list
         ]
     
