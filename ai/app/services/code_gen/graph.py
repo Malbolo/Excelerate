@@ -129,7 +129,6 @@ class CodeGenerator:
 
         # LLM과 도구를 사용하여 메시지에 대한 응답을 생성합니다.
         response = check_chain.invoke({'command_list': state['command_list'],'python_code' : state['python_code']})
-        print(response.content)
         if response.content == 'good':
             return 'good'
         
@@ -147,13 +146,11 @@ class CodeGenerator:
         """
         # 재시도 카운트 증가
         count = state['retry_count'] + 1
-        print(f"retry count: {count}")
 
         return {'retry_count': count}
 
     def _error_node(self, state: AgentState) -> dict:
         msg = AIMessage(content="⚠️ 코드 생성이 3회 연속 실패했습니다. 나중에 다시 시도해주세요.")
-        print(msg.content)
         return {
             "messages": state["messages"] + [msg],
             "python_code": ""  # 실패 시 빈 문자열 반환
@@ -176,7 +173,7 @@ class CodeGenerator:
         namespace: dict = {"pd": pd}
 
         # code_str 안에 반드시
-        # def df_manipulate(df): … return df_filtered
+        # def df_manipulate(df): … return df_list
         # 형태의 함수 정의가 있어야 합니다.
         exec(code_body, namespace)
 
@@ -192,6 +189,7 @@ class CodeGenerator:
         #     # messages, python_code, command_list, retry_count 등
         #     # 다른 필드는 그대로 유지됩니다.
         # }
+
         # 함수 호출 → 중간/최종 DataFrame들이 담긴 리스트를 받음
         dfs: list[pd.DataFrame] = namespace["df_manipulate"](df)
 

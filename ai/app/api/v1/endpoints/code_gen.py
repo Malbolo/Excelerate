@@ -42,6 +42,11 @@ async def command_code(
             # single_df.to_dict()
             for single_df in df_list
         ]
+
+        # # 디버깅 (저장된 df list 확인)
+        # for one in df_list:
+        #     print(one)
+        #     print("\n")
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
