@@ -11,7 +11,7 @@ import AvailableJobList from './components/AvailableJobList';
 import CreateScheduleModal from './components/CreateScheduleModal';
 import JobPagination from './components/JobPagination';
 import { JobSearchInput } from './components/JobSearchInput';
-import SelectedJobList from './components/SelectedJobList';
+import { SelectedJobList } from './components/SelectedJobList';
 import { allDummyJobs } from './data';
 
 const ITEMS_PER_PAGE = 6;
@@ -87,6 +87,10 @@ const CreateSchedulerPage = () => {
     );
   }, []);
 
+  const handleJobOrderChange = useCallback((newOrder: Job[]) => {
+    setSelectedJobs(newOrder);
+  }, []);
+
   const handleJobDeselect = useCallback((jobId: string) => {
     setSelectedJobs(prev => prev.filter(job => job.jobId !== jobId));
   }, []);
@@ -128,6 +132,7 @@ const CreateSchedulerPage = () => {
           <SelectedJobList
             selectedJobs={selectedJobs}
             onJobDeselect={handleJobDeselect}
+            onOrderChange={handleJobOrderChange}
           />
           <div className='mt-4'>
             <Button

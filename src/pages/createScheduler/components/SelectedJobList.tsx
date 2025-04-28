@@ -1,59 +1,95 @@
-// src/components/SelectedJobList.tsx (예시 경로)
-import { XIcon } from 'lucide-react';
+import { useMemo } from 'react';
 
-// 타입 임포트
-import { Button } from '@/components/ui/button';
+import {
+  DndContext,
+  DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Job } from '@/types/scheduler';
+
+import SortableJobItem from './SortableJobItem';
 
 interface SelectedJobListProps {
   selectedJobs: Job[];
   onJobDeselect: (jobId: string) => void;
+  onOrderChange: (newOrder: Job[]) => void;
 }
 
-const SelectedJobList = ({
+export function SelectedJobList({
   selectedJobs,
   onJobDeselect,
-}: SelectedJobListProps) => {
+  onOrderChange,
+}: SelectedJobListProps) {
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = selectedJobs.findIndex(job => job.jobId === active.id);
+      const newIndex = selectedJobs.findIndex(job => job.jobId === over.id);
+
+      const newOrder = arrayMove(selectedJobs, oldIndex, newIndex);
+      onOrderChange(newOrder);
+    }
+  };
+
+  const jobIds = useMemo(
+    () => selectedJobs.map(job => job.jobId),
+    [selectedJobs],
+  );
+
   return (
     <>
       <h2 className='mb-4 text-lg font-semibold'>
         선택된 JOB 목록 ({selectedJobs.length})
       </h2>
-      <ScrollArea className='flex-grow rounded-md border p-2'>
-        <div className='space-y-2 p-2'>
-          {selectedJobs.length > 0 ? (
-            selectedJobs.map((job, index) => (
-              <div
-                key={job.jobId}
-                className='flex cursor-grab items-center justify-between rounded-md border bg-white p-3 shadow-sm active:cursor-grabbing'
-              >
-                <div className='flex items-center space-x-2'>
-                  <span className='text-sm font-medium text-gray-500'>
-                    {index + 1}.
-                  </span>
-                  <span className='font-medium'>{job.title}</span>
+      <ScrollArea className='h-0 flex-1 rounded-md border p-2'>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={jobIds}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className='space-y-2 p-2'>
+              {selectedJobs.length > 0 ? (
+                selectedJobs.map((job, index) => (
+                  <SortableJobItem
+                    key={job.jobId}
+                    job={job}
+                    index={index}
+                    onJobDeselect={onJobDeselect}
+                  />
+                ))
+              ) : (
+                <div className='py-6 text-center text-gray-400'>
+                  왼쪽 목록에서 JOB을 선택하세요.
                 </div>
-                <Button
-                  variant='ghost'
-                  size='icon'
-                  className='h-7 w-7 text-gray-400 hover:text-red-500'
-                  onClick={() => onJobDeselect(job.jobId)}
-                  aria-label='선택 해제'
-                >
-                  <XIcon className='h-4 w-4' />
-                </Button>
-              </div>
-            ))
-          ) : (
-            <div className='py-6 text-center text-gray-400'>
-              왼쪽 목록에서 JOB을 선택하세요.
+              )}
             </div>
-          )}
-        </div>
+          </SortableContext>
+        </DndContext>
       </ScrollArea>
     </>
   );
-};
-
-export default SelectedJobList;
+}

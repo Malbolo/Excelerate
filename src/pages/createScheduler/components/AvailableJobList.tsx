@@ -14,7 +14,7 @@ const AvailableJobList = ({
   onJobSelect,
 }: AvailableJobListProps) => {
   return (
-    <ScrollArea className='flex-grow rounded-md border p-2'>
+    <ScrollArea className='h-0 flex-1 rounded-md border p-2'>
       <div className='space-y-3 p-2'>
         {jobs.length > 0 ? (
           jobs.map(job => (
