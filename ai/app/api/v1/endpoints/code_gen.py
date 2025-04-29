@@ -45,6 +45,8 @@ async def command_code(
             for single_df in df_list
         ]
 
+        # logs는 redis에 따로 저장하는 것을 고려
+
         # # 디버깅 (저장된 df list 확인)
         # for one in df_list:
         #     print(one)

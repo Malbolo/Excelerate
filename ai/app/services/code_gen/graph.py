@@ -1,4 +1,5 @@
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import time
 import requests
 import pandas as pd
@@ -161,7 +162,7 @@ class CodeGenerator:
 
         return {'retry_count': count}
 
-    def error_node(self, state: AgentState) -> dict:
+    def error_node(self, state: AgentState) -> AgentState:
         msg = AIMessage(content="⚠️ 코드 생성이 3회 연속 실패했습니다. 나중에 다시 시도해주세요.")
         return {
             "messages": state["messages"] + [msg]
@@ -250,7 +251,7 @@ class CodeGenerator:
             "node": "execute",
             "duration_s": duration,
             "error": state.get("error_msg"),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(ZoneInfo("Asia/Seoul")).isoformat(),
         }
 
         # 3) 정상 리턴
