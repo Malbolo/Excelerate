@@ -25,8 +25,26 @@ async def command_code(
 @router.get("/make")
 async def make_rag():
     try:
-        set_rag = CatalogIngestor()
-        set_rag.run()
+        sample_input = {
+            "수원공장": {
+                "factory_id": "FCT001",
+                "product": {
+                "PROD001": {"name":"스마트폰A","category":"전자기기"},
+                "PROD002": {"name":"스마트폰B","category":"전자기기"},
+                "PROD004": {"name":"노트북D","category":"컴퓨터"}
+                },
+                "metric_list": ["defects","production","inventory","energy"]
+            }
+        }
+
+        ingestor = CatalogIngestor(
+            catalog_data=sample_input,
+            connection_args={"host":"localhost","port":19530},
+            collection_name="factory_catalog",
+            drop_old=True
+        )
+        
+        ingestor.run()
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
