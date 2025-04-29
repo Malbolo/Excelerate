@@ -1,7 +1,6 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 import time
-import requests
 import pandas as pd
 import re
 import traceback
@@ -18,7 +17,6 @@ from langchain_openai import ChatOpenAI
 from langgraph.graph import START, END
 
 from app.utils.memory_logger import MemoryLogger
-
 
 load_dotenv()
 
@@ -79,6 +77,7 @@ class CodeGenerator:
                 "output":    output_data,
                 "timestamp": now,
                 "metadata":  metadata,
+                "sub_events": [], # 하위 로그 이벤트 추가
             }
 
             # 6) 이전 state + 새로운 out_state 병합
@@ -89,6 +88,48 @@ class CodeGenerator:
             return merged
 
         return wrapped
+
+    def _wrap_condition(self, func, name):
+        """
+        check_code 같은 조건 함수의 결과를 state['logs']에 기록합니다.
+        func: (state) -> str 리턴하는 함수
+        name: 로그에 사용할 단계 이름
+        """
+        def wrapped(state: AgentState, *args, **kwargs):
+            now = datetime.now(ZoneInfo("Asia/Seoul")).isoformat()
+            # 1) 조건 함수 실행
+            result = func(state, *args, **kwargs)
+            # 2) 로그 항목 생성
+            entry = {
+                "node":      name,
+                "input":     state.get("python_code"),
+                "output":    result,
+                "timestamp": now,
+                "metadata":  {},  # 필요 시 추가 메타데이터 삽입
+            }
+            # 3) 로그 추가
+            state.setdefault("logs", []).append(entry)
+            return result
+
+        return wrapped
+
+    def _log_sub_event(self, state: AgentState, name: str, 
+                      input=None, output=None, metadata: dict|None=None):
+        """
+        state['logs']의 마지막 엔트리에 sub_events를 추가합니다.
+        """
+        timestamp = datetime.now(ZoneInfo("Asia/Seoul")).isoformat()
+        sub = {
+            "event":     name,
+            "input":     input,
+            "output":    output,
+            "metadata":  metadata or {},
+            "timestamp": timestamp,
+        }
+        # 가장 최근에 추가된 노드 로그 엔트리
+        if state.get("logs"):
+            state["logs"][-1].setdefault("sub_events", []).append(sub)
+        return state
 
     def make_template(self) -> ChatPromptTemplate:
         # 2) 시스템 메시지: df와 파라미터를 받아 필터링 코드를 생성한다는 역할 정의
@@ -147,7 +188,11 @@ class CodeGenerator:
         schain = code_gen_prompt | self.sllm
         
         # LLM과 도구를 사용하여 메시지에 대한 응답을 생성합니다.
-        response = schain.invoke({'df' : df[:10], 'input' : input})
+        # 1) LLM 호출 전 input 준비
+        llm_input = {"df": df[:10], "input": input}
+
+        # 2) LLM 호출
+        response = schain.invoke(llm_input)
 
         # 응답 메시지를 포함하는 새로운 state를 반환합니다.
         return {'messages': [response], 'python_code': response.content}
@@ -318,10 +363,12 @@ class CodeGenerator:
         for name, fn in handlers.items():
             graph_builder.add_node(name, self._wrap_node(fn, name))
 
+        wrapped_check = self._wrap_condition(self.check_code, "check_code")
+
         graph_builder.add_edge(START, 'codegen')
         graph_builder.add_conditional_edges(
             'codegen',
-            self.check_code,
+            wrapped_check,
             {
                 'good' : 'execute',
                 'bad' : 'regen',
