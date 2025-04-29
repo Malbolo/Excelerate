@@ -67,7 +67,7 @@ class DataDocs:
             400: {"description": "잘못된 요청"}
         },
         "data" : {
-            "command": "베트남 지사 A 제품 데이터 가져와"
+            "command": "한국 지사의 DA 그룹 D 제품 kpi 보고서를 2025-03-01부터 2025-04-22까지 가져와"
         }
     }
 
