@@ -3,21 +3,13 @@ import pandas as pd
 
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.documents import Document
 from langchain_milvus import Milvus
 from langchain.chains.retrieval import create_retrieval_chain
 from langchain.chains.transform import TransformChain
 
-from pydantic import BaseModel, Field
-from app.services.code_gen.sample import sample_data
+from app.models.structure import FileAPIDetail
 
-class FileAPIDetail(BaseModel):
-    location: str = Field(description="파일을 불러올 지사 정보. 지사를 붙이지 말고 이름만 가져오세요. 예: vietnam, china")
-    startdate: str = Field(description="파일을 불러올 시작일. 예: 2025-01-01")
-    enddate: str = Field(description="파일을 불러올 종료일. 예: 2025-03-31")
-    group: str = Field(description="파일을 불러올 그룹 정보. 예: DX, DA")
-    product: str = Field(description="파일을 불러올 제품 정보. 예: A, B")
-    metric: str = Field(description="파일을 불러올 metric 정보. 예: 불량률, production")
+from app.services.code_gen.sample import sample_data
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 2. VectorDB & Retriever 초기화
