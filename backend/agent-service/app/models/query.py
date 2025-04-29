@@ -12,4 +12,4 @@ class DataRequest(BaseModel):
     command: str = None
 
 class RagRequest(BaseModel):
-    data: dict = None
+    data: List[dict] = None

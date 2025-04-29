@@ -72,18 +72,30 @@ class DataDocs:
     }
     make = {
         "data": {
-            "data" : {
-                "수원공장": {
-                    "system_name": "mes",
-                    "factory_id": "FCT001",
-                    "product": {
-                    "PROD001": {"name":"스마트폰A","category":"전자기기"},
-                    "PROD002": {"name":"스마트폰B","category":"전자기기"},
-                    "PROD004": {"name":"노트북D","category":"컴퓨터"}
-                    },
-                    "metric_list": ["defects","production","inventory","energy"]
+            "data" : [
+                {
+                    "수원공장": {
+                        "system_name": "mes",
+                        "factory_id": "FCT001",
+                        "product": {
+                            "PROD001": {"name":"스마트폰A","category":"전자기기"},
+                            "PROD002": {"name":"스마트폰B","category":"전자기기"},
+                            "PROD004": {"name":"노트북D","category":"컴퓨터"}
+                        },
+                        "metric_list": ["defects","production","inventory","energy"]
+                    }
+                },
+                {
+                    "평택공장": {
+                        "system_name": "smmas",
+                        "factory_id": "FCT002",
+                        "product": {
+                            "PROD003": {"name": "태블릿C", "category": "전자기기"}
+                        },
+                        "metric_list":  ["defects","production","inventory","energy"]
+                    }
                 }
-            }
+            ]
         }
     }
 

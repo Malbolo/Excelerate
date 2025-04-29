@@ -23,7 +23,7 @@ class FileAPIClient:
         collection_name: str = "factory_catalog",
         k: int = 3,
         model_name: str = "gpt-4o-mini",
-        base_url: str = "https://filesystem.com",
+        base_url: str = settings.FILESYSTEM_URL,
     ):
         # VectorDB + Retriever
         emb = OpenAIEmbeddings()
@@ -37,7 +37,7 @@ class FileAPIClient:
         )
         # Entity extractor chain
         prompt = ChatPromptTemplate.from_messages([
-            ("system", "다음 필드를 추출하세요: factory_name, system_name, metric, factory_id, start_date"),
+            ("system", "다음 필드를 추출하세요: factory_name, system_name, metric, factory_id, product_code, start_date"),
             ("system", "해당하는 값이 없으면 null로 두세요."),
             ("system", "<context>\n{context}\n</context>"),
             ("human", "{input}")
@@ -65,17 +65,23 @@ class FileAPIClient:
         # 2) metadata 로부터 유효값 파싱
         valid_ids     = [fact_doc.metadata["factory_id"]]
         valid_metrics = fact_doc.metadata["metric_list"].split(",")
-        # valid_prods   = fact_doc.metadata["product_list"].split(",") # prod 값 추출 시 이것도 체크
+        valid_prods   = fact_doc.metadata["product_list"].split(",")
 
         if q.factory_id not in valid_ids:
             raise ValueError(f"{q.factory_name}의 factory_id '{q.factory_id}'가 유효하지 않습니다.")
         if q.metric not in valid_metrics:
             raise ValueError(f"{q.factory_name}는 metric '{q.metric}'을 지원하지 않습니다.")
+        if q.product_code not in valid_prods:
+            raise ValueError(f"{q.factory_name}에는 product_code '{q.product_code}'가 없습니다.")
 
     def _assemble_url(self, q: FileAPIDetail) -> str:
         # 예시 URL: /{system_name}/factory-data/{metric}?product_code=...&start_date=...
         path  = f"/{q.system_name}/factory-data/{q.metric}"
-        query = f"?factory_id={q.factory_id}&start_date={q.start_date}"
+        query = (
+            f"?factory_id={q.factory_id}"
+            f"&product_code={q.product_code}"
+            f"&start_date={q.start_date}"
+        )
         return self.base_url + path + query
 
     def run(self, user_input: str) -> pd.DataFrame:

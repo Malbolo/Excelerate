@@ -3,33 +3,40 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_core.documents import Document
 from langchain_milvus import Milvus
 from app.core.config import settings
+from typing import List, Dict
 
-def build_catalog_documents(catalog: dict) -> list[Document]:
-    docs: list[Document] = []
-    for factory_name, info in catalog.items():
-        # 1) page_content: JSON 문자열(혹은 사람이 읽기 편한 포맷)으로 통째로 기록
-        content = json.dumps({factory_name: info}, ensure_ascii=False)
-
-        # 2) metadata: RAG 검색·검증에 필요한 키만 뽑아서 저장
-        docs.append(Document(
-            page_content=content,
-            metadata={
-                "type":          "factory_info",
-                "factory_name":  factory_name,
-                "system_name":   info["system_name"],
-                "factory_id":    info["factory_id"],
-                "product_list":  ",".join(info["product"].keys()),
-                "metric_list":   ",".join(info["metric_list"]),
+def build_catalog_documents(catalog: List[Dict]) -> List[Document]:
+    """
+    catalog: List of dicts, each mapping factory_name to its info dict:
+    [
+      {"수원공장": {"system_name":..., "factory_id":..., ...}},
+      {"서울공장": {...}},
+      ...
+    ]
+    """
+    docs: List[Document] = []
+    for entry in catalog:
+        # 각 entry는 {factory_name: info_dict}
+        for factory_name, info in entry.items():
+            # 전체 JSON 구조 저장
+            content = json.dumps({factory_name: info}, ensure_ascii=False)
+            # metadata에는 검색 및 검증 필드만
+            metadata = {
+                "type":         "factory_info",
+                "factory_name": factory_name,
+                "system_name":  info.get("system_name", ""),
+                "factory_id":   info.get("factory_id", ""),
+                "product_list": ",".join(info.get("product", {}).keys()),
+                "metric_list":  ",".join(info.get("metric_list", [])),
             }
-        ))
-
+            docs.append(Document(page_content=content, metadata=metadata))
     return docs
 
 
 class CatalogIngestor:
     def __init__(
         self,
-        catalog_data: dict,
+        catalog_data: List[Dict],
         *,
         connection_args: dict     = {"host": settings.MILVUS_HOST, "port": settings.MILVUS_PORT},
         collection_name: str      = "factory_catalog",
