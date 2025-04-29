@@ -3,12 +3,14 @@ import { useCallback, useMemo, useState } from 'react';
 import { Separator } from '@radix-ui/react-separator';
 import { useSearchParams } from 'react-router-dom';
 
+import { Button } from '@/components/ui/button';
 import { Job } from '@/types/scheduler';
 
 import AvailableJobList from '../createScheduler/components/AvailableJobList';
 import JobPagination from '../createScheduler/components/JobPagination';
 import JobSearchInput from '../createScheduler/components/JobSearchInput';
 import { allDummyJobs } from '../createScheduler/data';
+import CommandItem from './components/CommandItem';
 
 const ITEMS_PER_PAGE = 6;
 
@@ -71,7 +73,7 @@ const JobManagementPage = () => {
 
   return (
     <div className='relative container mx-auto flex h-full w-full flex-row'>
-      <main className='flex h-full w-[60%] flex-col gap-6'>
+      <main className='flex h-full w-[60%] flex-col gap-6 p-8'>
         <header className='flex items-center gap-3 border-b border-gray-200 pb-8'>
           <h1 className='flex-1 text-xl font-bold text-gray-800'>
             Job Management
@@ -82,6 +84,7 @@ const JobManagementPage = () => {
           <AvailableJobList
             jobs={paginatedJobs}
             onJobSelect={handleJobSelect}
+            selectedJob={selectedJob}
           />
           <JobPagination
             currentPage={
@@ -95,13 +98,27 @@ const JobManagementPage = () => {
         </div>
       </main>
       <Separator orientation='vertical' className='mx-2 hidden md:block' />
-      <div className='flex w-[40%] flex-col overflow-hidden bg-gray-100/50'>
-        <div className='flex-1'>
-          <div className='flex items-center justify-between'>
+      <div className='flex w-[40%] flex-col overflow-hidden bg-gray-100/50 p-8'>
+        <section className='flex grow flex-col gap-2'>
+          <div className='flex items-center justify-between gap-2'>
+            <p className='text-lg font-bold'>{selectedJob?.title}</p>
+          </div>
+          <div className='mt-4 flex flex-col gap-2'>
             {selectedJob?.commandList.map(command => (
-              <div key={command.commandId}>{command.commandTitle}</div>
+              <CommandItem
+                key={command.commandId}
+                commandTitle={command.commandTitle}
+              />
             ))}
           </div>
+        </section>
+        <div className='flex items-center justify-center gap-4'>
+          <Button variant='destructive' className='h-12 w-1/2 p-4'>
+            delete
+          </Button>
+          <Button variant='default' className='h-12 w-1/2 p-4'>
+            edit
+          </Button>
         </div>
       </div>
     </div>

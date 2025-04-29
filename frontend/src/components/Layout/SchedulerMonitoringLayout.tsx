@@ -1,5 +1,5 @@
 import { ArrowLeftIcon } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
 
@@ -21,8 +21,8 @@ const SchedulerMonitoringLayout = ({
   };
 
   return (
-    <div className='relative container mx-auto h-full'>
-      <header className='mb-6 flex items-center gap-3 border-b border-gray-200 pb-4 md:mb-8 md:gap-4'>
+    <div className='container mx-auto h-full p-8'>
+      <header className='mb-6 flex items-center gap-3 border-b border-gray-200 pb-4 md:gap-4'>
         {/* Info : month에서는 뒤로가기 버튼이 없어야 함 */}
         {backPath !== '/' && (
           <Button
@@ -36,6 +36,12 @@ const SchedulerMonitoringLayout = ({
           </Button>
         )}
         <h1 className='flex-1 text-xl font-bold text-gray-800'>{title}</h1>
+
+        <div className='rounded-lg'>
+          <Link to={`/scheduler-monitoring/create`}>
+            <Button>Create Schedule</Button>
+          </Link>
+        </div>
       </header>
       <main>{children}</main>
     </div>
