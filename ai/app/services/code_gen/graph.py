@@ -1,3 +1,5 @@
+from datetime import datetime
+import time
 import requests
 import pandas as pd
 import re
@@ -14,6 +16,8 @@ from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTempla
 from langchain_openai import ChatOpenAI
 from langgraph.graph import START, END
 
+from app.utils.memory_logger import MemoryLogger
+
 
 load_dotenv()
 
@@ -23,12 +27,14 @@ class AgentState(MessagesState):
     dataframe: List[pd.DataFrame]
     retry_count: int
     error_msg: dict | None
+    logs: List[dict]
 
 class CodeGenerator:
     def __init__(self):
+        self.logger = MemoryLogger()
         self.cllm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0)
         self.llm = ChatOpenAI(model_name="gpt-4o", temperature=0)
-        self.sllm = ChatOpenAI(model_name="gpt-4.1-nano", temperature=0)
+        self.sllm = ChatOpenAI(model_name="gpt-4.1-nano", temperature=0, callbacks=[self.logger])
 
     def make_template(self) -> ChatPromptTemplate:
         # 2) 시스템 메시지: df와 파라미터를 받아 필터링 코드를 생성한다는 역할 정의
@@ -89,8 +95,12 @@ class CodeGenerator:
         # LLM과 도구를 사용하여 메시지에 대한 응답을 생성합니다.
         response = schain.invoke({'df' : df[:10], 'input' : input})
 
+        # 생성된 코드와 함께 지금까지 쌓인 로그도 state에 넣어두기
+        logs = self.logger.logs.copy()
+        self.logger.reset()
+
         # 응답 메시지를 포함하는 새로운 state를 반환합니다.
-        return {'messages': [response], 'python_code': response.content}
+        return {'messages': [response], 'python_code': response.content, "logs": state["logs"] + logs}
 
     def check_code(self, state: AgentState) -> Literal['good', 'bad', 'fail']:
         """
@@ -201,6 +211,7 @@ class CodeGenerator:
         }
     
     def execute_code(self, state: AgentState) -> AgentState:
+        start = time.time()
         code_str = state["python_code"]
         df = state["dataframe"][0]
 
@@ -232,11 +243,21 @@ class CodeGenerator:
             dfs: list[pd.DataFrame] = namespace["df_manipulate"](df)
         except Exception as e:
             return self._extract_error_info(e, code_body, "invoke")
+        
+        duration = time.time() - start
+        node_log = {
+            "event": "node_execute",
+            "node": "execute",
+            "duration_s": duration,
+            "error": state.get("error_msg"),
+            "timestamp": datetime.utcnow().isoformat(),
+        }
 
         # 3) 정상 리턴
         return {
             "dataframe": [df, *dfs],
             "error_msg": None,
+            "logs": state["logs"] + [node_log],
         }
 
     def build(self):
