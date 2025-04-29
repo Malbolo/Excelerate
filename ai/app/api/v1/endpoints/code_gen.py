@@ -8,11 +8,11 @@ from langchain_core.messages import HumanMessage
 
 
 import pandas as pd
-from app.services.code_gen.sample import sample_data
+# from app.services.code_gen.sample import sample_data
+# df = pd.DataFrame(sample_data["data"]) # 테스트 용
 
 router = APIRouter()
 docs = CodeGenDocs()
-df = pd.DataFrame(sample_data["data"])
 
 # FastAPI 엔드포인트: 사용자의 질의를 받고 graph를 통해 답변 생성
 @router.post("/command")
@@ -27,8 +27,9 @@ async def command_code(
                 'messages': [HumanMessage(request.command_list)],
                 'python_code': '',
                 'command_list': request.command_list,
-                'dataframe': [df],
-                'retry_count': 0
+                'dataframe': [pd.DataFrame(request.dataframe)],
+                'retry_count': 0,
+                "error_msg": None
             }
 
         answer = graph.invoke(query)
@@ -50,4 +51,4 @@ async def command_code(
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    return JSONResponse(status_code=200, content={"code": answer["python_code"], "dataframe": serialized})
+    return JSONResponse(status_code=200, content={"code": answer["python_code"], "dataframe": serialized, "error_msg": answer["error_msg"]})

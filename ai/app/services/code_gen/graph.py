@@ -1,6 +1,7 @@
 import requests
 import pandas as pd
 import re
+import traceback
 
 from dotenv import load_dotenv
 
@@ -20,7 +21,8 @@ class AgentState(MessagesState):
     command_list: List[str]
     python_code: str
     dataframe: List[pd.DataFrame]
-    retry_count: int 
+    retry_count: int
+    error_msg: dict | None
 
 class CodeGenerator:
     def __init__(self):
@@ -28,7 +30,7 @@ class CodeGenerator:
         self.llm = ChatOpenAI(model_name="gpt-4o", temperature=0)
         self.sllm = ChatOpenAI(model_name="gpt-4.1-nano", temperature=0)
 
-    def _make_template(self) -> ChatPromptTemplate:
+    def make_template(self) -> ChatPromptTemplate:
         # 2) 시스템 메시지: df와 파라미터를 받아 필터링 코드를 생성한다는 역할 정의
         system_template = SystemMessagePromptTemplate.from_template(
             "당신은 pandas DataFrame을 조작하는 파이썬 코드를 작성하는 전문가입니다."
@@ -65,7 +67,7 @@ class CodeGenerator:
         prompt = ChatPromptTemplate.from_messages([system_template, human_template])
         return prompt
 
-    def _code_gen(self, state: AgentState) -> AgentState:
+    def code_gen(self, state: AgentState) -> AgentState:
         """
         주어진 `state`에서 메시지를 가져와
         LLM과 도구를 사용하여 응답 메시지를 생성합니다.
@@ -80,7 +82,7 @@ class CodeGenerator:
         df = state['dataframe'][0] # 오리지널 df
         input = state['command_list']
 
-        code_gen_prompt = self._make_template()
+        code_gen_prompt = self.make_template()
 
         schain = code_gen_prompt | self.sllm
         
@@ -90,7 +92,7 @@ class CodeGenerator:
         # 응답 메시지를 포함하는 새로운 state를 반환합니다.
         return {'messages': [response], 'python_code': response.content}
 
-    def _check_code(self, state: AgentState) -> Literal['good', 'bad', 'fail']:
+    def check_code(self, state: AgentState) -> Literal['good', 'bad', 'fail']:
         """
         생성된 코드가 적절한 지 확인하고, 적절하면 END로, 적절하지 않으면 재생성합니다.
         """
@@ -140,7 +142,7 @@ class CodeGenerator:
             # 3번째 재시도(=retry_count 2에서 bad) 후라면 실패 처리
             return "fail"
         
-    def _regen(self, state: AgentState) -> AgentState:
+    def regen(self, state: AgentState) -> AgentState:
         """
         재생성된 코드를 포함하는 새로운 state를 반환합니다.
         """
@@ -149,74 +151,113 @@ class CodeGenerator:
 
         return {'retry_count': count}
 
-    def _error_node(self, state: AgentState) -> dict:
+    def error_node(self, state: AgentState) -> dict:
         msg = AIMessage(content="⚠️ 코드 생성이 3회 연속 실패했습니다. 나중에 다시 시도해주세요.")
         return {
-            "messages": state["messages"] + [msg],
-            "python_code": ""  # 실패 시 빈 문자열 반환
+            "messages": state["messages"] + [msg]
         }
     
-    def _execute_code(self, state: AgentState) -> AgentState:
+    def _extract_error_info(self, exc: Exception, code_body: str, stage: str ) -> dict:
         """
-        1) state.python_code 문자열을 exec으로 정의된 함수로 만들고
-        2) state.dataframe을 인자로 실행한 뒤
-        3) 결과 DataFrame을 state.dataframe에 덮어씁니다.
+        Exception과 원본 코드 문자열, 실패 단계를 받아서
+        해당 번호 블록(# n.)부터 에러 라인까지의 snippet을 반환합니다.
         """
+        tb_last = traceback.extract_tb(exc.__traceback__)[-1]
+        raw_lineno = tb_last.lineno
+
+        # 1) code_body를 줄 단위로 분리
+        lines = code_body.splitlines()
+        total = len(lines)
+
+        # 2) 실제 접근 가능한 index로 clamp (에러 방지)
+        #    (1-based lineno → 0-based idx)
+        err_idx = min(raw_lineno - 1, total - 1)
+
+        # 3) 블록 시작 주석 찾기
+        comment_pattern = re.compile(r"\s*#\s*(\d+)\.")
+        block_start = 0
+        for idx in range(err_idx, -1, -1):
+            if comment_pattern.search(lines[idx]):
+                block_start = idx
+                break
+
+        # 4) snippet 생성 (block_start 부터 err_idx 까지)
+        snippet_lines = []
+        for i in range(block_start, err_idx + 1):
+            text = lines[i].rstrip()
+            prefix = "→" if i == err_idx else "  "
+            snippet_lines.append(f"{prefix} {i+1:4d}: {text}")
+
+        snippet = "\n".join(snippet_lines)
+
+        return {
+            "error_msg": {
+                "stage":   stage,
+                "message": str(exc),
+                "file":    tb_last.filename,
+                "line":    raw_lineno,
+                "code":    snippet,
+            }
+        }
+    
+    def execute_code(self, state: AgentState) -> AgentState:
         code_str = state["python_code"]
-        df = state["dataframe"][0] # 오리지널 df
+        df = state["dataframe"][0]
 
         fence_pattern = re.compile(r"```(?:python)?\n([\s\S]*?)```", re.IGNORECASE)
         m = fence_pattern.search(code_str)
         code_body = m.group(1) if m else code_str
 
-        # 안전을 위해 최소한의 namespace만 넘겨줍니다.
         namespace: dict = {"pd": pd}
 
-        # code_str 안에 반드시
-        # def df_manipulate(df): … return df_list
-        # 형태의 함수 정의가 있어야 합니다.
-        exec(code_body, namespace)
+        # 1) exec 단계
+        try:
+            compiled = compile(code_body, "<user_code>", "exec")
+            exec(compiled, namespace)
+        except Exception as e:
+            # 위치 인자로만 stage를 넘김
+            return self._extract_error_info(e, code_body, "exec")
 
+        # df_manipulate 함수 존재 확인
         if "df_manipulate" not in namespace:
-            raise RuntimeError("생성된 코드 안에 df_manipulate 함수가 없습니다.")
+            return {
+                "error_msg": {
+                    "stage": "validation",
+                    "message": "생성된 코드 안에 df_manipulate 함수가 없습니다."
+                }
+            }
 
-        # # 이제 방금 정의된 함수 호출
-        # result_df = namespace["df_manipulate"](df)
+        # 2) invoke 단계
+        try:
+            dfs: list[pd.DataFrame] = namespace["df_manipulate"](df)
+        except Exception as e:
+            return self._extract_error_info(e, code_body, "invoke")
 
-        # # 새 DataFrame을 반환하도록 state 업데이트
-        # return {
-        #     "dataframe": [df, result_df],
-        #     # messages, python_code, command_list, retry_count 등
-        #     # 다른 필드는 그대로 유지됩니다.
-        # }
-
-        # 함수 호출 → 중간/최종 DataFrame들이 담긴 리스트를 받음
-        dfs: list[pd.DataFrame] = namespace["df_manipulate"](df)
-
-        # 원본 df 뒤에 중간 단계들을 모두 붙여서 state에 저장
+        # 3) 정상 리턴
         return {
             "dataframe": [df, *dfs],
+            "error_msg": None,
         }
 
     def build(self):
         graph_builder = StateGraph(AgentState)
 
-        graph_builder.add_node('codegen', self._code_gen)
-        graph_builder.add_node('regen', self._regen)
-        graph_builder.add_node('error', self._error_node)
-        graph_builder.add_node('execute', self._execute_code)
+        graph_builder.add_node('codegen', self.code_gen)
+        graph_builder.add_node('regen', self.regen)
+        graph_builder.add_node('error', self.error_node)
+        graph_builder.add_node('execute', self.execute_code)
 
         graph_builder.add_edge(START, 'codegen')
         graph_builder.add_conditional_edges(
             'codegen',
-            self._check_code,
+            self.check_code,
             {
                 'good' : 'execute',
                 'bad' : 'regen',
                 'fail' : 'error',
             })
         graph_builder.add_edge('regen', 'codegen')
-        graph_builder.add_edge('error', END)
+        graph_builder.add_edge('error', 'execute')
         graph_builder.add_edge('execute', END)
 
         return graph_builder.compile()
