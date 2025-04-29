@@ -42,7 +42,7 @@ class CodeGenerator:
 사용자의 요청에 따라 DataFrame을 조작하는 함수 코드를 작성하세요.
 사용자의 요청은 순서가 있는 여러 개별적인 요청으로 나뉘어져 있습니다.
 각 요청에 대해 주석에 번호를 붙여 구분해주세요.
-주어진 DataFrame은 다음과 같습니다:
+주어진 DataFrame의 10번째 줄 까지는 다음과 같습니다:
 {df}
 """ +
 # """ 
@@ -87,7 +87,7 @@ class CodeGenerator:
         schain = code_gen_prompt | self.sllm
         
         # LLM과 도구를 사용하여 메시지에 대한 응답을 생성합니다.
-        response = schain.invoke({'df' : df, 'input' : input})
+        response = schain.invoke({'df' : df[:10], 'input' : input})
 
         # 응답 메시지를 포함하는 새로운 state를 반환합니다.
         return {'messages': [response], 'python_code': response.content}
