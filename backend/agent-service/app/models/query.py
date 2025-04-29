@@ -7,3 +7,6 @@ class QueryRequest(BaseModel):
 class CommandRequest(BaseModel):
     command_list: List[str] = None
     dataframe: List[dict] = None
+
+class DataRequest(BaseModel):
+    command: str = None

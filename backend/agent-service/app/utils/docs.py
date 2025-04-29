@@ -51,6 +51,26 @@ class QueryDocs:
         }
     }
 
+class DataDocs:
+    base = {
+        "res": {
+            200: {
+                "description": "쿼리 응답",
+                "content": {
+                    "application/json": {
+                        "example": {
+                            "message": "대답이 텍스트로 표시됩니다."
+                        }
+                    }
+                },
+            },
+            400: {"description": "잘못된 요청"}
+        },
+        "data" : {
+            "command": "베트남 지사 A 제품 데이터 가져와"
+        }
+    }
+
 class CodeGenDocs:
     base = {
         "res": {
