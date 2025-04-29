@@ -64,6 +64,7 @@ docker-compose.override.yml
 .DS_Store
 Thumbs.db
 .idea
+.idea.*
 
 # 테스트 디렉토리
 test

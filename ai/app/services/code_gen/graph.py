@@ -1,3 +1,6 @@
+from datetime import datetime
+from zoneinfo import ZoneInfo
+import time
 import requests
 import pandas as pd
 import re
@@ -14,6 +17,8 @@ from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTempla
 from langchain_openai import ChatOpenAI
 from langgraph.graph import START, END
 
+from app.utils.memory_logger import MemoryLogger
+
 
 load_dotenv()
 
@@ -23,12 +28,67 @@ class AgentState(MessagesState):
     dataframe: List[pd.DataFrame]
     retry_count: int
     error_msg: dict | None
+    logs: List[dict]
 
 class CodeGenerator:
     def __init__(self):
+        self.logger = MemoryLogger()
         self.cllm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0)
         self.llm = ChatOpenAI(model_name="gpt-4o", temperature=0)
-        self.sllm = ChatOpenAI(model_name="gpt-4.1-nano", temperature=0)
+        self.sllm = ChatOpenAI(model_name="gpt-4.1-nano", temperature=0, callbacks=[self.logger])
+
+    def _wrap_node(self, func, node_name):
+        def wrapped(state: AgentState, *args, **kwargs):
+            # 1) 이전 로그 복사 (List[Dict])
+            prev_logs = state.get("logs", []).copy()
+            now = datetime.now(ZoneInfo("Asia/Seoul")).isoformat()
+
+            # 2) 노드별 input 추출
+            if node_name == "codegen":
+                input_data = state.get("command_list")
+            elif node_name == "execute":
+                input_data = state.get("python_code")
+            else:
+                input_data = None
+
+            # 3) 실제 노드 실행 & 시간 측정
+            start = time.time()
+            out_state = func(state, *args, **kwargs)
+            duration = time.time() - start
+
+            # 4) 노드별 output·metadata 구성
+            if node_name == "codegen":
+                output_data = out_state.get("python_code")
+                # LLM 메시지에서 메타정보 꺼내기
+                msg = out_state["messages"][0]
+                metadata = {
+                    "model": msg.response_metadata.get("model_name"),
+                    "token_usage": msg.response_metadata.get("token_usage"),
+                }
+            else:
+                output_data = None
+                metadata = {
+                    "duration_s": duration,
+                    "error": out_state.get("error_msg"),
+                }
+
+            # 5) 새 로그 엔트리
+            entry = {
+                "node":      node_name,
+                "input":     input_data,
+                "output":    output_data,
+                "timestamp": now,
+                "metadata":  metadata,
+            }
+
+            # 6) 이전 state + 새로운 out_state 병합
+            merged = {**state, **out_state}
+            # 7) logs 키에 prev_logs + 새 엔트리
+            merged["logs"] = prev_logs + [entry]
+
+            return merged
+
+        return wrapped
 
     def make_template(self) -> ChatPromptTemplate:
         # 2) 시스템 메시지: df와 파라미터를 받아 필터링 코드를 생성한다는 역할 정의
@@ -151,7 +211,7 @@ class CodeGenerator:
 
         return {'retry_count': count}
 
-    def error_node(self, state: AgentState) -> dict:
+    def error_node(self, state: AgentState) -> AgentState:
         msg = AIMessage(content="⚠️ 코드 생성이 3회 연속 실패했습니다. 나중에 다시 시도해주세요.")
         return {
             "messages": state["messages"] + [msg]
@@ -242,10 +302,21 @@ class CodeGenerator:
     def build(self):
         graph_builder = StateGraph(AgentState)
 
-        graph_builder.add_node('codegen', self.code_gen)
-        graph_builder.add_node('regen', self.regen)
-        graph_builder.add_node('error', self.error_node)
-        graph_builder.add_node('execute', self.execute_code)
+        # graph_builder.add_node('codegen', self.code_gen)
+        # graph_builder.add_node('regen', self.regen)
+        # graph_builder.add_node('error', self.error_node)
+        # graph_builder.add_node('execute', self.execute_code)
+        # 각 메서드를 wrap 하여 노드 추가
+        handlers = {
+            'codegen': self.code_gen,
+            'regen':   self.regen,
+            'error':   self.error_node,
+            'execute': self.execute_code,
+        }
+
+        # 래핑해서 노드로 등록
+        for name, fn in handlers.items():
+            graph_builder.add_node(name, self._wrap_node(fn, name))
 
         graph_builder.add_edge(START, 'codegen')
         graph_builder.add_conditional_edges(
