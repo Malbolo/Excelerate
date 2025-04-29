@@ -16,16 +16,19 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import Editor from '@monaco-editor/react';
-import { DownloadIcon } from 'lucide-react';
+import { ColumnDef } from '@tanstack/react-table';
+import { ArrowUpDown, DownloadIcon } from 'lucide-react';
+import { toast } from 'sonner';
 
+import { useSendCommandList } from '@/apis/job';
 import { MPythonCode } from '@/mocks/datas/pythonCode';
+import { DataFrame, DataFrameRow } from '@/types/dataframe';
 
 import Command from '../components/Command';
 import DataTable from '../components/DataTable';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { cn } from '../lib/utils';
-import { MMachine, machineColumns } from '../mocks/datas/dataframe';
 import { TCommand } from '../types/job';
 
 const MainPage: React.FC = () => {
@@ -35,10 +38,49 @@ const MainPage: React.FC = () => {
   const [command, setCommand] = useState<string>('');
   const [sourceData, setSourceData] = useState<string>('');
 
-  const [runButtonStatus, setRunButtonStatus] = useState<
-    'disabled' | 'enabled' | 'processing' | 'error'
-  >('disabled');
+  const [columns, setColumns] = useState<ColumnDef<DataFrameRow>[]>([]);
+  const [data, setData] = useState<DataFrame | null>(null);
+  const [code, setCode] = useState<string>('');
+
   const [view, setView] = useState<'data' | 'code' | 'trace'>('data');
+  const [isEditMode, setIsEditMode] = useState<boolean>(false);
+
+  const commandMutation = useSendCommandList();
+
+  const handleSendCommandList = () => {
+    const commands = commandList.map(cmd => cmd.title);
+
+    commandMutation(commands, {
+      onSuccess: response => {
+        setData(response.dataframe);
+        setCode(response.code);
+
+        // response.dataframe을 기반으로 컬럼 생성
+        if (response.dataframe && response.dataframe.length > 0) {
+          const columns: ColumnDef<DataFrameRow>[] = Object.keys(
+            response.dataframe[0],
+          ).map(key => ({
+            accessorKey: key,
+            header: ({ column }) => (
+              <Button
+                variant='ghost'
+                onClick={() =>
+                  column.toggleSorting(column.getIsSorted() === 'asc')
+                }
+                className='cursor-pointer'
+              >
+                {key}
+                <ArrowUpDown className='ml-2 h-4 w-4' />
+              </Button>
+            ),
+          }));
+          setColumns(columns);
+        }
+
+        toast.success('Commands processed successfully');
+      },
+    });
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -113,6 +155,8 @@ const MainPage: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 1000));
       updateCommandStatus(i, 'success');
     }
+
+    handleSendCommandList();
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -198,6 +242,8 @@ const MainPage: React.FC = () => {
                       status={command.status}
                       onDelete={() => handleDeleteCommand(command.title)}
                       onEdit={handleEditCommand}
+                      isEditMode={isEditMode}
+                      setIsEditMode={setIsEditMode}
                     />
                   ))}
                 </SortableContext>
@@ -259,23 +305,37 @@ const MainPage: React.FC = () => {
           </div>
 
           {view === 'data' ? (
-            <div className='h-[90vh]'>
-              <DataTable columns={machineColumns} data={MMachine} />
-              <div className='absolute right-2 bottom-2 z-10 cursor-pointer rounded-full bg-black p-3'>
-                <DownloadIcon color='white' size={18} />
-              </div>
+            <div className='flex h-[90vh] flex-col'>
+              {data ? (
+                <>
+                  <DataTable columns={columns} data={data} />
+                  <div className='absolute right-2 bottom-2 z-10 cursor-pointer rounded-full bg-black p-3'>
+                    <DownloadIcon color='white' size={18} />
+                  </div>
+                </>
+              ) : (
+                <div className='border-border flex h-full items-center justify-center rounded-tl-md rounded-b-md border bg-white p-2'>
+                  No data
+                </div>
+              )}
             </div>
           ) : view === 'code' ? (
             <div className='border-border grow rounded-tl-md rounded-b-md border bg-white py-2'>
-              <Editor
-                defaultLanguage='python'
-                defaultValue={MPythonCode}
-                options={{
-                  readOnly: true,
-                  domReadOnly: true,
-                  minimap: { enabled: false },
-                }}
-              />
+              {code ? (
+                <Editor
+                  defaultLanguage='python'
+                  defaultValue={MPythonCode}
+                  options={{
+                    readOnly: true,
+                    domReadOnly: true,
+                    minimap: { enabled: false },
+                  }}
+                />
+              ) : (
+                <div className='flex h-full items-center justify-center'>
+                  No code
+                </div>
+              )}
             </div>
           ) : (
             <div className='border-border grow rounded-tl-md rounded-b-md border bg-white'>
