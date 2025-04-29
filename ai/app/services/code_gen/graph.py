@@ -37,6 +37,41 @@ class CodeGenerator:
         self.llm = ChatOpenAI(model_name="gpt-4o", temperature=0)
         self.sllm = ChatOpenAI(model_name="gpt-4.1-nano", temperature=0, callbacks=[self.logger])
 
+    def _wrap_node(self, func, node_name):
+        def wrapped(state: AgentState, *args, **kwargs):
+            # 1) 복사 가능한 이전 로그 보관
+            prev_logs = state.get("logs", []).copy()
+
+            # 2) 진입 로그 추가
+            entry = {
+                "event": "node_enter",
+                "node": node_name,
+                "timestamp": datetime.now(ZoneInfo("Asia/Seoul")).isoformat(),
+            }
+            prev_logs.append(entry)
+
+            # 3) 실제 노드 실행
+            start = time.time()
+            out_state = func(state, *args, **kwargs)
+            duration = time.time() - start
+
+            # 4) 종료 로그 생성
+            exit = {
+                "event": "node_exit",
+                "node": node_name,
+                "duration_s": duration,
+                "timestamp": datetime.now(ZoneInfo("Asia/Seoul")).isoformat(),
+            }
+
+            # 5) 새 state에 이전 키+함수 반환 키 병합
+            merged = {**state, **out_state}
+            # 6) logs는 이전 로그 + 함수가 반환한 별도 logs + exit 로그
+            merged["logs"] = prev_logs + out_state.get("logs", []) + [exit]
+
+            return merged
+
+        return wrapped
+
     def make_template(self) -> ChatPromptTemplate:
         # 2) 시스템 메시지: df와 파라미터를 받아 필터링 코드를 생성한다는 역할 정의
         system_template = SystemMessagePromptTemplate.from_template(
@@ -96,12 +131,8 @@ class CodeGenerator:
         # LLM과 도구를 사용하여 메시지에 대한 응답을 생성합니다.
         response = schain.invoke({'df' : df[:10], 'input' : input})
 
-        # 생성된 코드와 함께 지금까지 쌓인 로그도 state에 넣어두기
-        logs = self.logger.logs.copy()
-        self.logger.reset()
-
         # 응답 메시지를 포함하는 새로운 state를 반환합니다.
-        return {'messages': [response], 'python_code': response.content, "logs": state["logs"] + logs}
+        return {'messages': [response], 'python_code': response.content}
 
     def check_code(self, state: AgentState) -> Literal['good', 'bad', 'fail']:
         """
@@ -212,7 +243,6 @@ class CodeGenerator:
         }
     
     def execute_code(self, state: AgentState) -> AgentState:
-        start = time.time()
         code_str = state["python_code"]
         df = state["dataframe"][0]
 
@@ -244,30 +274,31 @@ class CodeGenerator:
             dfs: list[pd.DataFrame] = namespace["df_manipulate"](df)
         except Exception as e:
             return self._extract_error_info(e, code_body, "invoke")
-        
-        duration = time.time() - start
-        node_log = {
-            "event": "node_execute",
-            "node": "execute",
-            "duration_s": duration,
-            "error": state.get("error_msg"),
-            "timestamp": datetime.now(ZoneInfo("Asia/Seoul")).isoformat(),
-        }
 
         # 3) 정상 리턴
         return {
             "dataframe": [df, *dfs],
             "error_msg": None,
-            "logs": state["logs"] + [node_log],
         }
 
     def build(self):
         graph_builder = StateGraph(AgentState)
 
-        graph_builder.add_node('codegen', self.code_gen)
-        graph_builder.add_node('regen', self.regen)
-        graph_builder.add_node('error', self.error_node)
-        graph_builder.add_node('execute', self.execute_code)
+        # graph_builder.add_node('codegen', self.code_gen)
+        # graph_builder.add_node('regen', self.regen)
+        # graph_builder.add_node('error', self.error_node)
+        # graph_builder.add_node('execute', self.execute_code)
+        # 각 메서드를 wrap 하여 노드 추가
+        handlers = {
+            'codegen': self.code_gen,
+            'regen':   self.regen,
+            'error':   self.error_node,
+            'execute': self.execute_code,
+        }
+
+        # 래핑해서 노드로 등록
+        for name, fn in handlers.items():
+            graph_builder.add_node(name, self._wrap_node(fn, name))
 
         graph_builder.add_edge(START, 'codegen')
         graph_builder.add_conditional_edges(
