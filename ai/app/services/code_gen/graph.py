@@ -39,34 +39,52 @@ class CodeGenerator:
 
     def _wrap_node(self, func, node_name):
         def wrapped(state: AgentState, *args, **kwargs):
-            # 1) 복사 가능한 이전 로그 보관
+            # 1) 이전 로그 복사 (List[Dict])
             prev_logs = state.get("logs", []).copy()
+            now = datetime.now(ZoneInfo("Asia/Seoul")).isoformat()
 
-            # 2) 진입 로그 추가
-            entry = {
-                "event": "node_enter",
-                "node": node_name,
-                "timestamp": datetime.now(ZoneInfo("Asia/Seoul")).isoformat(),
-            }
-            prev_logs.append(entry)
+            # 2) 노드별 input 추출
+            if node_name == "codegen":
+                input_data = state.get("command_list")
+            elif node_name == "execute":
+                input_data = state.get("python_code")
+            else:
+                input_data = None
 
-            # 3) 실제 노드 실행
+            # 3) 실제 노드 실행 & 시간 측정
             start = time.time()
             out_state = func(state, *args, **kwargs)
             duration = time.time() - start
 
-            # 4) 종료 로그 생성
-            exit = {
-                "event": "node_exit",
-                "node": node_name,
-                "duration_s": duration,
-                "timestamp": datetime.now(ZoneInfo("Asia/Seoul")).isoformat(),
+            # 4) 노드별 output·metadata 구성
+            if node_name == "codegen":
+                output_data = out_state.get("python_code")
+                # LLM 메시지에서 메타정보 꺼내기
+                msg = out_state["messages"][0]
+                metadata = {
+                    "model": msg.response_metadata.get("model_name"),
+                    "token_usage": msg.response_metadata.get("token_usage"),
+                }
+            else:
+                output_data = None
+                metadata = {
+                    "duration_s": duration,
+                    "error": out_state.get("error_msg"),
+                }
+
+            # 5) 새 로그 엔트리
+            entry = {
+                "node":      node_name,
+                "input":     input_data,
+                "output":    output_data,
+                "timestamp": now,
+                "metadata":  metadata,
             }
 
-            # 5) 새 state에 이전 키+함수 반환 키 병합
+            # 6) 이전 state + 새로운 out_state 병합
             merged = {**state, **out_state}
-            # 6) logs는 이전 로그 + 함수가 반환한 별도 logs + exit 로그
-            merged["logs"] = prev_logs + out_state.get("logs", []) + [exit]
+            # 7) logs 키에 prev_logs + 새 엔트리
+            merged["logs"] = prev_logs + [entry]
 
             return merged
 
