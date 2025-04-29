@@ -1,9 +1,10 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 from app.utils.docs import DataDocs
-from app.models.query import DataRequest
+from app.models.query import DataRequest, RagRequest
 from app.services.data_load.datachain import FileAPIClient
 from app.services.data_load.makerag import CatalogIngestor
+from app.core.config import settings
 
 router = APIRouter()
 docs = DataDocs()
@@ -22,24 +23,14 @@ async def command_code(
     return JSONResponse(status_code=200, content={"url": url, "data" : result.to_dict(orient="records")})
 
 
-@router.get("/make")
-async def make_rag():
+@router.post("/make")
+async def make_rag(
+    request: RagRequest = docs.make["data"]
+):
     try:
-        sample_input = {
-            "수원공장": {
-                "factory_id": "FCT001",
-                "product": {
-                "PROD001": {"name":"스마트폰A","category":"전자기기"},
-                "PROD002": {"name":"스마트폰B","category":"전자기기"},
-                "PROD004": {"name":"노트북D","category":"컴퓨터"}
-                },
-                "metric_list": ["defects","production","inventory","energy"]
-            }
-        }
-
         ingestor = CatalogIngestor(
-            catalog_data=sample_input,
-            connection_args={"host":"localhost","port":19530},
+            catalog_data=request.data,
+            connection_args={"host":settings.MILVUS_HOST,"port":settings.MILVUS_PORT},
             collection_name="factory_catalog",
             drop_old=True
         )

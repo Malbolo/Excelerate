@@ -7,6 +7,7 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_milvus import Milvus
 from langchain_core.documents import Document
 from langchain_experimental.tools.python.tool import PythonREPLTool
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ class LLMTest:
         self.embeddings = OpenAIEmbeddings(model="text-embedding-3-small") # 차후 필요 시 더 고급 임베딩 모델 사용
 
         # Milvus 벡터 스토어 설정
-        URI = "http://localhost:19530"
+        URI = f"http://{settings.MILVUS_HOST}:{settings.MILVUS_PORT}"
 
         self.vector_store = Milvus(
             embedding_function=self.embeddings,

@@ -1,6 +1,7 @@
 from langchain_openai import OpenAIEmbeddings
 from langchain_core.documents import Document
 from langchain_milvus import Milvus
+from app.core.config import settings
 
 def build_catalog_documents() -> list[Document]:
     location_map = {
@@ -40,7 +41,7 @@ class CatalogIngestor:
     def __init__(
         self,
         *,
-        connection_args: dict = {"host": "localhost", "port": 19530},
+        connection_args: dict = {"host": settings.MILVUS_HOST, "port": settings.MILVUS_PORT},
         collection_name: str = "catalog_docs",
         index_params: dict = {"index_type": "HNSW", "metric_type": "L2"},
         drop_old: bool = True

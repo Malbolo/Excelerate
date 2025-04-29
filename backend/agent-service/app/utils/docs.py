@@ -67,7 +67,23 @@ class DataDocs:
             400: {"description": "잘못된 요청"}
         },
         "data" : {
-            "command": "한국 지사의 DA 그룹 D 제품 kpi 보고서를 2025-03-01부터 2025-04-22까지 가져와"
+            "command": "수원공장에서 4월 1일 부터 스마트폰A 불량률 데이터 가져와"
+        }
+    }
+    make = {
+        "data": {
+            "data" : {
+                "수원공장": {
+                    "system_name": "mes",
+                    "factory_id": "FCT001",
+                    "product": {
+                    "PROD001": {"name":"스마트폰A","category":"전자기기"},
+                    "PROD002": {"name":"스마트폰B","category":"전자기기"},
+                    "PROD004": {"name":"노트북D","category":"컴퓨터"}
+                    },
+                    "metric_list": ["defects","production","inventory","energy"]
+                }
+            }
         }
     }
 
