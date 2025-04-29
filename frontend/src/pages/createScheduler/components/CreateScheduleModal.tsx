@@ -5,6 +5,7 @@ import { CalendarIcon } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import { useCreateSchedule } from '@/apis/schedule';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -37,6 +38,17 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { Job } from '@/types/scheduler';
+
+export interface CreateScheduleFormData {
+  scheduleTitle: string;
+  scheduleDescription: string;
+  successEmail: string;
+  failEmail: string;
+  interval: 'daily' | 'weekly' | 'monthly';
+  startDate: Date;
+  endDate: Date | undefined;
+  executionTime: string;
+}
 
 const formSchema = z
   .object({
@@ -101,6 +113,8 @@ const CreateScheduleModal = ({
     },
   });
 
+  const createSchedule = useCreateSchedule();
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     const finalEndDate =
       values.endDate instanceof Date ? values.endDate : new Date(2099, 11, 31);
@@ -110,9 +124,9 @@ const CreateScheduleModal = ({
       endDate: finalEndDate,
     };
 
-    console.log('Form Data Submitted:', submissionData);
+    // 스케쥴 생성
+    createSchedule(submissionData);
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
     onOpenChange(false);
     form.reset();
   }

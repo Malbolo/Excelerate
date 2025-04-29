@@ -1,16 +1,47 @@
-const COOKIE_NAME = 'your-cookie-name';
+const BASE_URL = import.meta.env.VITE_BASE_URL;
+const ACCESS_TOKEN =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
 
-export const api = async <T>(path: string, init?: RequestInit): Promise<T> => {
-  const url = `https://api.example.com/api/v1${path}`;
+type ApiSuccess<T> = {
+  success: true;
+  data: T;
+  error: null;
+};
 
-  const headers = {
+type ApiFail = {
+  success: false;
+  data: null;
+  error: string;
+};
+
+export type ApiResponse<T> = ApiSuccess<T> | ApiFail;
+
+export async function api<T>(
+  path: string,
+  init?: RequestInit,
+): Promise<ApiResponse<T>> {
+  const url = `${BASE_URL}${path}`;
+
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    Authorization: COOKIE_NAME,
-    ...(init && init.headers),
+    ...{ Authorization: 'Bearer ' + ACCESS_TOKEN },
+    ...(init?.headers as Record<string, string>),
   };
 
-  const response = await fetch(url, { ...init, headers });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message);
-  return data as T;
-};
+  const res = await fetch(url, { ...init, headers });
+  const data = await res.json();
+
+  if (!res.ok) {
+    return {
+      data: null,
+      success: false,
+      error: data.message || res.statusText,
+    };
+  }
+
+  return {
+    data: data as T,
+    success: true,
+    error: null,
+  };
+}
