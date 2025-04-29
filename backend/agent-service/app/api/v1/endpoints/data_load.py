@@ -17,8 +17,8 @@ async def command_code(
     request: DataRequest = docs.base["data"]
 ):
     try:
-        result = data_loader.run(request.command)
+        url, result = data_loader.run(request.command)
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    return JSONResponse(status_code=200, content=result.to_dict(orient="records"))
+    return JSONResponse(status_code=200, content={"url": url, "data" : result.to_dict(orient="records")})

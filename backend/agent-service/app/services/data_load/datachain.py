@@ -112,4 +112,4 @@ class FileAPIClient:
             raw = sample_data
 
         # 5) DataFrame 반환
-        return pd.DataFrame(raw["data"])
+        return url, pd.DataFrame(raw["data"])
