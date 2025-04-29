@@ -1,13 +1,31 @@
 import { useState } from 'react';
 
+import {
+  DndContext,
+  DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import Editor from '@monaco-editor/react';
+import { DownloadIcon } from 'lucide-react';
+
+import { MPythonCode } from '@/mocks/datas/pythonCode';
 
 import Command from '../components/Command';
 import DataTable from '../components/DataTable';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { cn } from '../lib/utils';
-import { columns, payments } from '../mocks/datas/columns';
+import { MMachine, machineColumns } from '../mocks/datas/dataframe';
 import { TCommand } from '../types/job';
 
 const MainPage: React.FC = () => {
@@ -17,7 +35,17 @@ const MainPage: React.FC = () => {
   const [command, setCommand] = useState<string>('');
   const [sourceData, setSourceData] = useState<string>('');
 
+  const [runButtonStatus, setRunButtonStatus] = useState<
+    'disabled' | 'enabled' | 'processing' | 'error'
+  >('disabled');
   const [view, setView] = useState<'data' | 'code' | 'trace'>('data');
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
 
   const fetchSourceData = async () => {
     if (command.trim() !== '베트남 지사 A 제품 데이터 가져와')
@@ -62,7 +90,9 @@ const MainPage: React.FC = () => {
 
   const handleDeleteCommand = (command: string) => {
     setCommandList(prev =>
-      prev.filter(prevCommand => prevCommand.title !== command),
+      prev
+        .filter(prevCommand => prevCommand.title !== command)
+        .map(cmd => ({ ...cmd, status: 'pending' })),
     );
   };
 
@@ -82,6 +112,22 @@ const MainPage: React.FC = () => {
       updateCommandStatus(i, 'processing');
       await new Promise(resolve => setTimeout(resolve, 1000));
       updateCommandStatus(i, 'success');
+    }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setCommandList(items => {
+        const oldIndex = items.findIndex(item => item.title === active.id);
+        const newIndex = items.findIndex(item => item.title === over.id);
+
+        return arrayMove(items, oldIndex, newIndex).map(item => ({
+          ...item,
+          status: 'pending',
+        }));
+      });
     }
   };
 
@@ -135,15 +181,27 @@ const MainPage: React.FC = () => {
               )}
             </div>
             <div className='flex flex-col gap-2'>
-              {commandList.map(command => (
-                <Command
-                  key={command.title}
-                  command={command.title}
-                  status={command.status}
-                  onDelete={() => handleDeleteCommand(command.title)}
-                  onEdit={handleEditCommand}
-                ></Command>
-              ))}
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={commandList.map(cmd => cmd.title)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {commandList.map(command => (
+                    <Command
+                      key={command.title}
+                      id={command.title}
+                      command={command.title}
+                      status={command.status}
+                      onDelete={() => handleDeleteCommand(command.title)}
+                      onEdit={handleEditCommand}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
             </div>
           </section>
         </div>
@@ -157,13 +215,13 @@ const MainPage: React.FC = () => {
           />
 
           <Button onClick={handleLoad} className='cursor-pointer'>
-            Load
+            Enter
           </Button>
         </div>
       </div>
 
       <div className='h-full w-[400px]'>
-        <div className='border-border flex h-full w-full flex-col border-l bg-[#F0F0F0] px-2 py-6'>
+        <div className='border-border relative flex h-full w-full flex-col border-l bg-[#F0F0F0] px-2 py-6'>
           <div className='flex translate-y-[1px] self-end'>
             <div
               onClick={() => setView('data')}
@@ -201,13 +259,22 @@ const MainPage: React.FC = () => {
           </div>
 
           {view === 'data' ? (
-            <DataTable columns={columns} data={payments} />
+            <div className='h-[90vh]'>
+              <DataTable columns={machineColumns} data={MMachine} />
+              <div className='absolute right-2 bottom-2 z-10 cursor-pointer rounded-full bg-black p-3'>
+                <DownloadIcon color='white' size={18} />
+              </div>
+            </div>
           ) : view === 'code' ? (
             <div className='border-border grow rounded-tl-md rounded-b-md border bg-white py-2'>
               <Editor
-                height='90vh'
                 defaultLanguage='python'
-                defaultValue='print("Hi")'
+                defaultValue={MPythonCode}
+                options={{
+                  readOnly: true,
+                  domReadOnly: true,
+                  minimap: { enabled: false },
+                }}
               />
             </div>
           ) : (

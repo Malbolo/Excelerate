@@ -30,14 +30,14 @@ function DataTable<TData, TValue>({
   });
 
   return (
-    <div className='border-border overflow-y-auto rounded-tl-md rounded-b-md border bg-white'>
+    <div className='h-full border-border rounded-tl-md rounded-b-md border bg-white'>
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map(headerGroup => (
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map(header => {
                 return (
-                  <TableHead key={header.id}>
+                  <TableHead key={header.id} className='font-bold'>
                     {header.isPlaceholder
                       ? null
                       : flexRender(
