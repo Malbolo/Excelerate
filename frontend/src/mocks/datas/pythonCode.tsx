@@ -1,4 +1,5 @@
-export const MPythonCode = `import pandas as pd
+export const MPythonCode =
+`import pandas as pd
 import numpy as np
 
 def load_data(file_path):
@@ -20,4 +21,4 @@ def main():
     print(processed_data.describe())
 
 if __name__ == "__main__":
-    main()`;
+    main()`
