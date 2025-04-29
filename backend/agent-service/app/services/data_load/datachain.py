@@ -71,7 +71,7 @@ class FileAPIClient:
             raise ValueError(f"{q.factory_name}의 factory_id '{q.factory_id}'가 유효하지 않습니다.")
         if q.metric not in valid_metrics:
             raise ValueError(f"{q.factory_name}는 metric '{q.metric}'을 지원하지 않습니다.")
-        if q.product_code not in valid_prods:
+        if q.product_code and q.product_code not in valid_prods:
             raise ValueError(f"{q.factory_name}에는 product_code '{q.product_code}'가 없습니다.")
 
     def _assemble_url(self, q: FileAPIDetail) -> str:
@@ -79,9 +79,10 @@ class FileAPIClient:
         path  = f"/{q.system_name}/factory-data/{q.metric}"
         query = (
             f"?factory_id={q.factory_id}"
-            f"&product_code={q.product_code}"
             f"&start_date={q.start_date}"
         )
+        if q.product_code:
+            query += f"&product_code={q.product_code}"
         return self.base_url + path + query
 
     def run(self, user_input: str) -> pd.DataFrame:
@@ -91,6 +92,8 @@ class FileAPIClient:
         # 예시 : 한국 지사의 DA 그룹 B, D 제품의 kpi 보고서를 2025-03-01부터 2025-04-22까지 가져와
         # → 한국 지사의 DA 그룹 B 제품의 kpi 보고서를 2025-03-01부터 2025-04-22까지 가져와
         # → 한국 지사의 DA 그룹 D 제품의 kpi 보고서를 2025-03-01부터 2025-04-22까지 가져와
+        # "평택공장에서 4월 13일 부터 태블릿C 불량률 데이터 가져와"
+        # "수원공장에서 4월 2일 부터 스마트폰B 불량률 데이터 가져와"
         # 실제 파일 시스템이 한번에 여러 그룹의 제품 정보를 한번에 호출할 수 있는 지 확인 필요.
 
 
