@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { Check, MoreVertical } from 'lucide-react';
+
 import { cn } from '../lib/utils';
 import { Input } from './ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
@@ -60,13 +61,13 @@ const Command: React.FC<CommandProps> = ({
           onClick={handleEdit}
           className='bg-success flex h-6 w-6 cursor-pointer items-center justify-center rounded-full'
         >
-          <Check className="h-4 w-4" />
+          <Check className='h-4 w-4' />
         </div>
       ) : (
         <Popover>
           <PopoverTrigger>
             <div className='border-border flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border bg-white'>
-              <MoreVertical className="h-4 w-4" />
+              <MoreVertical className='h-4 w-4' />
             </div>
           </PopoverTrigger>
           <PopoverContent className='overflow-hidden'>

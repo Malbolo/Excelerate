@@ -34,7 +34,7 @@ const JobSearchInput = ({ initialKeyword, onSearch }: JobSearchInputProps) => {
   };
 
   return (
-    <div className='mb-4 flex gap-2'>
+    <div className='flex gap-2 p-4'>
       <Input
         type='text'
         placeholder='Search by job title or description...'

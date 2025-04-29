@@ -1,11 +1,13 @@
 import { CheckIcon } from 'lucide-react';
 
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 import { Job } from '@/types/scheduler';
 
 interface AvailableJobListProps {
   jobs: Job[];
   selectedJobIds?: Set<string>;
+  selectedJob?: Job | null;
   onJobSelect?: (job: Job, checked: boolean) => void;
 }
 
@@ -13,6 +15,7 @@ const AvailableJobList = ({
   jobs,
   selectedJobIds,
   onJobSelect,
+  selectedJob,
 }: AvailableJobListProps) => {
   return (
     <ScrollArea className='h-0 flex-1 p-2'>
@@ -21,7 +24,11 @@ const AvailableJobList = ({
           jobs.map(job => (
             <div
               key={job.jobId}
-              className='flex items-center rounded-md border p-3 transition-colors'
+              className={cn(
+                'flex items-center rounded-md border p-3 transition-colors',
+                selectedJob?.jobId === job.jobId &&
+                  'border-blue-500 bg-blue-100',
+              )}
               onClick={() => onJobSelect?.(job, true)}
             >
               {selectedJobIds &&
