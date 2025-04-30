@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, Text, String, TIMESTAMP, func
-# from db.db import Base
+# from app.db.db import Base
 
 class Email(Base):
     __tablename__ = "email"
