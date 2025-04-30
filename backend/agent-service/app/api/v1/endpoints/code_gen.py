@@ -8,14 +8,12 @@ from langchain_core.messages import HumanMessage
 
 
 import pandas as pd
-# from app.services.code_gen.sample import sample_data
-# df = pd.DataFrame(sample_data["data"]) # 테스트 용
 
 router = APIRouter()
 docs = CodeGenDocs()
 
 # FastAPI 엔드포인트: 사용자의 질의를 받고 graph를 통해 답변 생성
-@router.post("/command")
+@router.post("/generate")
 async def command_code(
     request: CommandRequest = docs.base["data"],
     code_gen: CodeGenerator = Depends(get_code_gen)
