@@ -14,7 +14,7 @@ envFromSecret: notification-service-secret
 ingress:
   enabled: true
   host: k12s101.p.ssafy.io
-  path: /api/storage
+  path: /api/notification
   pathType: Prefix
   annotations:
     kubernetes.io/ingress.class: traefik
