@@ -52,7 +52,6 @@ class CatalogIngestor:
 
     def run(self) -> Milvus:
         docs = build_catalog_documents(self.catalog_data)
-        print(docs)
         # 메타데이터 키 통일
         all_keys = set().union(*(d.metadata.keys() for d in docs))
         for d in docs:

@@ -36,6 +36,8 @@ async def make_rag(
         )
         
         ingestor.run()
+        
+        print("Vector DB 구성 완료")
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
