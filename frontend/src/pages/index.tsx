@@ -19,7 +19,7 @@ import Editor from '@monaco-editor/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { ArrowUpDown, DownloadIcon } from 'lucide-react';
 
-import { useSendCommandList } from '@/apis/job';
+import { useGetSourceData, useSendCommandList } from '@/apis/job';
 import { DataFrame, DataFrameRow } from '@/types/dataframe';
 
 import Command from '../components/Command';
@@ -44,12 +44,13 @@ const MainPage: React.FC = () => {
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
 
   const commandMutation = useSendCommandList();
+  const sourceDataMutation = useGetSourceData();
 
   const handleSendCommandList = async () => {
     const commands = commandList.map(cmd => cmd.title);
     const response = await commandMutation(commands);
 
-    setData(response.dataframe);
+    setData(response.dataframe[response.dataframe.length - 1]);
     setCode(response.code);
 
     // response.dataframe을 기반으로 컬럼 생성
@@ -81,31 +82,29 @@ const MainPage: React.FC = () => {
   );
 
   const fetchSourceData = async () => {
-    if (command.trim() !== '베트남 지사 A 제품 데이터 가져와')
-      throw new Error('Invalid command');
-    const data = '베트남 지사 A 제품';
-    setSourceData(data);
+    if (!command.trim()) return;
+
+    const response = await sourceDataMutation(command);
+
+    setData(response.dataframe);
+    setSourceData(response.url);
   };
 
   const handleLoad = async () => {
     if (!command) return;
     if (!command.trim()) return;
 
-    try {
-      switch (step) {
-        case 'source':
-          await fetchSourceData();
-          setStep('command');
-          break;
-        case 'command':
-          setCommandList(prev => [
-            ...prev,
-            { title: command, status: 'pending' },
-          ]);
-          break;
-      }
-    } catch (err) {
-      alert('Invalid command');
+    switch (step) {
+      case 'source':
+        await fetchSourceData();
+        setStep('command');
+        break;
+      case 'command':
+        setCommandList(prev => [
+          ...prev,
+          { title: command, status: 'pending' },
+        ]);
+        break;
     }
 
     setCommand('');
