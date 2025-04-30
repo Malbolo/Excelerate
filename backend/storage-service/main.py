@@ -11,7 +11,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
-app.include_router(router, prefix="/mes", tags=["MES 공장 데이터"])
+app.include_router(router, prefix="/api/storage/mes", tags=["MES 공장 데이터"])
 
 @app.on_event("startup")
 async def startup_event():
