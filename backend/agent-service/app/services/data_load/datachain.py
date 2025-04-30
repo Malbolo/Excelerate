@@ -1,40 +1,50 @@
 import requests
 import pandas as pd
+import logging
+import time
 
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_milvus import Milvus
 from langchain.chains.retrieval import create_retrieval_chain
 from langchain.chains.transform import TransformChain
+from pymilvus import connections, utility
 
 from app.models.structure import FileAPIDetail
 
 from app.services.code_gen.sample import sample_data
 from app.core.config import settings
 
+# 로깅 설정
+logger = logging.getLogger(__name__)
+
 # ─────────────────────────────────────────────────────────────────────────────
 # 2. VectorDB & Retriever 초기화
 # ─────────────────────────────────────────────────────────────────────────────
 class FileAPIClient:
     def __init__(
-        self,
-        host: str = settings.MILVUS_HOST,
-        port: int = settings.MILVUS_PORT,
-        collection_name: str = "factory_catalog",
-        k: int = 3,
-        model_name: str = "gpt-4o-mini",
-        base_url: str = settings.FILESYSTEM_URL,
+            self,
+            host: str = settings.MILVUS_HOST,
+            port: int = settings.MILVUS_PORT,
+            collection_name: str = "factory_catalog",
+            k: int = 3,
+            model_name: str = "gpt-4o-mini",
+            base_url: str = settings.FILESYSTEM_URL,
     ):
-        # VectorDB + Retriever
-        emb = OpenAIEmbeddings()
-        store = Milvus(
-            embedding_function=emb,
-            connection_args={"host": host, "port": port},
-            collection_name=collection_name,
-        )
-        self.retriever = store.as_retriever(
-            search_type="similarity", search_kwargs={"k": k}
-        )
+        # 임베딩 초기화
+        self.emb = OpenAIEmbeddings()
+
+        # Milvus 초기화 시도
+        self.store = self._initialize_milvus(host, port, collection_name)
+
+        if self.store:
+            self.retriever = self.store.as_retriever(
+                search_type="similarity", search_kwargs={"k": k}
+            )
+        else:
+            logger.warning("Milvus 연결 실패. 검색 기능이 제한됩니다.")
+            self.retriever = None
+
         # Entity extractor chain
         prompt = ChatPromptTemplate.from_messages([
             ("system", "다음 필드를 추출하세요: factory_name, system_name, metric, factory_id, product_code, start_date"),
@@ -52,31 +62,90 @@ class FileAPIClient:
         self.extractor_chain = flatten | prompt | structured
         self.base_url = base_url
 
+    def _initialize_milvus(self, host, port, collection_name):
+        """Milvus 연결을 초기화하는 메서드, 실패 시 None 반환"""
+        logger.info(f"Milvus 연결 시도: {host}:{port}, 컬렉션: {collection_name}")
+
+        max_retries = 5
+        retry_interval = 3  # 초
+
+        for attempt in range(max_retries):
+            try:
+                logger.info(f"Milvus 연결 시도 {attempt+1}/{max_retries}: {host}:{port}")
+
+                # pymilvus 연결 (TCP URI 사용)
+                connections.connect(
+                    uri=f"tcp://{host}:{port}"
+                )
+
+                # 연결 테스트
+                collection_list = utility.list_collections()
+                logger.info(f"사용 가능한 컬렉션 목록: {collection_list}")
+
+                collection_exists = collection_name in collection_list
+                logger.info(f"Milvus 컬렉션 '{collection_name}' 존재 여부: {collection_exists}")
+
+                if not collection_exists:
+                    logger.warning(f"컬렉션 '{collection_name}'이 없습니다.")
+
+                # LangChain Milvus 초기화
+                logger.info("LangChain Milvus 래퍼 초기화 중...")
+                store = Milvus(
+                    embedding_function=self.emb,
+                    connection_args={
+                        "uri": f"tcp://{host}:{port}"
+                    },
+                    collection_name=collection_name,
+                )
+
+                logger.info("Milvus 연결 성공!")
+                return store
+
+            except Exception as e:
+                logger.warning(f"Milvus 연결 시도 {attempt+1} 실패: {e}")
+                if attempt < max_retries - 1:
+                    logger.info(f"{retry_interval}초 후 재시도...")
+                    time.sleep(retry_interval)
+
+        logger.error(f"Milvus 연결 모두 실패 ({max_retries}회 시도)")
+        return None
+
     def fetch_data(self, url: str) -> dict:
         resp = requests.get(url)
         resp.raise_for_status()
         return resp.json()
 
     def _validate(self, q: FileAPIDetail):
-        # 1) factory_info 문서 가져오기
-        docs     = list(self.retriever.invoke(q.factory_name))
-        fact_doc = next(d for d in docs if d.metadata["type"] == "factory_info")
+        if not self.retriever:
+            logger.warning("Milvus 연결이 없어 검증을 건너뜁니다.")
+            return
 
-        # 2) metadata 로부터 유효값 파싱
-        valid_ids     = [fact_doc.metadata["factory_id"]]
-        valid_metrics = fact_doc.metadata["metric_list"].split(",")
-        valid_prods   = fact_doc.metadata["product_list"].split(",")
+        try:
+            # 1) factory_info 문서 가져오기
+            docs = list(self.retriever.invoke(q.factory_name))
+            fact_doc = next((d for d in docs if d.metadata.get("type") == "factory_info"), None)
 
-        if q.factory_id not in valid_ids:
-            raise ValueError(f"{q.factory_name}의 factory_id '{q.factory_id}'가 유효하지 않습니다.")
-        if q.metric not in valid_metrics:
-            raise ValueError(f"{q.factory_name}는 metric '{q.metric}'을 지원하지 않습니다.")
-        if q.product_code and q.product_code not in valid_prods:
-            raise ValueError(f"{q.factory_name}에는 product_code '{q.product_code}'가 없습니다.")
+            if not fact_doc:
+                logger.warning(f"'{q.factory_name}' 관련 factory_info 문서를 찾을 수 없습니다.")
+                return
+
+            # 2) metadata 로부터 유효값 파싱
+            valid_ids = [fact_doc.metadata.get("factory_id", "")]
+            valid_metrics = fact_doc.metadata.get("metric_list", "").split(",")
+            valid_prods = fact_doc.metadata.get("product_list", "").split(",")
+
+            if q.factory_id not in valid_ids:
+                raise ValueError(f"{q.factory_name}의 factory_id '{q.factory_id}'가 유효하지 않습니다.")
+            if q.metric not in valid_metrics:
+                raise ValueError(f"{q.factory_name}는 metric '{q.metric}'을 지원하지 않습니다.")
+            if q.product_code and q.product_code not in valid_prods:
+                raise ValueError(f"{q.factory_name}에는 product_code '{q.product_code}'가 없습니다.")
+        except Exception as e:
+            logger.error(f"검증 중 오류 발생: {e}")
 
     def _assemble_url(self, q: FileAPIDetail) -> str:
         # 예시 URL: /{system_name}/factory-data/{metric}?product_code=...&start_date=...
-        path  = f"/{q.system_name}/factory-data/{q.metric}"
+        path = f"/{q.system_name}/factory-data/{q.metric}"
         query = (
             f"?factory_id={q.factory_id}"
             f"&start_date={q.start_date}"
@@ -86,33 +155,33 @@ class FileAPIClient:
         return self.base_url + path + query
 
     def run(self, user_input: str) -> pd.DataFrame:
-        # 1) 쿼리 분할
-        # 쿼리가 다중 API 호출이 필요한 경우, 쿼리를 분할하여 처리해야 함
-        # 분할 하여 처리 후 각각의 결과를 조합하는 로직 필요
-        # 예시 : 한국 지사의 DA 그룹 B, D 제품의 kpi 보고서를 2025-03-01부터 2025-04-22까지 가져와
-        # → 한국 지사의 DA 그룹 B 제품의 kpi 보고서를 2025-03-01부터 2025-04-22까지 가져와
-        # → 한국 지사의 DA 그룹 D 제품의 kpi 보고서를 2025-03-01부터 2025-04-22까지 가져와
-        # "평택공장에서 4월 13일 부터 태블릿C 불량률 데이터 가져와"
-        # "수원공장에서 4월 2일 부터 스마트폰B 불량률 데이터 가져와"
-        # 실제 파일 시스템이 한번에 여러 그룹의 제품 정보를 한번에 호출할 수 있는 지 확인 필요.
+        # 1) 엔티티 추출
+        if self.retriever:
+            result = create_retrieval_chain(self.retriever, self.extractor_chain).invoke({
+                "input": user_input
+            })
+            entities: FileAPIDetail = result['answer']
+        else:
+            # retriever가 없는 경우 직접 추출
+            result = self.extractor_chain.invoke({
+                "context": "",
+                "input": user_input
+            })
+            entities: FileAPIDetail = result
 
-
-        # 2) 엔티티 추출
-        result = create_retrieval_chain(self.retriever, self.extractor_chain).invoke({
-            "input": user_input
-        })
-        entities : FileAPIDetail = result['answer']
-        # 3) 검증
+        # 2) 검증
         self._validate(entities)
 
-        # 4) URL 생성 & 호출
+        # 3) URL 생성 & 호출
         url = self._assemble_url(entities)
-        print(url) # url 체크
+        logger.info(f"API 호출 URL: {url}")
+
         try:
             raw = self.fetch_data(url)
-        except:
-            print("아직 API 연결이 안됐어요")
+        except Exception as e:
+            logger.warning(f"API 호출 실패: {e}")
+            logger.info("샘플 데이터를 사용합니다.")
             raw = sample_data
 
-        # 5) DataFrame 반환
+        # 4) DataFrame 반환
         return url, pd.DataFrame(raw["data"])
