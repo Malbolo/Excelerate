@@ -40,7 +40,7 @@ class CatalogIngestor:
         *,
         connection_args: dict     = {"host": settings.MILVUS_HOST, "port": settings.MILVUS_PORT},
         collection_name: str      = "factory_catalog",
-        index_params: dict        = {"index_type": "HNSW", "metric_type": "L2"},
+        index_params: dict        = {"index_type": "HNSW", "metric_type": "L2", "params": { "M": 16, "efConstruction": 200}},
         drop_old: bool            = True
     ):
         self.catalog_data   = catalog_data

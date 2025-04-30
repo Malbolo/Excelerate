@@ -34,9 +34,9 @@ class LLMTest:
 
         self.vector_store = None
 
-        host = os.getenv("MILVUS_HOST", "milvus")
-        port = os.getenv("MILVUS_PORT", "19530")
-        collection = os.getenv("MILVUS_COLLECTION", "documents")
+        host = settings.MILVUS_HOST
+        port = settings.MILVUS_PORT
+        collection = settings.MILVUS_COLLECTION
         logger.warning(f"Milvus 연결 시도: {host}:{port}")
 
         try:
