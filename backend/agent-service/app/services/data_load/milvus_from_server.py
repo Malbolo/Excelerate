@@ -9,6 +9,8 @@ from langchain_milvus import Milvus
 from langchain.chains.retrieval import create_retrieval_chain
 from langchain.chains.transform import TransformChain
 from pymilvus import connections
+from app.core.config import settings
+
 
 from pydantic import BaseModel, Field
 
@@ -150,7 +152,7 @@ def validate_entities(entities, retriever):
 # ─────────────────────────────────────────────────────────────────────────────
 # 5. URL 조합
 # ─────────────────────────────────────────────────────────────────────────────
-def assemble_url(entities, base_url="https://filesystem.com"):
+def assemble_url(entities, base_url=settings.FILESYSTEM_URL):
     path = "/api/v1/{location}/{group}/{product}/{metric}".format(**entities)
     query = f"?startdate={entities['startdate']}&enddate={entities['enddate']}"
     return base_url + path + query

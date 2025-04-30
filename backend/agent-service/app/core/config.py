@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings
 # 먼저 ENV 환경변수를 읽어와서 개발 환경 여부를 판단합니다.
 if os.getenv("ENV", "DEV") == "DEV":
     from dotenv import load_dotenv
-    load_dotenv() # 개발환경이라면 환경변수를 직접 주입하여 사용합니다.
+    load_dotenv(override=True) # 개발환경이라면 환경변수를 직접 주입하여 사용합니다.
 
 
 class Settings(BaseSettings):

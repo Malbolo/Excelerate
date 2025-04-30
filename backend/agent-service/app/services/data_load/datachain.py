@@ -145,8 +145,7 @@ class FileAPIClient:
 
     def _assemble_url(self, q: FileAPIDetail) -> str:
         # 예시 URL: /{system_name}/factory-data/{metric}?product_code=...&start_date=...
-        # path = f"/{q.system_name}/factory-data/{q.metric}"
-        path = f"/api/storage/{q.system_name}/factory-data/{q.metric}"
+        path = f"/{q.system_name}/factory-data/{q.metric}"
         query = (
             f"?factory_id={q.factory_id}"
             f"&start_date={q.start_date}"
