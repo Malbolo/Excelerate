@@ -1,13 +1,32 @@
 import { useState } from 'react';
 
+import {
+  DndContext,
+  DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import Editor from '@monaco-editor/react';
+import { ColumnDef } from '@tanstack/react-table';
+import { ArrowUpDown, DownloadIcon } from 'lucide-react';
+
+import { useGetSourceData, useSendCommandList } from '@/apis/job';
+import { DataFrame, DataFrameRow } from '@/types/dataframe';
 
 import Command from '../components/Command';
 import DataTable from '../components/DataTable';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { cn } from '../lib/utils';
-import { columns, payments } from '../mocks/datas/columns';
 import { TCommand } from '../types/job';
 
 const MainPage: React.FC = () => {
@@ -17,34 +36,75 @@ const MainPage: React.FC = () => {
   const [command, setCommand] = useState<string>('');
   const [sourceData, setSourceData] = useState<string>('');
 
+  const [columns, setColumns] = useState<ColumnDef<DataFrameRow>[]>([]);
+  const [data, setData] = useState<DataFrame | null>(null);
+  const [code, setCode] = useState<string>('');
+
   const [view, setView] = useState<'data' | 'code' | 'trace'>('data');
+  const [isEditMode, setIsEditMode] = useState<boolean>(false);
+
+  const commandMutation = useSendCommandList();
+  const sourceDataMutation = useGetSourceData();
+
+  const handleSendCommandList = async () => {
+    const commands = commandList.map(cmd => cmd.title);
+    const response = await commandMutation(commands);
+
+    setData(response.dataframe[response.dataframe.length - 1]);
+    setCode(response.code);
+
+    // response.dataframe을 기반으로 컬럼 생성
+    if (response.dataframe && response.dataframe.length > 0) {
+      const columns: ColumnDef<DataFrameRow>[] = Object.keys(
+        response.dataframe[0],
+      ).map(key => ({
+        accessorKey: key,
+        header: ({ column }) => (
+          <Button
+            variant='ghost'
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            className='cursor-pointer'
+          >
+            {key}
+            <ArrowUpDown className='ml-2 h-4 w-4' />
+          </Button>
+        ),
+      }));
+      setColumns(columns);
+    }
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
 
   const fetchSourceData = async () => {
-    if (command.trim() !== '베트남 지사 A 제품 데이터 가져와')
-      throw new Error('Invalid command');
-    const data = '베트남 지사 A 제품';
-    setSourceData(data);
+    if (!command.trim()) return;
+
+    const response = await sourceDataMutation(command);
+
+    setData(response.dataframe);
+    setSourceData(response.url);
   };
 
   const handleLoad = async () => {
     if (!command) return;
     if (!command.trim()) return;
 
-    try {
-      switch (step) {
-        case 'source':
-          await fetchSourceData();
-          setStep('command');
-          break;
-        case 'command':
-          setCommandList(prev => [
-            ...prev,
-            { title: command, status: 'pending' },
-          ]);
-          break;
-      }
-    } catch (err) {
-      alert('Invalid command');
+    switch (step) {
+      case 'source':
+        await fetchSourceData();
+        setStep('command');
+        break;
+      case 'command':
+        setCommandList(prev => [
+          ...prev,
+          { title: command, status: 'pending' },
+        ]);
+        break;
     }
 
     setCommand('');
@@ -62,7 +122,9 @@ const MainPage: React.FC = () => {
 
   const handleDeleteCommand = (command: string) => {
     setCommandList(prev =>
-      prev.filter(prevCommand => prevCommand.title !== command),
+      prev
+        .filter(prevCommand => prevCommand.title !== command)
+        .map(cmd => ({ ...cmd, status: 'pending' })),
     );
   };
 
@@ -82,6 +144,24 @@ const MainPage: React.FC = () => {
       updateCommandStatus(i, 'processing');
       await new Promise(resolve => setTimeout(resolve, 1000));
       updateCommandStatus(i, 'success');
+    }
+
+    handleSendCommandList();
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setCommandList(items => {
+        const oldIndex = items.findIndex(item => item.title === active.id);
+        const newIndex = items.findIndex(item => item.title === over.id);
+
+        return arrayMove(items, oldIndex, newIndex).map(item => ({
+          ...item,
+          status: 'pending',
+        }));
+      });
     }
   };
 
@@ -135,15 +215,29 @@ const MainPage: React.FC = () => {
               )}
             </div>
             <div className='flex flex-col gap-2'>
-              {commandList.map(command => (
-                <Command
-                  key={command.title}
-                  command={command.title}
-                  status={command.status}
-                  onDelete={() => handleDeleteCommand(command.title)}
-                  onEdit={handleEditCommand}
-                ></Command>
-              ))}
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={commandList.map(cmd => cmd.title)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {commandList.map(command => (
+                    <Command
+                      key={command.title}
+                      id={command.title}
+                      command={command.title}
+                      status={command.status}
+                      onDelete={() => handleDeleteCommand(command.title)}
+                      onEdit={handleEditCommand}
+                      isEditMode={isEditMode}
+                      setIsEditMode={setIsEditMode}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
             </div>
           </section>
         </div>
@@ -157,13 +251,13 @@ const MainPage: React.FC = () => {
           />
 
           <Button onClick={handleLoad} className='cursor-pointer'>
-            Load
+            Enter
           </Button>
         </div>
       </div>
 
       <div className='h-full w-[400px]'>
-        <div className='border-border flex h-full w-full flex-col border-l bg-[#F0F0F0] px-2 py-6'>
+        <div className='border-border relative flex h-full w-full flex-col border-l bg-[#F0F0F0] px-2 py-6'>
           <div className='flex translate-y-[1px] self-end'>
             <div
               onClick={() => setView('data')}
@@ -201,14 +295,37 @@ const MainPage: React.FC = () => {
           </div>
 
           {view === 'data' ? (
-            <DataTable columns={columns} data={payments} />
+            <div className='flex h-[90vh] flex-col'>
+              {data ? (
+                <>
+                  <DataTable columns={columns} data={data} />
+                  <div className='absolute right-2 bottom-2 z-10 cursor-pointer rounded-full bg-black p-3'>
+                    <DownloadIcon color='white' size={18} />
+                  </div>
+                </>
+              ) : (
+                <div className='border-border flex h-full items-center justify-center rounded-tl-md rounded-b-md border bg-white p-2'>
+                  No data
+                </div>
+              )}
+            </div>
           ) : view === 'code' ? (
             <div className='border-border grow rounded-tl-md rounded-b-md border bg-white py-2'>
-              <Editor
-                height='90vh'
-                defaultLanguage='python'
-                defaultValue='print("Hi")'
-              />
+              {code ? (
+                <Editor
+                  defaultLanguage='python'
+                  defaultValue={code}
+                  options={{
+                    readOnly: true,
+                    domReadOnly: true,
+                    minimap: { enabled: false },
+                  }}
+                />
+              ) : (
+                <div className='flex h-full items-center justify-center'>
+                  No code
+                </div>
+              )}
             </div>
           ) : (
             <div className='border-border grow rounded-tl-md rounded-b-md border bg-white'>
