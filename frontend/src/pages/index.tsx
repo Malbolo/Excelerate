@@ -18,10 +18,8 @@ import {
 import Editor from '@monaco-editor/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { ArrowUpDown, DownloadIcon } from 'lucide-react';
-import { toast } from 'sonner';
 
 import { useSendCommandList } from '@/apis/job';
-import { MPythonCode } from '@/mocks/datas/pythonCode';
 import { DataFrame, DataFrameRow } from '@/types/dataframe';
 
 import Command from '../components/Command';
@@ -47,39 +45,32 @@ const MainPage: React.FC = () => {
 
   const commandMutation = useSendCommandList();
 
-  const handleSendCommandList = () => {
+  const handleSendCommandList = async () => {
     const commands = commandList.map(cmd => cmd.title);
+    const response = await commandMutation(commands);
 
-    commandMutation(commands, {
-      onSuccess: response => {
-        setData(response.dataframe);
-        setCode(response.code);
+    setData(response.dataframe);
+    setCode(response.code);
 
-        // response.dataframe을 기반으로 컬럼 생성
-        if (response.dataframe && response.dataframe.length > 0) {
-          const columns: ColumnDef<DataFrameRow>[] = Object.keys(
-            response.dataframe[0],
-          ).map(key => ({
-            accessorKey: key,
-            header: ({ column }) => (
-              <Button
-                variant='ghost'
-                onClick={() =>
-                  column.toggleSorting(column.getIsSorted() === 'asc')
-                }
-                className='cursor-pointer'
-              >
-                {key}
-                <ArrowUpDown className='ml-2 h-4 w-4' />
-              </Button>
-            ),
-          }));
-          setColumns(columns);
-        }
-
-        toast.success('Commands processed successfully');
-      },
-    });
+    // response.dataframe을 기반으로 컬럼 생성
+    if (response.dataframe && response.dataframe.length > 0) {
+      const columns: ColumnDef<DataFrameRow>[] = Object.keys(
+        response.dataframe[0],
+      ).map(key => ({
+        accessorKey: key,
+        header: ({ column }) => (
+          <Button
+            variant='ghost'
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            className='cursor-pointer'
+          >
+            {key}
+            <ArrowUpDown className='ml-2 h-4 w-4' />
+          </Button>
+        ),
+      }));
+      setColumns(columns);
+    }
   };
 
   const sensors = useSensors(
@@ -324,7 +315,7 @@ const MainPage: React.FC = () => {
               {code ? (
                 <Editor
                   defaultLanguage='python'
-                  defaultValue={MPythonCode}
+                  defaultValue={code}
                   options={{
                     readOnly: true,
                     domReadOnly: true,

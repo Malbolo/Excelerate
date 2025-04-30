@@ -26,12 +26,12 @@ const sendCommandList = async (commandList: string[]) => {
 };
 
 export const useSendCommandList = () => {
-  const { mutate } = useMutation({
+  const { mutateAsync } = useMutation({
     mutationFn: (commandList: string[]) => sendCommandList(commandList),
     onError: error => {
       toast.error(error.message);
     },
   });
 
-  return mutate;
+  return mutateAsync;
 };
