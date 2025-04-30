@@ -51,7 +51,7 @@ pipeline {
               } else if (target.startsWith('backend-')) {
                 def serviceName = target.replace('backend-', '')
                 contextPath = "backend/${serviceName}"
-                imageName = "k12s101ss/backend-${serviceName}"
+                imageName = "k12s101ss/${serviceName}"
               }
 
               echo "Building and pushing ${imageName}"
