@@ -1,0 +1,12 @@
+.venv
+venv/
+
+.idea/
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+.env
+test_main.http
+uvicorn.sh
