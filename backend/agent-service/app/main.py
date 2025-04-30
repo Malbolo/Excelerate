@@ -31,7 +31,7 @@ app = None
 if settings.ENV == "DEV":
     app = FastAPI(title=settings.APP_NAME, debug=settings.DEBUG, lifespan=lifespan, docs_url="/api/agent/docs")
 else:
-    app = FastAPI(title=settings.APP_NAME, debug=settings.DEBUG, lifespan=lifespan, docs_url="/api/agent/docs")
+    app = FastAPI(title=settings.APP_NAME, debug=settings.DEBUG, lifespan=lifespan, docs_url="/api/agent/docs", redoc_url=None, openapi_url="/api/agent/openapi.json")
     # app = FastAPI(title=settings.APP_NAME, debug=settings.DEBUG, lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None) # 배포 시 docs 비활성화
 
 docs = RootDocs()
