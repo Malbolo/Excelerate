@@ -46,7 +46,7 @@ app.add_middleware(
 )
 
 # 라우터 등록
-app.include_router(endpoints.router, prefix="/api/v1")
+app.include_router(endpoints.router, prefix="/api/agent/v1")
 
 
 @app.get(

@@ -8,6 +8,7 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_milvus import Milvus
 from langchain_core.documents import Document
 from langchain_experimental.tools.python.tool import PythonREPLTool
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
