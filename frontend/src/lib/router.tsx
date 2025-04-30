@@ -2,16 +2,16 @@ import { Suspense } from 'react';
 
 import { createBrowserRouter } from 'react-router-dom';
 
+import Layout from '@/components/Layout/Layout';
 import MainPage from '@/pages';
+import AgentMonitoringPage from '@/pages/agentMonitoring';
 import CreateSchedulerPage from '@/pages/createScheduler';
 import DaySchedulePage from '@/pages/daySchedulerMonitoring';
+import JobManagementPage from '@/pages/jobManagement';
+import MonthSchedulePage from '@/pages/monthSchedulerMonitoring';
+import PlayGroundPage from '@/pages/playGround';
 import ScheduleDetail from '@/pages/scheduleDetail';
-
-import Layout from '../components/Layout/Layout';
-import AgentMonitoringPage from '../pages/agentMonitoring';
-import JobManagementPage from '../pages/jobManagement';
-import MonthSchedulePage from '../pages/monthSchedulerMonitoring';
-import PlayGroundPage from '../pages/playGround';
+import SchedulerListPage from '@/pages/schedulerList';
 
 const routes = [
   {
@@ -105,6 +105,17 @@ const routes = [
       </Layout>
     ),
     name: 'CreateScheduler',
+  },
+  {
+    path: '/scheduler-list',
+    element: (
+      <Layout>
+        <Suspense fallback={<div>로딩중...</div>}>
+          <SchedulerListPage />
+        </Suspense>
+      </Layout>
+    ),
+    name: 'SchedulerList',
   },
 ];
 
