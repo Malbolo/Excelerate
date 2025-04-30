@@ -9,7 +9,7 @@ from app.services.email_service import (
 )
 
 router = APIRouter(
-    prefix="/notification"
+    prefix="/api/notification"
 )
 
 @router.post("/email")
