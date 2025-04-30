@@ -1,0 +1,41 @@
+replicaCount: 1
+
+image:
+  repository: k12s101ss/storage-service
+  pullPolicy: Always
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 8000
+
+envFromSecret: storage-service-secret
+
+ingress:
+  enabled: true
+  host: k12s101.p.ssafy.io
+  path: /api/storage
+  pathType: Prefix
+  annotations:
+    kubernetes.io/ingress.class: traefik
+
+# MinIO 설정 (외부에서 호스팅하는 경우)
+minio:
+  enabled: true
+  mode: standalone
+  auth:
+    rootUser: minioadmin
+    rootPassword: minioadmin
+  persistence:
+    enabled: true
+    size: 10Gi
+  service:
+    type: ClusterIP
+    port: 9000
+  apiService:
+    type: ClusterIP
+  defaultBuckets: "factory-data"
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 250m
