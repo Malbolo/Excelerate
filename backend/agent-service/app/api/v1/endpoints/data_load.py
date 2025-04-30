@@ -20,7 +20,7 @@ async def command_code(
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    return JSONResponse(status_code=200, content={"url": url, "data" : result.to_dict(orient="records")})
+    return JSONResponse(status_code=200, content={"url": url, "dataframe" : result.to_dict(orient="records")})
 
 
 @router.post("/make")
