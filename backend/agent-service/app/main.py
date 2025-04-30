@@ -29,10 +29,10 @@ async def lifespan(app: FastAPI):
 app = None
 
 if settings.ENV == "DEV":
-    app = FastAPI(title=settings.APP_NAME, debug=settings.DEBUG, lifespan=lifespan)
+    app = FastAPI(title=settings.APP_NAME, debug=settings.DEBUG, lifespan=lifespan, docs_url="/api/agent/docs")
 else:
     app = FastAPI(title=settings.APP_NAME, debug=settings.DEBUG, lifespan=lifespan,
-                  docs_url=None, redoc_url=None, openapi_url=None) # 배포 시 docs 비활성화
+                  docs_url="/api/agent/docs", redoc_url=None, openapi_url=None) # 배포 시 docs 비활성화
 
 docs = RootDocs()
 
@@ -46,11 +46,11 @@ app.add_middleware(
 )
 
 # 라우터 등록
-app.include_router(endpoints.router, prefix="/api/agent/v1")
+app.include_router(endpoints.router, prefix="/api/agent")
 
 
 @app.get(
-    "/",
+    "/api/agent",
     summary="서버 연결 테스트",
     description="루트 디렉토리에 접근해 서버가 활성화되어 있는 지 확인합니다.",
     response_description="서버 상태 코드",
