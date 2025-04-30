@@ -88,6 +88,24 @@ const MainPage: React.FC = () => {
 
     setData(response.dataframe);
     setSourceData(response.url);
+
+    const columns: ColumnDef<DataFrameRow>[] = Object.keys(
+      response.dataframe[0],
+    ).map(key => ({
+      accessorKey: key,
+      header: ({ column }) => (
+        <Button
+          variant='ghost'
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className='cursor-pointer'
+        >
+          {key}
+          <ArrowUpDown className='ml-2 h-4 w-4' />
+        </Button>
+      ),
+    }));
+
+    setColumns(columns);
   };
 
   const handleLoad = async () => {
