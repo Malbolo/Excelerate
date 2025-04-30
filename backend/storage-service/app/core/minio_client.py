@@ -2,9 +2,9 @@ from minio import Minio
 from app.core.config import settings
 import json
 import io
-from fastapi_logger import get_logger
+import logging
 
-logger = get_logger("minio-client")
+logger = logging.getLogger("minio-client")
 
 class MinioClient:
     def __init__(self):
