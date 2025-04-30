@@ -1,4 +1,6 @@
 import requests
+import os
+import logging
 
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
@@ -6,8 +8,12 @@ from langchain_core.documents import Document
 from langchain_milvus import Milvus
 from langchain.chains.retrieval import create_retrieval_chain
 from langchain.chains.transform import TransformChain
+from pymilvus import connections
 
 from pydantic import BaseModel, Field
+
+# 로거 설정
+logger = logging.getLogger(__name__)
 
 class FileAPIDetail(BaseModel):
     location: str = Field(description="파일을 불러올 지사 정보. 지사를 붙이지 말고 이름만 가져오세요. 예: vietnam, china")
@@ -26,13 +32,65 @@ def init_vectorstore():
     그대로 검색에만 사용합니다. 문서 재삽입은 하지 않습니다.
     """
     emb = OpenAIEmbeddings()
-    store = Milvus(
-        embedding_function=emb,                      # 임베딩 함수
-        connection_args={"host": "localhost",        # Milvus 서버 접속 정보
-                         "port": 19530},
-        collection_name="catalog_docs"               # 이미 생성·삽입해 둔 컬렉션 이름
-    )
-    return store
+
+    # Milvus 연결 설정
+    MILVUS_HOST = os.getenv("MILVUS_HOST", "milvus")
+    MILVUS_PORT = os.getenv("MILVUS_PORT", "19530")
+    MILVUS_COLLECTION = os.getenv("MILVUS_COLLECTION", "catalog_docs")
+
+    logger.info(f"Milvus 연결 시도: HOST={MILVUS_HOST}, PORT={MILVUS_PORT}, COLLECTION={MILVUS_COLLECTION}")
+
+    try:
+        # 직접 연결 시도
+        connections.connect(
+            alias="default",
+            host=MILVUS_HOST,
+            port=MILVUS_PORT
+        )
+        logger.info("Milvus 연결 성공!")
+
+        store = Milvus(
+            embedding_function=emb,
+            collection_name=MILVUS_COLLECTION  # 이미 생성·삽입해 둔 컬렉션 이름
+        )
+        return store
+
+    except Exception as e:
+        logger.error(f"Milvus 직접 연결 실패: {e}")
+        # 실패 시 여러 방법 시도
+        try:
+            # 방법 1: connection_args 사용
+            store = Milvus(
+                embedding_function=emb,
+                connection_args={"host": MILVUS_HOST, "port": int(MILVUS_PORT)},
+                collection_name=MILVUS_COLLECTION
+            )
+            logger.info("Milvus connection_args 방식으로 연결 성공!")
+            return store
+        except Exception as e2:
+            logger.error(f"connection_args 방식 실패: {e2}")
+
+            # 방법 2: URI 방식 시도
+            try:
+                uri = f"http://{MILVUS_HOST}:{MILVUS_PORT}"
+                logger.info(f"URI 방식 시도: {uri}")
+                store = Milvus(
+                    embedding_function=emb,
+                    connection_args={"uri": uri},
+                    collection_name=MILVUS_COLLECTION
+                )
+                logger.info("URI 방식으로 Milvus 연결 성공!")
+                return store
+            except Exception as e3:
+                logger.error(f"URI 방식도 실패: {e3}")
+                # 마지막 시도: 하드코딩
+                store = Milvus(
+                    embedding_function=emb,
+                    connection_args={"host": "milvus", "port": 19530},
+                    collection_name=MILVUS_COLLECTION
+                )
+                logger.info("하드코딩 방식으로 Milvus 연결 성공!")
+                return store
 
 def init_retriever(vectorstore, k=3):
     return vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": k})
@@ -49,7 +107,7 @@ def init_entity_extractor():
     ])
     llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0)
     structured_llm = llm.with_structured_output(FileAPIDetail)
-    
+
     # Context flattening chain
     # (context: list[Document] → context: str)
     flatten_chain = TransformChain(
@@ -59,7 +117,7 @@ def init_entity_extractor():
             "context": "\n".join(d.page_content for d in inputs["context"])
         }
     )
-    
+
     qa_chain = flatten_chain | prompt | structured_llm
 
     return qa_chain
@@ -124,17 +182,17 @@ def handle_request(user_input: str, retriever, extractor) -> str:
         if d.metadata["type"] == "metric_info"
     )
     metrics = met_doc.metadata["metrics"].split(",")
-    
+
     # rag 체인 생성, invoke
     rag_chain = create_retrieval_chain(retriever,  extractor)
 
-    file_params: FileAPIDetail = rag_chain.invoke({
+    file_params = rag_chain.invoke({
         "metric_list": "metric 목록 → " + ", ".join(metrics),
         "input":   user_input
     })
-    print("=======================================")
-    print(f"체인 실행 결과: \n{file_params['answer']}")  # 디버깅용
-    print("=======================================")
+    logger.info("=======================================")
+    logger.info(f"체인 실행 결과: \n{file_params['answer']}")  # 디버깅용
+    logger.info("=======================================")
     entities = file_params['answer'].model_dump()
     # 7-2. 유효성 검증
     validate_entities(entities, retriever)

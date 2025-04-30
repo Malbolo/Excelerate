@@ -1,5 +1,6 @@
 import os
 import logging
+import time
 from app.core.config import settings
 # LangChain 관련 라이브러리 임포트
 from langchain.chains import RetrievalQA
@@ -15,7 +16,7 @@ class LLMTest:
         """
         LLM 연결 테스트용 서비스
         """
-        
+
         self.llm = ChatOpenAI(
             temperature=0.3,
             max_tokens=1024,
@@ -24,33 +25,70 @@ class LLMTest:
 
         self.embeddings = OpenAIEmbeddings(model="text-embedding-3-small") # 차후 필요 시 더 고급 임베딩 모델 사용
 
-        # Milvus 벡터 스토어 설정
-        URI = "http://localhost:19530"
+        # Milvus 초기화 시도
+        self._initialize_milvus()
 
-        self.vector_store = Milvus(
-            embedding_function=self.embeddings,
-            connection_args={"uri": URI},
-        )
+    def _initialize_milvus(self):
+        """Milvus 연결을 초기화하는 메서드, 실패 시 백업 방법 제공"""
 
-    async def run(self, query: str):
-        """
-        주어진 query를 기반으로 RAG 체인을 실행하여 응답을 생성합니다.
-        """
+        self.vector_store = None
+
+        host = os.getenv("MILVUS_HOST", "milvus")
+        port = os.getenv("MILVUS_PORT", "19530")
+        collection = os.getenv("MILVUS_COLLECTION", "documents")
+        logger.warning(f"Milvus 연결 시도: {host}:{port}")
+
         try:
-            # # 검색기 구성: Milvus에서 k개 문서를 검색 (예제에서는 k=3)
-            # retriever = self.vector_store.as_retriever(search_kwargs={"k": 3})
+            from pymilvus import connections, utility
 
-            # # LangChain의 RAG 체인 구성: 검색된 문서들을 이용해 답변 생성
-            # qa_chain = RetrievalQA.from_chain_type(
-            #     llm=self.llm, 
-            #     chain_type="stuff",
-            #     retriever=retriever
-            # )
+            max_retries = 5
+            retry_interval = 3  # 초
 
-            # # 체인 실행: 동기 방식으로 실행 (비동기 지원 시 await qa_chain.arun(query) 사용 고려)
-            # answer = qa_chain.run(query)
-            answer = self.llm.invoke(query)
-            return answer.content # 응답만 반환
+            for attempt in range(max_retries):
+                try:
+                    logger.warning(f"Milvus 연결 시도 {attempt+1}/{max_retries}: {host}:{port}")
+
+                    # pymilvus 연결 (alias 없이)
+                    connections.connect(
+                        uri=f"tcp://{host}:{port}"
+                    )
+
+                    # 연결 테스트
+                    collection_list = utility.list_collections()
+                    logger.info(f"사용 가능한 컬렉션 목록: {collection_list}")
+
+                    collection_exists = collection in collection_list
+                    logger.info(f"Milvus 컬렉션 '{collection}' 존재 여부: {collection_exists}")
+
+                    # LangChain Milvus 초기화
+                    logger.info("LangChain Milvus 래퍼 초기화 중...")
+                    self.vector_store = Milvus(
+                        embedding_function=self.embeddings,
+                        connection_args={
+                            "uri": f"tcp://{host}:{port}"
+                        },
+                        collection_name=collection,
+                        vector_field="vector"
+                    )
+
+                    logger.info("Milvus 연결 성공!")
+
+                    if not collection_exists:
+                        logger.warning(f"컬렉션 '{collection}'이 없습니다. 먼저 create_collection.py 스크립트를 실행하세요.")
+
+                    return
+
+                except Exception as e:
+                    logger.warning(f"Milvus 연결 시도 {attempt+1} 실패: {e}")
+                    if attempt < max_retries - 1:
+                        logger.info(f"{retry_interval}초 후 재시도...")
+                        time.sleep(retry_interval)
+                    else:
+                        logger.error(f"Milvus 연결 모두 실패 ({max_retries}회 시도)")
+                        self.vector_store = None
+
         except Exception as e:
-            logger.error("RAG 실행 중 에러 발생: %s", e)
-            raise e
+            logger.error(f"Milvus 연결 모듈 로드 또는 초기화 실패: {e}")
+            self.vector_store = None
+
+        logger.warning("Milvus 없이 LLM만 사용하는 모드로 전환합니다.")
