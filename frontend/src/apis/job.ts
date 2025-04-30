@@ -20,7 +20,7 @@ interface GetSourceDataResponse {
 const sendCommandList = async (commandList: string[]) => {
   const { data, error, success } = await api<SendCommandListResponse>(
     '/code/generate',
-    { method: 'POST', body: JSON.stringify(commandList) },
+    { method: 'POST', body: JSON.stringify({ command_list: commandList }) },
   );
 
   if (!success) {
@@ -33,7 +33,7 @@ const sendCommandList = async (commandList: string[]) => {
 const getSourceData = async (command: string) => {
   const { data, error, success } = await api<GetSourceDataResponse>(
     '/data/load',
-    { method: 'POST', body: JSON.stringify(command) },
+    { method: 'POST', body: JSON.stringify({ command }) },
   );
 
   if (!success) {
