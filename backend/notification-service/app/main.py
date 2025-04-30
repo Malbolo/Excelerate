@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from api.email_api import router as email_router
+from app.api.email_api import router as email_router
 
 app = FastAPI()
 

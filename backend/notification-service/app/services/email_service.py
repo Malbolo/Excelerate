@@ -3,8 +3,8 @@ from fastapi import UploadFile, File, Form
 from fastapi_mail import MessageSchema, MessageType, FastMail
 from pydantic import EmailStr
 from starlette.responses import JSONResponse
-from core import email_connection_config
-from schemas.email_schema import EmailSchema
+from app.core import email_connection_config
+from app.schemas.email_schema import EmailSchema
 
 conf = email_connection_config.conf
 

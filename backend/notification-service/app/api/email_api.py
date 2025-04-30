@@ -2,8 +2,8 @@ from typing import List
 from fastapi import APIRouter, File, UploadFile, Form
 from pydantic import EmailStr
 from starlette.responses import JSONResponse
-from schemas.email_schema import EmailSchema
-from services.email_service import (
+from app.schemas.email_schema import EmailSchema
+from app.services.email_service import (
     handle_sending_email,
     handle_sending_email_with_files
 )
