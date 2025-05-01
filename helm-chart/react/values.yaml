@@ -9,8 +9,6 @@ service:
   type: ClusterIP
   port: 80
 
-envFromSecret: react-secret
-
 ingress:
   enabled: true
   hosts:
