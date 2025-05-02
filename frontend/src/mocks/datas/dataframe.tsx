@@ -2,7 +2,9 @@ import { ColumnDef } from '@tanstack/react-table';
 import { ArrowUpDown } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { MUser } from '@/mocks/datas/user';
 import { TMachine } from '@/types/job';
+import { Job } from '@/types/scheduler';
 
 export const machineColumns: ColumnDef<TMachine>[] = [
   {
@@ -82,7 +84,7 @@ export const machineColumns: ColumnDef<TMachine>[] = [
   },
 ];
 
-export const MMachine: TMachine[] = [
+export const MMachineTable: TMachine[] = [
   {
     machineId: 'MACH-001',
     parameter: 'temperature',
@@ -362,5 +364,125 @@ export const MMachine: TMachine[] = [
     value: 1200,
     unit: 'rpm',
     collectedAt: '2025-04-23T09:44:59Z',
+  },
+];
+
+export const jobColumns: ColumnDef<Job>[] = [
+  {
+    accessorKey: 'title',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant='ghost'
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className='cursor-pointer'
+        >
+          Title
+          <ArrowUpDown className='ml-2 h-4 w-4' />
+        </Button>
+      );
+    },
+  },
+  {
+    accessorKey: 'sourceData',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant='ghost'
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className='cursor-pointer'
+        >
+          Source Data
+          <ArrowUpDown className='ml-2 h-4 w-4' />
+        </Button>
+      );
+    },
+  },
+  {
+    accessorKey: 'createdAt',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant='ghost'
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className='cursor-pointer'
+        >
+          Date
+          <ArrowUpDown className='ml-2 h-4 w-4' />
+        </Button>
+      );
+    },
+  },
+  {
+    accessorKey: 'user',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant='ghost'
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className='cursor-pointer'
+        >
+          User
+          <ArrowUpDown className='ml-2 h-4 w-4' />
+        </Button>
+      );
+    },
+  },
+];
+
+export const MJobTable: Job[] = [
+  {
+    title: 'job title 1',
+    description: 'job description 1',
+    createdAt: '2025-04-22T09:44:58Z',
+    jobId: '1',
+    commandList: [],
+    sourceData: 'sourceData 1',
+    userName: MUser.name,
+  },
+  {
+    title: 'job title 2',
+    description: 'job description 2',
+    createdAt: '2025-04-22T09:44:58Z',
+    jobId: '2',
+    commandList: [],
+    sourceData: 'sourceData 2',
+    userName: MUser.name,
+  },
+  {
+    title: 'job title 3',
+    description: 'job description 3',
+    createdAt: '2025-04-22T09:44:58Z',
+    jobId: '3',
+    commandList: [],
+    sourceData: 'sourceData 3',
+    userName: MUser.name,
+  },
+  {
+    title: 'job title 4',
+    description: 'job description 4',
+    createdAt: '2025-04-22T09:44:58Z',
+    jobId: '4',
+    commandList: [],
+    sourceData: 'sourceData 4',
+    userName: MUser.name,
+  },
+  {
+    title: 'job title 5',
+    description: 'job description 5',
+    createdAt: '2025-04-22T09:44:58Z',
+    jobId: '5',
+    commandList: [],
+    sourceData: 'sourceData 5',
+    userName: MUser.name,
+  },
+  {
+    title: 'job title 6',
+    description: 'job description 6',
+    createdAt: '2025-04-22T09:44:58Z',
+    jobId: '6',
+    commandList: [],
+    sourceData: 'sourceData 6',
+    userName: MUser.name,
   },
 ];

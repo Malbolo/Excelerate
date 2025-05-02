@@ -17,10 +17,7 @@ interface GetSourceDataResponse {
   dataframe: DataFrame;
 }
 
-const sendCommandList = async (
-  commandList: string[],
-  sourceData: DataFrame,
-) => {
+const sendCommandList = async (commandList: string[], sourceData: string) => {
   const { data, error, success } = await api<SendCommandListResponse>(
     '/code/generate',
     {
@@ -59,7 +56,7 @@ export const useSendCommandList = () => {
       sourceData,
     }: {
       commandList: string[];
-      sourceData: DataFrame;
+      sourceData: string;
     }) => sendCommandList(commandList, sourceData),
     onError: error => {
       toast.error(error.message);
