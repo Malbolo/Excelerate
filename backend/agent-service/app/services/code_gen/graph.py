@@ -7,9 +7,7 @@ import json
 
 from dotenv import load_dotenv
 
-from typing import Literal
 from typing_extensions import List, TypedDict
-from langchain_core.documents import Document
 from langgraph.graph import StateGraph, MessagesState
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langchain_openai import ChatOpenAI

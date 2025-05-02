@@ -17,23 +17,6 @@ class RootDocs:
         }
     }
 
-class ExampleDocs:
-    base = {
-        "res": {
-            200: {
-                "description": "정상 응답 예시",
-                "content": {
-                    "application/json": {
-                        "example": {
-                            "message": "Hello, FastAPI!"
-                        }
-                    }
-                },
-            },
-            400: {"description": "잘못된 요청"}
-        }
-    }
-
 class QueryDocs:
     base = {
         "res": {
