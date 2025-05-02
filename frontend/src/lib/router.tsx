@@ -11,7 +11,7 @@ import JobManagementPage from '@/pages/jobManagement';
 import MonthSchedulePage from '@/pages/monthSchedulerMonitoring';
 import PlayGroundPage from '@/pages/playGround';
 import ScheduleDetail from '@/pages/scheduleDetail';
-import SchedulerListPage from '@/pages/schedulerList';
+import SchedulerManagementPage from '@/pages/schedulerManagement';
 
 const routes = [
   {
@@ -107,15 +107,26 @@ const routes = [
     name: 'CreateScheduler',
   },
   {
-    path: '/scheduler-list',
+    path: '/scheduler-management',
     element: (
       <Layout>
         <Suspense fallback={<div>로딩중...</div>}>
-          <SchedulerListPage />
+          <SchedulerManagementPage />
         </Suspense>
       </Layout>
     ),
     name: 'SchedulerList',
+  },
+  {
+    path: '/scheduler-management/create',
+    element: (
+      <Layout>
+        <Suspense fallback={<div>로딩중...</div>}>
+          <CreateSchedulerPage />
+        </Suspense>
+      </Layout>
+    ),
+    name: 'CreateScheduler',
   },
 ];
 

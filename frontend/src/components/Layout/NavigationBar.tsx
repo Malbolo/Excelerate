@@ -9,7 +9,7 @@ const navItems = [
     to: `/scheduler-monitoring/month/${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`, // 월을 두 자리로 (예: 2025-04)
     basePath: '/scheduler-monitoring',
   },
-  { label: 'Scheduler List', to: '/scheduler-list' },
+  { label: 'Scheduler Management', to: '/scheduler-management' },
   { label: 'Agent Monitoring', to: '/agent-monitoring' },
   { label: 'Play Ground', to: '/playground' },
 ];
