@@ -1,15 +1,12 @@
-from datetime import datetime
-from zoneinfo import ZoneInfo
-import time
 import pandas as pd
 import re
 import json
 
 from dotenv import load_dotenv
 
-from typing_extensions import List, TypedDict
+from typing_extensions import List
 from langgraph.graph import StateGraph, MessagesState
-from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
+from langchain_core.messages import AIMessage
 from langchain_openai import ChatOpenAI
 from langgraph.graph import START, END
 
@@ -20,7 +17,10 @@ load_dotenv()
 
 class AgentState(MessagesState):
     command_list: List[str]
+    queue_idx: int # 현재 진행중인 큐
+    current_cmds: List[str] # 현재 큐의 커맨드 리스트
     python_code: str
+    python_codes_list: List[str] # 각 단계별 코드 리스트 모음
     dataframe: List[pd.DataFrame]
     retry_count: int
     error_msg: dict | None
@@ -32,102 +32,6 @@ class CodeGenerator:
         self.cllm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0, callbacks=[self.logger])
         self.llm = ChatOpenAI(model_name="gpt-4o", temperature=0, callbacks=[self.logger])
         self.sllm = ChatOpenAI(model_name="gpt-4.1-nano", temperature=0, callbacks=[self.logger])
-
-    def _wrap_node(self, func, node_name):
-        def wrapped(state: AgentState, *args, **kwargs):
-            # 1) 이전 로그 복사 (List[Dict])
-            prev_logs = state.get("logs", []).copy()
-            now = datetime.now(ZoneInfo("Asia/Seoul")).isoformat()
-
-            # 2) 노드별 input 추출
-            if node_name == "codegen":
-                input_data = state.get("command_list")
-            elif node_name == "execute":
-                input_data = state.get("python_code")
-            else:
-                input_data = None
-
-            # 3) 실제 노드 실행 & 시간 측정
-            start = time.time()
-            out_state = func(state, *args, **kwargs)
-            duration = time.time() - start
-
-            # 4) 노드별 output·metadata 구성
-            if node_name == "codegen":
-                output_data = out_state.get("python_code")
-                # LLM 메시지에서 메타정보 꺼내기
-                msg = out_state["messages"][0]
-                metadata = {
-                    "model": msg.response_metadata.get("model_name"),
-                    "token_usage": msg.response_metadata.get("token_usage"),
-                }
-            else:
-                output_data = None
-                metadata = {
-                    "duration_s": duration,
-                    "error": out_state.get("error_msg"),
-                }
-
-            # 5) 새 로그 엔트리
-            entry = {
-                "node":      node_name,
-                "input":     input_data,
-                "output":    output_data,
-                "timestamp": now,
-                "metadata":  metadata,
-                "sub_events": [], # 하위 로그 이벤트 추가
-            }
-
-            # 6) 이전 state + 새로운 out_state 병합
-            merged = {**state, **out_state}
-            # 7) logs 키에 prev_logs + 새 엔트리
-            merged["logs"] = prev_logs + [entry]
-
-            return merged
-
-        return wrapped
-
-    def _wrap_condition(self, func, name):
-        """
-        check_code 같은 조건 함수의 결과를 state['logs']에 기록합니다.
-        func: (state) -> str 리턴하는 함수
-        name: 로그에 사용할 단계 이름
-        """
-        def wrapped(state: AgentState, *args, **kwargs):
-            now = datetime.now(ZoneInfo("Asia/Seoul")).isoformat()
-            # 1) 조건 함수 실행
-            result = func(state, *args, **kwargs)
-            # 2) 로그 항목 생성
-            entry = {
-                "node":      name,
-                "input":     state.get("python_code"),
-                "output":    result,
-                "timestamp": now,
-                "metadata":  {},  # 필요 시 추가 메타데이터 삽입
-            }
-            # 3) 로그 추가
-            state.setdefault("logs", []).append(entry)
-            return result
-
-        return wrapped
-
-    def _log_sub_event(self, state: AgentState, name: str, 
-                      input=None, output=None, metadata: dict|None=None):
-        """
-        state['logs']의 마지막 엔트리에 sub_events를 추가합니다.
-        """
-        timestamp = datetime.now(ZoneInfo("Asia/Seoul")).isoformat()
-        sub = {
-            "event":     name,
-            "input":     input,
-            "output":    output,
-            "metadata":  metadata or {},
-            "timestamp": timestamp,
-        }
-        # 가장 최근에 추가된 노드 로그 엔트리
-        if state.get("logs"):
-            state["logs"][-1].setdefault("sub_events", []).append(sub)
-        return state
 
     def classify_and_group(self, state: AgentState) -> AgentState:
         # 로그 이름 설정 & 초기화
@@ -156,8 +60,24 @@ class CodeGenerator:
         # state 업데이트
         new_logs = state.get("logs", []) + [llm_entry]
 
-        # 최종적으로 파이썬 리스트를 state에 넣어 줌
-        return {'command_list': new_list, 'logs': new_logs}
+        # 커맨드 스플릿, queue_idx 명시적 초기화
+        return {'command_list': new_list, 'queue_idx': 0, 'logs': new_logs}
+
+    def next_unit(self, state: AgentState) -> AgentState:
+        units = state.get("command_list", []) # 전체 커맨드 리스트
+        idx   = state.get("queue_idx", 99) # 현재 처리중인 queue idx
+
+        # 더 처리할 게 없으면 END 분기로
+        if idx >= len(units):
+            return {"current_cmds": []}
+
+        # 현재 unit 하나 꺼내고, queue_index 증가
+        current = units[idx]
+        return {
+            "current_cmds": [current],   # codegen 이 참조할 리스트
+            "queue_idx":   idx + 1, # 이거 증가하는 타이밍을 차후 execute 완료 시로 수정하여, current_cmds 없이 구현
+            "retry_count": 0, # 다음으로 넘어가며 retry_count 초기화
+        }
 
     def code_gen(self, state: AgentState) -> AgentState:
         """
@@ -175,8 +95,8 @@ class CodeGenerator:
         self.logger.reset()
 
         # 메시지를 state에서 가져옵니다.
-        df = state['dataframe'][0] # 오리지널 df
-        input = state['command_list']
+        df = state['dataframe'][-1] # 마지막 df
+        input = state["current_cmds"]
 
         code_gen_prompt = make_code_template()
 
@@ -222,7 +142,7 @@ class CodeGenerator:
     
     def execute_code(self, state: AgentState) -> AgentState:
         code_str = state["python_code"]
-        df = state["dataframe"][0]
+        df = state["dataframe"][-1]
 
         fence_pattern = re.compile(r"```(?:python)?\n([\s\S]*?)```", re.IGNORECASE)
         m = fence_pattern.search(code_str)
@@ -252,11 +172,16 @@ class CodeGenerator:
             dfs: list[pd.DataFrame] = namespace["df_manipulate"](df)
         except Exception as e:
             return extract_error_info(e, code_body, "invoke")
+        
+        # 3) dataframes와 codes 갱신
+        new_dataframes = state.get("dataframe", []) + dfs
+        codes = state.get("python_codes_list", []) + [code_str]
 
-        # 3) 정상 리턴
+        # 4) 정상 리턴
         return {
-            "dataframe": [df, *dfs],
+            "dataframe": new_dataframes,
             "error_msg": None,
+            "python_codes_list": codes,
         }
 
     def build(self):
@@ -264,6 +189,7 @@ class CodeGenerator:
         # # 각 메서드를 wrap 하여 노드 추가
         handlers = {
             'group' : self.classify_and_group,
+            'next_unit' : self.next_unit,
             'codegen': self.code_gen,
             'retry':   self.retry,
             'error':   self.error_node,
@@ -276,14 +202,20 @@ class CodeGenerator:
             graph_builder.add_node(name, fn) # wrap 안하고 노드 추가가
 
         graph_builder.add_edge(START, 'group')
-        graph_builder.add_edge('group', 'codegen')
+        graph_builder.add_edge('group', 'next_unit')
+        # 남아 있는 cmds가 있으면 수행, 아니면 종료
+        graph_builder.add_conditional_edges(
+            "next_unit",
+            lambda s: "has"  if s.get("current_cmds") else "done",
+            {"has": "codegen", "done": END}
+        )
         graph_builder.add_edge('codegen', 'execute')
         graph_builder.add_conditional_edges(
             "execute",
             # error_msg가 없으면 success, 있으면 retry
             lambda s: "success" if not s.get("error_msg") else "fail",
             {
-                "success": END,   # 에러 없으면 종료
+                "success": 'next_unit',   # 에러 없으면 다음 커맨드 리스트로
                 "fail":   "retry"  # 에러 있으면 retry
             }
         )

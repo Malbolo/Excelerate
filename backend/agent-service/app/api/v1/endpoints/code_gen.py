@@ -31,7 +31,10 @@ async def command_code(
         query = {
                 'messages': [HumanMessage(request.command_list)],
                 'python_code': '',
+                'python_codes_list': [],
                 'command_list': request.command_list,
+                'queue_idx': 0,
+                'current_cmds': [],
                 'dataframe': [pd.DataFrame(checkdata)],
                 'retry_count': 0,
                 "error_msg": None,
