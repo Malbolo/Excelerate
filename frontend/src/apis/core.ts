@@ -36,10 +36,7 @@ export async function api<T>(
   const res = await fetch(url, { ...init, headers });
   const { data } = (await res.json()) as DataResponse<T>;
 
-  console.log(res);
-
   if (!res.ok) {
-    console.log(res);
     return {
       data: null,
       success: false,
