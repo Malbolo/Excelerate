@@ -11,7 +11,7 @@ const Tabs: React.FC<TabsProps> = ({ tabList, tabPanels }) => {
   const [activeTab, setActiveTab] = useState(tabList[0]);
 
   return (
-    <div className='flex w-full flex-col'>
+    <div className='flex h-full w-full flex-col'>
       <div className='flex translate-y-[1px] self-end'>
         {tabList.map(tab => (
           <div

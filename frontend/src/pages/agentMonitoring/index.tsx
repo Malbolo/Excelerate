@@ -1,7 +1,13 @@
 import { useState } from 'react';
 
-import DataTable from '@/components/DataTable';
 import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -14,7 +20,8 @@ import {
 import { JOB_TYPE } from '@/constant/job';
 import { DEPARTMENT } from '@/constant/user';
 import useClickOutsideRef from '@/hooks/useClickOutsideRef';
-import { MJobTable, jobColumns } from '@/mocks/datas/dataframe';
+import useInternalRouter from '@/hooks/useInternalRouter';
+import { MJobTable } from '@/mocks/datas/dataframe';
 import { MUserNameList } from '@/mocks/datas/user';
 import { TDepartment, TJobType } from '@/types/agent';
 
@@ -25,6 +32,8 @@ const AgentMonitoringPage: React.FC = () => {
 
   const [searchNameList] = useState<string[]>(MUserNameList);
   const [isOpenScrollArea, setIsOpenScrollArea] = useState<boolean>(false);
+
+  const { push } = useInternalRouter();
 
   const scrollAreaRef = useClickOutsideRef<HTMLDivElement>(() =>
     setIsOpenScrollArea(false),
@@ -102,8 +111,23 @@ const AgentMonitoringPage: React.FC = () => {
         </Button>
       </div>
 
-      <div className='flex-1'>
-        <DataTable columns={jobColumns} data={MJobTable} />
+      <div className='flex flex-1 flex-col gap-4'>
+        {MJobTable.map(job => (
+          <Card
+            key={job.jobId}
+            onClick={() => push(`/agent-monitoring/job/${job.jobId}`)}
+            className='cursor-pointer'
+          >
+            <CardHeader>
+              <CardTitle>{job.title}</CardTitle>
+              <CardDescription>{job.description}</CardDescription>
+            </CardHeader>
+            <CardContent className='flex w-full justify-between'>
+              <p>{job.userName}</p>
+              <p>{job.createdAt}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   );

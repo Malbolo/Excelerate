@@ -36,19 +36,6 @@ const routes = [
       </Layout>
     ),
     name: 'AgentMonitoring',
-    children: [
-      {
-        path: 'job/:jobId',
-        element: (
-          <Layout>
-            <Suspense fallback={<div>로딩중...</div>}>
-              <JobAgentMonitoringPage />
-            </Suspense>
-          </Layout>
-        ),
-        name: 'JobAgentMonitoring',
-      },
-    ],
   },
   {
     path: '/job-management',
@@ -141,6 +128,17 @@ const routes = [
       </Layout>
     ),
     name: 'CreateScheduler',
+  },
+  {
+    path: '/agent-monitoring/job/:jobId',
+    element: (
+      <Layout>
+        <Suspense fallback={<div>로딩중...</div>}>
+          <JobAgentMonitoringPage />
+        </Suspense>
+      </Layout>
+    ),
+    name: 'JobAgentMonitoring',
   },
 ];
 
