@@ -23,7 +23,7 @@ const AgentMonitoringPage: React.FC = () => {
   const [department, setDepartment] = useState<TDepartment>();
   const [name, setName] = useState<string>('');
 
-  const [searchNameList, setSearchNameList] = useState<string[]>(MUserNameList);
+  const [searchNameList] = useState<string[]>(MUserNameList);
   const [isOpenScrollArea, setIsOpenScrollArea] = useState<boolean>(false);
 
   const scrollAreaRef = useClickOutsideRef<HTMLDivElement>(() =>
