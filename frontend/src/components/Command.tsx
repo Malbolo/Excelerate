@@ -4,18 +4,21 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Check, MoreVertical } from 'lucide-react';
 
-import { cn } from '../lib/utils';
-import { Input } from './ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Input } from '@/components/ui/input';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { useJobStore } from '@/store/useJobStore';
 
 interface CommandProps {
   id: string;
   command: string;
   status?: 'pending' | 'processing' | 'success' | 'fail';
-  onDelete?: () => void;
-  onEdit?: (command: string, newCommand: string) => void;
-  isEditMode?: boolean;
-  setIsEditMode?: (isEditMode: boolean) => void;
+  onDelete: (command: string) => void;
+  onEdit: (command: string, newCommand: string) => void;
 }
 
 const statusColor = {
@@ -31,23 +34,18 @@ const Command: React.FC<CommandProps> = ({
   status = 'pending',
   onDelete,
   onEdit,
-  isEditMode,
-  setIsEditMode,
 }) => {
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editingCommand, setEdtingCommand] = useState<string>(command);
 
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-  } = useSortable({ id });
+  const { isEditMode, setIsEditMode } = useJobStore();
+
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({ id });
 
   const sortableProps = {
     ref: isEditMode ? undefined : setNodeRef,
-    style: isEditMode 
+    style: isEditMode
       ? {}
       : {
           transform: CSS.Transform.toString(transform),
@@ -62,17 +60,16 @@ const Command: React.FC<CommandProps> = ({
       alert('Edit mode is already on');
       return;
     }
-    setIsEditMode?.(true);
+    setIsEditMode(true);
     setIsEditing(true);
   };
 
   const handleEdit = () => {
     if (!editingCommand.trim()) return;
 
-    if (onEdit) {
-      onEdit(command, editingCommand);
-    }
-    setIsEditMode?.(false);
+    onEdit(command, editingCommand);
+
+    setIsEditMode(false);
     setIsEditing(false);
   };
 
@@ -85,7 +82,7 @@ const Command: React.FC<CommandProps> = ({
         {...sortableProps.listeners}
         className={cn(
           'flex grow items-center gap-2 pr-2',
-          !isEditMode && 'cursor-move'
+          !isEditMode && 'cursor-move',
         )}
       >
         <div
@@ -96,7 +93,7 @@ const Command: React.FC<CommandProps> = ({
             value={editingCommand}
             onChange={e => setEdtingCommand(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleEdit()}
-            className="cursor-text"
+            className='cursor-text'
             onMouseDown={e => {
               e.stopPropagation();
             }}
@@ -129,7 +126,7 @@ const Command: React.FC<CommandProps> = ({
                 edit
               </li>
               <li
-                onClick={onDelete}
+                onClick={() => onDelete(command)}
                 className='w-full cursor-pointer px-3 py-1 text-center hover:bg-black/10'
               >
                 delete
