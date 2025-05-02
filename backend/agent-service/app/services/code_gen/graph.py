@@ -1,6 +1,7 @@
 import pandas as pd
 import re
 import json
+import os
 
 from dotenv import load_dotenv
 
@@ -11,7 +12,8 @@ from langchain_openai import ChatOpenAI
 from langgraph.graph import START, END
 
 from app.utils.memory_logger import MemoryLogger
-from app.services.code_gen.graph_util import extract_error_info, make_code_template, make_classify_template
+from app.services.code_gen.graph_util import extract_error_info, make_code_template, make_classify_template, make_excel_template, insert_df_to_excel
+from app.utils.minio_client import MinioClient
 
 load_dotenv()
 
@@ -29,9 +31,14 @@ class AgentState(MessagesState):
 class CodeGenerator:
     def __init__(self):
         self.logger = MemoryLogger()
+        self.minio_client = MinioClient()
         self.cllm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0, callbacks=[self.logger])
         self.llm = ChatOpenAI(model_name="gpt-4o", temperature=0, callbacks=[self.logger])
         self.sllm = ChatOpenAI(model_name="gpt-4.1-nano", temperature=0, callbacks=[self.logger])
+
+        BASE_TEMPLATE_DIR = os.path.dirname(__file__)
+        self.file_path = os.path.join(BASE_TEMPLATE_DIR, "test.xlsx")
+        self.output_path = os.path.join(BASE_TEMPLATE_DIR, "test_merged.xlsx")
 
     def classify_and_group(self, state: AgentState) -> AgentState:
         # 로그 이름 설정 & 초기화
@@ -59,6 +66,24 @@ class CodeGenerator:
         llm_entry = self.logger.logs[-1] if self.logger.logs else {}
         # state 업데이트
         new_logs = state.get("logs", []) + [llm_entry]
+
+
+        # ########### 겸사겸사 엑셀 조작 테스트
+        # print(self.file_path)
+        # print(self.output_path)
+
+        # df_sample = state['dataframe'][-1]
+        # df_sample.drop("defect_types", axis=1, inplace=True)
+
+        # insert_df_to_excel(
+        #     df=df_sample,
+        #     input_path=self.file_path,
+        #     output_path=self.output_path,
+        #     start_row=5,
+        #     start_col=2
+        # )
+        # ########### git에 주석 풀고 올리지 마세요!
+
 
         # 커맨드 스플릿, queue_idx 명시적 초기화
         return {'command_list': new_list, 'queue_idx': 0, 'logs': new_logs}
@@ -100,6 +125,8 @@ class CodeGenerator:
 
         code_gen_prompt = make_code_template()
 
+        
+
         schain = code_gen_prompt | self.sllm
         
         # LLM과 도구를 사용하여 메시지에 대한 응답을 생성합니다.
@@ -136,6 +163,7 @@ class CodeGenerator:
 
     def error_node(self, state: AgentState) -> AgentState:
         msg = AIMessage(content="⚠️ 코드 생성이 3회 연속 실패했습니다. 나중에 다시 시도해주세요.")
+        # 에러 시 처리 코드 추가
         return {
             "messages": state["messages"] + [msg]
         }
@@ -184,25 +212,31 @@ class CodeGenerator:
             "python_codes_list": codes,
         }
 
+    def excel_manipulate(self, state: AgentState) -> AgentState:
+        self.minio_client.download_template(template_name="원본", local_path="/tmp/template.xlsx")
+        ## 불러온 템플릿으로 뭔가 수행하기
+        ## 수행된 결과 엑셀로 만들기
+        url = self.minio_client.upload_result(user_id="tester", template_name="변경", local_path="/tmp/output.xlsx")
+        print(url)
+        return {}
+
     def build(self):
         graph_builder = StateGraph(AgentState)
-        # # 각 메서드를 wrap 하여 노드 추가
         handlers = {
-            'group' : self.classify_and_group,
+            'split' : self.classify_and_group,
             'next_unit' : self.next_unit,
             'codegen': self.code_gen,
             'retry':   self.retry,
             'error':   self.error_node,
             'execute': self.execute_code,
         }
-
-        # 래핑해서 노드로 등록
+        # 노드로 등록
         for name, fn in handlers.items():
-            # graph_builder.add_node(name, self._wrap_node(fn, name))
+            # graph_builder.add_node(name, self._wrap_node(fn, name)) # 각 메서드를 wrap 하여 노드 추가
             graph_builder.add_node(name, fn) # wrap 안하고 노드 추가가
 
-        graph_builder.add_edge(START, 'group')
-        graph_builder.add_edge('group', 'next_unit')
+        graph_builder.add_edge(START, 'split')
+        graph_builder.add_edge('split', 'next_unit')
         # 남아 있는 cmds가 있으면 수행, 아니면 종료
         graph_builder.add_conditional_edges(
             "next_unit",

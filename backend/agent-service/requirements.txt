@@ -60,6 +60,7 @@ langgraph-sdk
 langsmith
 marshmallow
 matplotlib-inline
+minio==7.2.15
 more-itertools
 msgpack
 multidict
@@ -67,6 +68,7 @@ mypy_extensions
 nest-asyncio
 numpy
 openai
+openpyxl
 orjson
 ormsgpack
 packaging
