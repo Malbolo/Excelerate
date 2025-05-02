@@ -62,20 +62,32 @@ def get_defect_data(
                 if pid not in PRODUCTS:
                     logger.debug(f"Unknown product_id: {pid}")
                     continue
-                pdata.update({
+
+                # 중첩된 defect_types 구조를 평면화
+                flat_data = {
                     "product_id": pid,
                     "factory_id": factory_id,
                     "date": date,
-                    "product_category": PRODUCTS[pid]["category"]
-                })
-                result.append(pdata)
+                    "product_category": PRODUCTS[pid]["category"],
+                    "product_name": pdata.get("product_name", ""),
+                    "defect_rate": pdata.get("defect_rate", 0),
+                    "total_inspected": pdata.get("total_inspected", 0),
+                    "defect_count": pdata.get("defect_count", 0)
+                }
+
+                # defect_types 객체의 각 항목을 평면화된 구조에 추가
+                for defect_name, defect_count in pdata.get("defect_types", {}).items():
+                    flat_data[defect_name] = defect_count
+
+                result.append(flat_data)
         except Exception as e:
             logger.error(f"Error loading {path}: {e}")
 
     result = filter_common(result, product_id, product_category)
 
+    # defect_type 필터 로직 수정 - 이제 평면화된 구조이므로 직접 접근
     if defect_type:
-        result = [r for r in result if r["defect_types"].get(defect_type, 0) > 0]
+        result = [r for r in result if r.get(defect_type, 0) > 0]
     if defect_rate_min is not None:
         result = [r for r in result if r["defect_rate"] >= defect_rate_min]
     if defect_rate_max is not None:
@@ -211,13 +223,34 @@ def get_quality_inspection_data(
             try:
                 raw = minio_client.get_data(path)
                 for record in raw["records"]:
-                    record.update({
+                    # 기본 레코드 정보
+                    flattened_record = {
                         "factory_id": factory_id,
                         "product_id": pid,
-                        "product_category": PRODUCTS[pid]["category"]
-                    })
-                    result.append(record)
-            except Exception:
+                        "product_category": PRODUCTS[pid]["category"],
+                        "date": record.get("date", ""),
+                        "time": record.get("time", ""),
+                        "product_name": record.get("product_name", ""),
+                        "inspection_type": record.get("inspection_type", ""),
+                        "inspector": record.get("inspector", ""),
+                        "total_samples": record.get("total_samples", 0),
+                        "total_pass": record.get("total_pass", 0),
+                        "total_fail": record.get("total_fail", 0),
+                        "pass_rate": record.get("pass_rate", 0)
+                    }
+
+                    # detailed_results 평면화
+                    if "detailed_results" in record:
+                        for category, items in record["detailed_results"].items():
+                            for item_name, item_data in items.items():
+                                # 키 이름 형식: '카테고리_항목명_속성'
+                                prefix = f"{category}_{item_name}"
+                                for metric, value in item_data.items():
+                                    flattened_record[f"{prefix}_{metric}"] = value
+
+                    result.append(flattened_record)
+            except Exception as e:
+                logger.error(f"Error loading {path}: {e}")
                 continue
 
     result = filter_common(result, product_id, product_category)
