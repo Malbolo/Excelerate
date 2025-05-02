@@ -223,13 +223,34 @@ def get_quality_inspection_data(
             try:
                 raw = minio_client.get_data(path)
                 for record in raw["records"]:
-                    record.update({
+                    # 기본 레코드 정보
+                    flattened_record = {
                         "factory_id": factory_id,
                         "product_id": pid,
-                        "product_category": PRODUCTS[pid]["category"]
-                    })
-                    result.append(record)
-            except Exception:
+                        "product_category": PRODUCTS[pid]["category"],
+                        "date": record.get("date", ""),
+                        "time": record.get("time", ""),
+                        "product_name": record.get("product_name", ""),
+                        "inspection_type": record.get("inspection_type", ""),
+                        "inspector": record.get("inspector", ""),
+                        "total_samples": record.get("total_samples", 0),
+                        "total_pass": record.get("total_pass", 0),
+                        "total_fail": record.get("total_fail", 0),
+                        "pass_rate": record.get("pass_rate", 0)
+                    }
+
+                    # detailed_results 평면화
+                    if "detailed_results" in record:
+                        for category, items in record["detailed_results"].items():
+                            for item_name, item_data in items.items():
+                                # 키 이름 형식: '카테고리_항목명_속성'
+                                prefix = f"{category}_{item_name}"
+                                for metric, value in item_data.items():
+                                    flattened_record[f"{prefix}_{metric}"] = value
+
+                    result.append(flattened_record)
+            except Exception as e:
+                logger.error(f"Error loading {path}: {e}")
                 continue
 
     result = filter_common(result, product_id, product_category)
