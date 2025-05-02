@@ -15,15 +15,15 @@ interface GetMonthScheduleResponse {
   ];
 }
 
+export interface DaySchedule {
+  id: string;
+  title: string;
+  description: string;
+  status: Status;
+}
+
 interface DayScheduleResponse {
-  schedules: [
-    {
-      id: string;
-      title: string;
-      description: string;
-      status: Status;
-    },
-  ];
+  schedules: DaySchedule[];
 }
 
 interface ScheduleResponse {
@@ -49,8 +49,8 @@ interface ScheduleResponse {
   ];
 }
 
-const getDaySchedule = async (year: number, month: number, day: number) => {
-  const { data } = await api<DayScheduleResponse[]>(
+const getDaySchedules = async (year: string, month: string, day: string) => {
+  const { data } = await api<DayScheduleResponse>(
     `/api/schedules/statistics/daily?year=${year}&month=${month}&day=${day}`,
     { method: 'GET' },
   );
@@ -63,8 +63,8 @@ const getDaySchedule = async (year: number, month: number, day: number) => {
   return data;
 };
 
-const getMonthSchedule = async (year: number, month: number) => {
-  const { data } = await api<GetMonthScheduleResponse[]>(
+const getMonthSchedules = async (year: string, month: string) => {
+  const { data } = await api<GetMonthScheduleResponse>(
     `/api/schedules/statistics/monthly?year=${year}&month=${month}`,
     { method: 'GET' },
   );
@@ -78,9 +78,9 @@ const getMonthSchedule = async (year: number, month: number) => {
 };
 
 const getSchedule = async (
-  year: number,
-  month: number,
-  day: number,
+  year: string,
+  month: string,
+  day: string,
   scheduleId: string,
 ) => {
   const { data } = await api<ScheduleResponse>(
@@ -96,24 +96,28 @@ const getSchedule = async (
   return data;
 };
 
-export const useGetDaySchedule = (year: number, month: number, day: number) => {
+export const useGetDaySchedules = (
+  year: string,
+  month: string,
+  day: string,
+) => {
   return useSuspenseQuery({
-    queryKey: ['daySchedule', year, month, day],
-    queryFn: () => getDaySchedule(year, month, day),
+    queryKey: ['daySchedules', year, month, day],
+    queryFn: () => getDaySchedules(year, month, day),
   });
 };
 
-export const useGetMonthSchedule = (year: number, month: number) => {
+export const useGetMonthSchedules = (year: string, month: string) => {
   return useSuspenseQuery({
-    queryKey: ['monthSchedule', year, month],
-    queryFn: () => getMonthSchedule(year, month),
+    queryKey: ['monthSchedules', year, month],
+    queryFn: () => getMonthSchedules(year, month),
   });
 };
 
 export const useGetSchedule = (
-  year: number,
-  month: number,
-  day: number,
+  year: string,
+  month: string,
+  day: string,
   scheduleId: string,
 ) => {
   return useSuspenseQuery({
