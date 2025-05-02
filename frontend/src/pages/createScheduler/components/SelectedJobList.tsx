@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import {
   DndContext,
@@ -16,23 +16,23 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 
+import { JobResponse } from '@/apis/jobManagement';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Job } from '@/types/scheduler';
 
 import SortableJobItem from './SortableJobItem';
 
 interface SelectedJobListProps {
-  selectedJobs: Job[];
-  onJobDeselect: (jobId: string) => void;
-  onOrderChange: (newOrder: Job[]) => void;
+  selectedJobs: JobResponse[];
+  handleJobOrderChange: (newOrder: JobResponse[]) => void;
+  handleJobDeselect: (jobId: string) => void;
 }
 
 // 모든 로직을 zustand로 이동 예정
 
 const SelectedJobList = ({
   selectedJobs,
-  onJobDeselect,
-  onOrderChange,
+  handleJobOrderChange,
+  handleJobDeselect,
 }: SelectedJobListProps) => {
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -41,22 +41,23 @@ const SelectedJobList = ({
     }),
   );
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const onDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      const oldIndex = selectedJobs.findIndex(job => job.jobId === active.id);
-      const newIndex = selectedJobs.findIndex(job => job.jobId === over.id);
+      const oldIndex = selectedJobs.findIndex(job => job.id === active.id);
+      const newIndex = selectedJobs.findIndex(job => job.id === over.id);
 
       const newOrder = arrayMove(selectedJobs, oldIndex, newIndex);
-      onOrderChange(newOrder);
+      handleJobOrderChange(newOrder);
     }
   };
 
-  const jobIds = useMemo(
-    () => selectedJobs.map(job => job.jobId),
-    [selectedJobs],
-  );
+  const jobIds = useMemo(() => selectedJobs.map(job => job.id), [selectedJobs]);
+
+  const onJobDeselect = useCallback((jobId: string) => {
+    handleJobDeselect(jobId);
+  }, []);
 
   return (
     <>
@@ -67,7 +68,7 @@ const SelectedJobList = ({
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
+          onDragEnd={onDragEnd}
         >
           <SortableContext
             items={jobIds}
@@ -77,7 +78,7 @@ const SelectedJobList = ({
               {selectedJobs.length > 0 ? (
                 selectedJobs.map((job, index) => (
                   <SortableJobItem
-                    key={job.jobId}
+                    key={job.id}
                     job={job}
                     index={index}
                     onJobDeselect={onJobDeselect}

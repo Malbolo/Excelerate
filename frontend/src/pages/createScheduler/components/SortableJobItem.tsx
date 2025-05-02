@@ -2,11 +2,11 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { XIcon } from 'lucide-react';
 
+import { JobResponse } from '@/apis/jobManagement';
 import { Button } from '@/components/ui/button';
-import { Job } from '@/types/scheduler';
 
 interface SortableJobItemProps {
-  job: Job;
+  job: JobResponse;
   index: number;
   onJobDeselect: (jobId: string) => void;
 }
@@ -23,7 +23,7 @@ const SortableJobItem = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: job.jobId });
+  } = useSortable({ id: job.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -68,7 +68,7 @@ const SortableJobItem = ({
         variant='ghost'
         size='icon'
         className='ml-2 h-7 w-7 flex-shrink-0 text-gray-400 hover:text-red-500' // flex-shrink-0 추가
-        onClick={() => onJobDeselect(job.jobId)}
+        onClick={() => onJobDeselect(job.id)}
         aria-label='Deselect'
       >
         <XIcon className='h-4 w-4' />

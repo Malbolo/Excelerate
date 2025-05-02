@@ -1,38 +1,49 @@
 import { CheckIcon } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 
+import { JobResponse, useGetJobList } from '@/apis/jobManagement';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { Job } from '@/types/scheduler';
+import { ITEMS_PER_PAGE } from '@/pages/jobManagement';
 
 interface AvailableJobListProps {
-  jobs: Job[];
   selectedJobIds?: Set<string>;
-  selectedJob?: Job | null;
-  onJobSelect?: (job: Job, checked: boolean) => void;
+  selectedJob?: JobResponse | null;
+  onJobSelect?: (job: JobResponse, checked: boolean) => void;
 }
 
 const AvailableJobList = ({
-  jobs,
   selectedJobIds,
   onJobSelect,
   selectedJob,
 }: AvailableJobListProps) => {
+  const [searchParams] = useSearchParams();
+  const keyword = searchParams.get('keyword') || '';
+  const currentPage = parseInt(searchParams.get('page') || '1', 10);
+
+  const { data: jobList } = useGetJobList(currentPage, ITEMS_PER_PAGE, keyword);
+
+  const { jobs } = jobList;
+
+  const handleJobSelect = async (job: JobResponse, checked: boolean) => {
+    onJobSelect && onJobSelect(job, checked);
+  };
+
   return (
     <ScrollArea className='h-0 flex-1 p-2'>
       <div className='space-y-3 p-2'>
         {jobs.length > 0 ? (
           jobs.map(job => (
             <div
-              key={job.jobId}
+              key={`${job.id}-${job.title}`}
               className={cn(
                 'flex items-center rounded-md border p-3 transition-colors',
-                selectedJob?.jobId === job.jobId &&
-                  'border-blue-500 bg-blue-100',
+                selectedJob?.id === job.id && 'border-blue-500 bg-blue-100',
               )}
-              onClick={() => onJobSelect?.(job, true)}
+              onClick={() => handleJobSelect(job, true)}
             >
               {selectedJobIds &&
-                (selectedJobIds.has(job.jobId) ? (
+                (selectedJobIds.has(job.id) ? (
                   <div className='flex rounded-full bg-blue-500 p-1'>
                     <CheckIcon className='h-4 w-4 text-white' />
                   </div>
