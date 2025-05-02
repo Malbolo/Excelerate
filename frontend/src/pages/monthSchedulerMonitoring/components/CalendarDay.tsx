@@ -65,7 +65,9 @@ const CalendarDay: React.FC<CalendarDayProps> = ({
       className={cn(
         'relative flex min-h-20 flex-col border p-2',
         isCurrentMonth ? 'bg-white text-gray-900' : 'bg-gray-100 text-gray-400',
-        isToday && 'border-2 border-blue-500 ring-1 ring-blue-500',
+        isCurrentMonth &&
+          isToday &&
+          'border-2 border-blue-500 ring-1 ring-blue-500',
       )}
     >
       <span
