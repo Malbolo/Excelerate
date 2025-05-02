@@ -2,6 +2,13 @@
 
 export type Status = 'pending' | 'success' | 'error';
 
+export type Interval = {
+  type: 'daily' | 'weekly' | 'monthly';
+  time: string;
+  dayOfWeek?: string;
+  dayOfMonth?: number;
+};
+
 export interface Command {
   commandId: string;
   commandTitle: string;
@@ -21,6 +28,9 @@ export interface Schedule {
   createdAt: string;
   title: string;
   description: string;
+  lastRunAt: string;
+  nextRunAt: string;
+  interval: Interval;
   userId: string;
   status: Status;
   jobList: Job[];

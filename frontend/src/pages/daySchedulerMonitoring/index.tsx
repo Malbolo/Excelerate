@@ -18,6 +18,12 @@ const mockData: DaySchedule = {
       description: 'Create April KPI report',
       userId: 'user1',
       status: 'pending',
+      lastRunAt: '2025-04-24T09:00:00',
+      nextRunAt: '2025-04-24T09:00:00',
+      interval: {
+        type: 'daily',
+        time: '09:00',
+      },
       jobList: [
         {
           jobId: 'job1',
@@ -43,6 +49,12 @@ const mockData: DaySchedule = {
       description: 'Equipment performance measurement complete',
       userId: 'user3',
       status: 'success',
+      lastRunAt: '2025-04-24T11:00:00',
+      nextRunAt: '2025-04-24T11:00:00',
+      interval: {
+        type: 'daily',
+        time: '09:00',
+      },
       jobList: [
         {
           jobId: 'job2',
@@ -68,6 +80,12 @@ const mockData: DaySchedule = {
       description: 'Failed to measure defect rate',
       userId: 'user4',
       status: 'error',
+      lastRunAt: '2025-04-24T12:00:00',
+      nextRunAt: '2025-04-24T12:00:00',
+      interval: {
+        type: 'daily',
+        time: '09:00',
+      },
       jobList: [
         {
           jobId: 'job3',

@@ -1,5 +1,5 @@
 import { ArrowLeftIcon } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
 
@@ -36,12 +36,6 @@ const SchedulerMonitoringLayout = ({
           </Button>
         )}
         <h1 className='flex-1 text-xl font-bold text-gray-800'>{title}</h1>
-
-        <div className='rounded-lg'>
-          <Link to={`/scheduler-monitoring/create`}>
-            <Button>Create Schedule</Button>
-          </Link>
-        </div>
       </header>
       <main>{children}</main>
     </div>

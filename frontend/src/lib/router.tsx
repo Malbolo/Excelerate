@@ -2,16 +2,16 @@ import { Suspense } from 'react';
 
 import { createBrowserRouter } from 'react-router-dom';
 
+import Layout from '@/components/Layout/Layout';
 import MainPage from '@/pages';
+import AgentMonitoringPage from '@/pages/agentMonitoring';
 import CreateSchedulerPage from '@/pages/createScheduler';
 import DaySchedulePage from '@/pages/daySchedulerMonitoring';
+import JobManagementPage from '@/pages/jobManagement';
+import MonthSchedulePage from '@/pages/monthSchedulerMonitoring';
+import PlayGroundPage from '@/pages/playGround';
 import ScheduleDetail from '@/pages/scheduleDetail';
-
-import Layout from '../components/Layout/Layout';
-import AgentMonitoringPage from '../pages/agentMonitoring';
-import JobManagementPage from '../pages/jobManagement';
-import MonthSchedulePage from '../pages/monthSchedulerMonitoring';
-import PlayGroundPage from '../pages/playGround';
+import SchedulerManagementPage from '@/pages/schedulerManagement';
 
 const routes = [
   {
@@ -97,6 +97,28 @@ const routes = [
   },
   {
     path: '/scheduler-monitoring/create',
+    element: (
+      <Layout>
+        <Suspense fallback={<div>로딩중...</div>}>
+          <CreateSchedulerPage />
+        </Suspense>
+      </Layout>
+    ),
+    name: 'CreateScheduler',
+  },
+  {
+    path: '/scheduler-management',
+    element: (
+      <Layout>
+        <Suspense fallback={<div>로딩중...</div>}>
+          <SchedulerManagementPage />
+        </Suspense>
+      </Layout>
+    ),
+    name: 'SchedulerList',
+  },
+  {
+    path: '/scheduler-management/create',
     element: (
       <Layout>
         <Suspense fallback={<div>로딩중...</div>}>
