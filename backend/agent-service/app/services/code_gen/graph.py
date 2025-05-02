@@ -4,6 +4,7 @@ import time
 import pandas as pd
 import re
 import traceback
+import json
 
 from dotenv import load_dotenv
 
@@ -12,7 +13,7 @@ from typing_extensions import List, TypedDict
 from langchain_core.documents import Document
 from langgraph.graph import StateGraph, MessagesState
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
-from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
+from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate, AIMessagePromptTemplate
 from langchain_openai import ChatOpenAI
 from langgraph.graph import START, END
 
@@ -131,6 +132,52 @@ class CodeGenerator:
             state["logs"][-1].setdefault("sub_events", []).append(sub)
         return state
 
+    def classify_and_group(self, state: AgentState) -> AgentState:
+        cmds = state['command_list']
+        
+        system = SystemMessagePromptTemplate.from_template(
+            "사용자가 입력한 커맨드 리스트를 분류해 그룹화 해주세요. "
+            "엑셀 파일 조작 명령(엑셀 템플릿을 불러와 데이터를 합치거나, 수정된 파일을 저장해야하는 경우)만 개별로 남겨두고, "
+            "그 외 단순 명령들은 가능한 한 순서를 유지하며 하나의 중첩 array로 합쳐주세요. "
+            "결과는 ```등의 마크다운 없이 JSON array 형태로만 출력해 주세요. "
+        )
+
+        example_h1 = HumanMessagePromptTemplate.from_template(
+            '사용자 입력: ["압력이 3이상인 것만 필터링 해주세요", "createAt의 포맷을 YYYY-MM-DD로 바꿔주세요", "KPIreport 템플릿을 불러와 2열에 데이터를 붙여넣어 주세요"]'
+        )
+        example_a1 = AIMessagePromptTemplate.from_template(
+            '[["압력이 3이상인 것만 필터링 해주세요", "createAt의 포맷을 YYYY-MM-DD로 바꿔주세요"], "KPIreport 템플릿을 불러와 2열에 데이터를 붙여넣어 주세요"]'
+        )
+
+        user = HumanMessagePromptTemplate.from_template(
+            "사용자 입력: {cmd_list}"
+        )
+
+        prompt = ChatPromptTemplate.from_messages([
+            system,
+            example_h1,
+            example_a1,
+            user,
+        ])
+
+        # invoke
+        cng_chain = prompt | self.sllm
+        resp = cng_chain.invoke({"cmd_list": json.dumps(cmds, ensure_ascii=False)})
+        
+        try:
+            parsed = json.loads(resp.content)
+            # JSON이 리스트가 아니면 에러
+            if not isinstance(parsed, list):
+                raise ValueError("Not a list")
+            # 모든 요소를 문자열로 보장
+            new_list = [str(x) for x in parsed]
+        except (json.JSONDecodeError, ValueError):
+            # 파싱 실패 시 기존 리스트 유지
+            new_list = cmds
+
+        # 최종적으로 파이썬 리스트를 state에 넣어 줌
+        return {'command_list': new_list}
+
     def make_template(self) -> ChatPromptTemplate:
         # 2) 시스템 메시지: df와 파라미터를 받아 필터링 코드를 생성한다는 역할 정의
         system_template = SystemMessagePromptTemplate.from_template(
@@ -143,13 +190,12 @@ class CodeGenerator:
 사용자의 요청에 따라 DataFrame을 조작하는 함수 코드를 작성하세요.
 사용자의 요청은 순서가 있는 여러 개별적인 요청으로 나뉘어져 있습니다.
 각 요청에 대해 주석에 번호를 붙여 구분해주세요.
-주어진 DataFrame의 10번째 줄 까지는 다음과 같습니다:
+반드시 dataframe에 존재하는 컬럼명을 사용하고 type과 포맷에 맞게 적절한 코드를 작성하세요. 
+주어진 DataFrame의 컬럼 별 타입 정보는 다음과 같습니다:
+{dftypes}
+주어진 DataFrame의 5번째 줄 까지는 다음과 같습니다:
 {df}
 """ +
-# """ 
-# 함수는 df_manipulate(df)라는 이름으로 작성되어야 하며, df를 인자로 받아야 합니다.
-# 반환값은 필터된 DataFrame이어야 합니다.
-# """ +
 """
 함수는 df_manipulate(df)라는 이름으로 작성되어야 합니다.
 각 필터/변환 단계마다 `intermediate.append(…)` 로 DataFrame을 수집하고,
@@ -189,7 +235,12 @@ class CodeGenerator:
         
         # LLM과 도구를 사용하여 메시지에 대한 응답을 생성합니다.
         # 1) LLM 호출 전 input 준비
-        llm_input = {"df": df[:10], "input": input}
+        df_preview = df.head(5).to_string(
+            index=False,          # 인덱스 번호 제거
+            show_dimensions=False # 맨 마지막 shape 요약 생략
+        )
+
+        llm_input = {"dftypes": df.dtypes.to_string(), "df": df_preview, "input": input}
 
         # 2) LLM 호출
         response = schain.invoke(llm_input)
@@ -353,6 +404,7 @@ class CodeGenerator:
         # graph_builder.add_node('execute', self.execute_code)
         # 각 메서드를 wrap 하여 노드 추가
         handlers = {
+            'group' : self.classify_and_group,
             'codegen': self.code_gen,
             'regen':   self.regen,
             'error':   self.error_node,
@@ -365,7 +417,8 @@ class CodeGenerator:
 
         wrapped_check = self._wrap_condition(self.check_code, "check_code")
 
-        graph_builder.add_edge(START, 'codegen')
+        graph_builder.add_edge(START, 'group')
+        graph_builder.add_edge('group', 'codegen')
         graph_builder.add_conditional_edges(
             'codegen',
             wrapped_check,

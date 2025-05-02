@@ -5,12 +5,15 @@ from app.models.query import CommandRequest
 from app.services.code_gen.graph import CodeGenerator
 from app.utils.depend import get_code_gen
 from langchain_core.messages import HumanMessage
+from fastapi.encoders import jsonable_encoder
 
 
 import pandas as pd
+import requests
 
 router = APIRouter()
 docs = CodeGenDocs()
+url = "http://k12s101.p.ssafy.io/api/storage/mes/factory-data/defects?factory_id=FCT001&start_date=2025-04-01&product_code=PROD001"
 
 # FastAPI 엔드포인트: 사용자의 질의를 받고 graph를 통해 답변 생성
 @router.post("/generate")
@@ -21,11 +24,15 @@ async def command_code(
     try:
         graph = code_gen.build()
 
+        checkdata = requests.get(url).json()
+        checkdata = checkdata["data"]
+
         query = {
                 'messages': [HumanMessage(request.command_list)],
                 'python_code': '',
                 'command_list': request.command_list,
-                'dataframe': [pd.DataFrame(request.dataframe)],
+                # 'dataframe': [pd.DataFrame(request.dataframe)],
+                'dataframe': [pd.DataFrame(checkdata)],
                 'retry_count': 0,
                 "error_msg": None,
                 "logs": []
@@ -43,6 +50,12 @@ async def command_code(
             for single_df in df_list
         ]
 
+        payload = {
+            "code":      answer["python_code"],
+            "dataframe": serialized,      # 여전히 to_dict 직후의 리스트
+            "error_msg": answer["error_msg"],
+            "logs":      answer["logs"],
+        }
         # logs는 redis에 따로 저장하는 것을 고려
 
         # # 디버깅 (저장된 df list 확인)
@@ -52,9 +65,4 @@ async def command_code(
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    return JSONResponse(status_code=200, content={
-            "code": answer["python_code"], 
-            "dataframe": serialized, 
-            "error_msg": answer["error_msg"],
-            "logs": answer["logs"]
-        })
+    return JSONResponse(status_code=200, content=jsonable_encoder(payload))
