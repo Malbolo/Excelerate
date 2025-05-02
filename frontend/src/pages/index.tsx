@@ -22,7 +22,7 @@ const MainPage: React.FC = () => {
   const [columns, setColumns] = useState<ColumnDef<DataFrameRow>[]>([]);
   const [data, setData] = useState<DataFrame | null>(null);
   const [code, setCode] = useState<string>('');
-  const [trace, setTrace] = useState<string>('');
+  const [trace] = useState<string>('');
 
   const [step, setStep] = useState<'source' | 'command'>('command');
   const { isEditMode, canSaveJob, setCanSaveJob } = useJobStore();
