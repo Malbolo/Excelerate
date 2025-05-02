@@ -17,8 +17,8 @@ interface CommandProps {
   id: string;
   command: string;
   status?: 'pending' | 'processing' | 'success' | 'fail';
-  onDelete?: () => void;
-  onEdit?: (command: string, newCommand: string) => void;
+  onDelete: (command: string) => void;
+  onEdit: (command: string, newCommand: string) => void;
 }
 
 const statusColor = {
@@ -67,9 +67,8 @@ const Command: React.FC<CommandProps> = ({
   const handleEdit = () => {
     if (!editingCommand.trim()) return;
 
-    if (onEdit) {
-      onEdit(command, editingCommand);
-    }
+    onEdit(command, editingCommand);
+
     setIsEditMode(false);
     setIsEditing(false);
   };
@@ -127,7 +126,7 @@ const Command: React.FC<CommandProps> = ({
                 edit
               </li>
               <li
-                onClick={onDelete}
+                onClick={() => onDelete(command)}
                 className='w-full cursor-pointer px-3 py-1 text-center hover:bg-black/10'
               >
                 delete

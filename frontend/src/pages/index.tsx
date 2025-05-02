@@ -109,7 +109,7 @@ const MainPage: React.FC = () => {
       <div className='mx-auto flex w-full max-w-[800px] flex-1 flex-col justify-between gap-4 p-8'>
         <div className='flex flex-col gap-4'>
           <div className='flex gap-4'>
-            <TemplateList templates={MTemplates} />
+            <TemplateList />
             <SourceData sourceData={sourceData} />
           </div>
 
@@ -123,17 +123,13 @@ const MainPage: React.FC = () => {
                       ? 'default'
                       : 'disabled'
                   }
-                  onClick={
-                    commandList.length !== 0 && !isEditMode
-                      ? handleRun
-                      : () => {}
-                  }
+                  onClick={handleRun}
                 >
                   Run
                 </Button>
                 <Button
                   variant={canSaveJob && !isEditMode ? 'default' : 'disabled'}
-                  onClick={canSaveJob && !isEditMode ? handleSaveJob : () => {}}
+                  onClick={handleSaveJob}
                 >
                   Save Job
                 </Button>

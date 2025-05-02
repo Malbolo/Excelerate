@@ -80,13 +80,13 @@ const CommandList: React.FC<CommandListProps> = ({
           items={commandList.map(cmd => cmd.title)}
           strategy={verticalListSortingStrategy}
         >
-          {commandList.map(command => (
+          {commandList.map((command, index) => (
             <Command
-              key={command.title}
-              id={command.title}
+              key={`${command.title}-${index}`}
+              id={`${command.title}-${index}`}
               command={command.title}
               status={command.status}
-              onDelete={() => handleDeleteCommand(command.title)}
+              onDelete={handleDeleteCommand}
               onEdit={handleEditCommand}
             />
           ))}

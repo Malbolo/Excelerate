@@ -1,8 +1,10 @@
-interface TemplateListProps {
-  templates: string[];
-}
+import { useState } from 'react';
 
-const TemplateList: React.FC<TemplateListProps> = ({ templates }) => {
+import { MTemplates } from '@/mocks/datas/template';
+
+const TemplateList: React.FC = () => {
+  const [templates] = useState<string[]>(MTemplates);
+
   return (
     <section className='flex max-h-48 flex-1 flex-col gap-2'>
       <p className='text-lg font-bold'>Template List</p>
