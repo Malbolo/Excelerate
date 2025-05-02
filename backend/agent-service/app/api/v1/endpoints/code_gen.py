@@ -13,7 +13,6 @@ import requests
 
 router = APIRouter()
 docs = CodeGenDocs()
-url = "http://k12s101.p.ssafy.io/api/storage/mes/factory-data/defects?factory_id=FCT001&start_date=2025-04-01&product_code=PROD001"
 
 # FastAPI 엔드포인트: 사용자의 질의를 받고 graph를 통해 답변 생성
 @router.post("/generate")
@@ -24,14 +23,15 @@ async def command_code(
     try:
         graph = code_gen.build()
 
-        checkdata = requests.get(url).json()
+        checkdata = requests.get(request.url).json()
         checkdata = checkdata["data"]
+        # 이후 동일 url로 온 적이 있는 요청은 캐시해서 들고 있을 것. 아니면 dataload 요청 시 저장된 값을 활용하도록 할 것
+        # 또는 url 필드에 파일 시스템 파일 경로를 받아 조작하도록 할 것. 그럼 필드는 유지될 것으로 보임
 
         query = {
                 'messages': [HumanMessage(request.command_list)],
                 'python_code': '',
                 'command_list': request.command_list,
-                # 'dataframe': [pd.DataFrame(request.dataframe)],
                 'dataframe': [pd.DataFrame(checkdata)],
                 'retry_count': 0,
                 "error_msg": None,
