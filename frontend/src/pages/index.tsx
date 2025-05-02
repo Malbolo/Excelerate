@@ -5,7 +5,6 @@ import { ColumnDef } from '@tanstack/react-table';
 import { useGetSourceData, useSendCommandList } from '@/apis/job';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { MTemplates } from '@/mocks/datas/template';
 import CommandList from '@/pages/main/components/CommandList';
 import MainSideBar from '@/pages/main/components/MainSideBar';
 import SourceData from '@/pages/main/components/SourceData';
@@ -45,7 +44,10 @@ const MainPage: React.FC = () => {
 
   const handleSendCommandList = async () => {
     const commands = commandList.map(cmd => cmd.title);
-    const response = await commandMutation(commands);
+    const response = await commandMutation({
+      commandList: commands,
+      sourceData: data!,
+    });
 
     const columns: ColumnDef<DataFrameRow>[] = response.dataframe[0]
       ? createSortableColumns(response.dataframe[0])
