@@ -1,30 +1,35 @@
-import { ChangeEvent, KeyboardEvent, useEffect, useState } from 'react';
+import { ChangeEvent, KeyboardEvent, useState } from 'react';
 
 import { SearchIcon } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
-interface JobSearchInputProps {
-  initialKeyword: string;
-  onSearch: (keyword: string) => void;
-}
-
 // todo: tanstack query로 invalidate 처리 예정
 // 쿼리파라미터만 변경하여 쿼리 재호출 예정
-const JobSearchInput = ({ initialKeyword, onSearch }: JobSearchInputProps) => {
-  const [localKeyword, setLocalKeyword] = useState(initialKeyword);
+const JobSearchInput = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const keyword = searchParams.get('keyword') || '';
+  const [localKeyword, setLocalKeyword] = useState(keyword);
 
-  useEffect(() => {
-    setLocalKeyword(initialKeyword);
-  }, [initialKeyword]);
+  const handleSearch = (newKeyword: string) => {
+    setSearchParams(
+      prev => {
+        prev.set('keyword', newKeyword);
+        prev.set('page', '1');
+        return prev;
+      },
+      { replace: true },
+    );
+  };
 
   const handleKeywordChange = (event: ChangeEvent<HTMLInputElement>) => {
     setLocalKeyword(event.target.value);
   };
 
   const executeSearch = () => {
-    onSearch(localKeyword);
+    handleSearch(localKeyword);
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {

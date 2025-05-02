@@ -1,75 +1,26 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useState } from 'react';
 
 import { Separator } from '@radix-ui/react-separator';
-import { useSearchParams } from 'react-router-dom';
 
+import { JobResponse, useGetJobDetail } from '@/apis/jobManagement';
 import { Button } from '@/components/ui/button';
-import { Job } from '@/types/scheduler';
 
 import AvailableJobList from '../createScheduler/components/AvailableJobList';
 import JobPagination from '../createScheduler/components/JobPagination';
 import JobSearchInput from '../createScheduler/components/JobSearchInput';
-import { allDummyJobs } from '../createScheduler/data';
 import CommandItem from './components/CommandItem';
 
-const ITEMS_PER_PAGE = 6;
+export const ITEMS_PER_PAGE = 6;
 
 const JobManagementPage = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedJob, setSelectedJob] = useState<JobResponse | null>(null);
 
-  const keyword = searchParams.get('keyword') || '';
-  const currentPage = parseInt(searchParams.get('page') || '1', 10);
+  const getJobDetail = useGetJobDetail();
 
-  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-
-  const handleJobSelect = (job: Job) => {
-    setSelectedJob(job);
+  const handleJobSelect = async (job: JobResponse) => {
+    const jobDetail = await getJobDetail(job.id);
+    setSelectedJob(jobDetail);
   };
-
-  const handleSearch = (newKeyword: string) => {
-    setSearchParams(
-      prev => {
-        prev.set('keyword', newKeyword);
-        prev.set('page', '1');
-        return prev;
-      },
-      { replace: true },
-    );
-  };
-
-  const filteredJobs = useMemo(() => {
-    if (!keyword) return allDummyJobs;
-    const lowerCaseKeyword = keyword.toLowerCase();
-    return allDummyJobs.filter(
-      job =>
-        job.title.toLowerCase().includes(lowerCaseKeyword) ||
-        job.description.toLowerCase().includes(lowerCaseKeyword),
-    );
-  }, [keyword]);
-
-  const { paginatedJobs, totalPages } = useMemo(() => {
-    const total = Math.ceil(filteredJobs.length / ITEMS_PER_PAGE);
-    const adjustedPage = Math.min(currentPage, total > 0 ? total : 1);
-    const startIndex = (adjustedPage - 1) * ITEMS_PER_PAGE;
-    const endIndex = startIndex + ITEMS_PER_PAGE;
-    const jobs = filteredJobs.slice(startIndex, endIndex);
-    return { paginatedJobs: jobs, totalPages: total };
-  }, [filteredJobs, currentPage]);
-
-  const handlePageChange = useCallback(
-    (page: number) => {
-      if (page >= 1 && page <= totalPages) {
-        setSearchParams(
-          prev => {
-            prev.set('page', page.toString());
-            return prev;
-          },
-          { replace: true },
-        );
-      }
-    },
-    [totalPages, setSearchParams],
-  );
 
   return (
     <div className='relative container mx-auto flex h-full w-full flex-row'>
@@ -80,21 +31,12 @@ const JobManagementPage = () => {
           </h1>
         </header>
         <div className='flex w-full grow flex-col overflow-hidden'>
-          <JobSearchInput initialKeyword={keyword} onSearch={handleSearch} />
+          <JobSearchInput />
           <AvailableJobList
-            jobs={paginatedJobs}
             onJobSelect={handleJobSelect}
             selectedJob={selectedJob}
           />
-          <JobPagination
-            currentPage={
-              currentPage > totalPages && totalPages > 0
-                ? totalPages
-                : currentPage
-            }
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-          />
+          <JobPagination />
         </div>
       </main>
       <Separator orientation='vertical' className='mx-2 hidden md:block' />
@@ -104,10 +46,10 @@ const JobManagementPage = () => {
             <p className='text-lg font-bold'>{selectedJob?.title}</p>
           </div>
           <div className='mt-4 flex flex-col gap-2'>
-            {selectedJob?.commandList.map(command => (
+            {selectedJob?.commands.map(command => (
               <CommandItem
-                key={command.commandId}
-                commandTitle={command.commandTitle}
+                key={`${command.content}-${command.order}`}
+                commandTitle={command.content}
               />
             ))}
           </div>

@@ -5,7 +5,8 @@ import { CalendarIcon } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { useCreateSchedule } from '@/apis/schedule';
+import { JobResponse } from '@/apis/jobManagement';
+import { useCreateSchedule } from '@/apis/schedulerManagement';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -37,7 +38,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { Job } from '@/types/scheduler';
 
 export interface CreateScheduleFormData {
   scheduleTitle: string;
@@ -48,6 +48,7 @@ export interface CreateScheduleFormData {
   startDate: Date;
   endDate: Date | undefined;
   executionTime: string;
+  selectedJobs: JobResponse[];
 }
 
 const formSchema = z
@@ -91,7 +92,7 @@ const formSchema = z
 interface CreateScheduleModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  selectedJobs: Job[];
+  selectedJobs: JobResponse[];
 }
 
 const CreateScheduleModal = ({
@@ -122,6 +123,7 @@ const CreateScheduleModal = ({
     const submissionData = {
       ...values,
       endDate: finalEndDate,
+      selectedJobs,
     };
 
     // 스케쥴 생성
@@ -156,7 +158,7 @@ const CreateScheduleModal = ({
             </h4>
             <ul className='max-h-24 list-inside list-decimal space-y-1 overflow-y-auto text-xs text-gray-600'>
               {selectedJobs.map(job => (
-                <li key={job.jobId}>{job.title}</li>
+                <li key={job.id}>{job.title}</li>
               ))}
             </ul>
           </div>
