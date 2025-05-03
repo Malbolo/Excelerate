@@ -4,4 +4,5 @@ public record FindUserProfileResult(
     String name,
     String email,
     String department
-) {}
+) {
+}

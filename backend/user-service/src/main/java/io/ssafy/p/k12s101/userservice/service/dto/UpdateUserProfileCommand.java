@@ -4,4 +4,5 @@ public record UpdateUserProfileCommand(
     Long userId,
     String name,
     String department
-) {}
+) {
+}

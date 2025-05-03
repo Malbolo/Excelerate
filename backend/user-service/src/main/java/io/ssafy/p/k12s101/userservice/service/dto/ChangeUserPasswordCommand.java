@@ -4,4 +4,5 @@ public record ChangeUserPasswordCommand(
     Long userId,
     String currentPassword,
     String newPassword
-) {}
+) {
+}

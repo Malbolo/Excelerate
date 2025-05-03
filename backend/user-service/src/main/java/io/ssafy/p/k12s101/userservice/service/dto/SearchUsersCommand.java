@@ -4,4 +4,5 @@ public record SearchUsersCommand(
     int page,
     int size,
     String name
-) {}
+) {
+}

@@ -7,4 +7,5 @@ public record SearchUsersResult(
     int page,
     int size,
     long total
-) {}
+) {
+}
