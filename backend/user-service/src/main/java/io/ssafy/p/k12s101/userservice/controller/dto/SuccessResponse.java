@@ -4,6 +4,7 @@ public record SuccessResponse<T>(
     String result,
     T data
 ) {
+
     public static <T> SuccessResponse<T> success(T data) {
         return new SuccessResponse<>("success", data);
     }
