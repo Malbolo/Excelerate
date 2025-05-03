@@ -79,7 +79,7 @@ public class UserController {
     public ResponseEntity<?> searchUsers(
         @RequestParam(defaultValue = "1") int page,
         @RequestParam(defaultValue = "10") int size,
-        @RequestParam String name
+        @RequestParam(required = false) String name
     ) {
         SearchUsersCommand command = new SearchUsersCommand(page, size, name);
         SearchUsersResult result = searchUsersService.handle(command);
