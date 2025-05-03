@@ -57,6 +57,10 @@ pipeline {
               echo "Building and pushing ${imageName}"
 
               dir(contextPath) {
+                if (target == 'backend-user-service') {
+                  sh './gradlew clean build -x test'
+                }
+
                 sh """
                   echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
                   docker build -t ${imageName}:${imageTag} -t ${imageName}:latest .
