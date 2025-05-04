@@ -15,6 +15,7 @@ async def create_job(request: JobCreateRequest, user_id: int) -> JSONResponse:
         crud.create_job(db, request, user_id)
         return JSONResponse(status_code=200, content={"message": "Job이 생성되었습니다."})
     except Exception as e:
+        print(e)
         return JSONResponse(status_code=500, content={"message": "Job이 생성에 실패하였습니다."})
 
 async def get_job_detail(id: int, db: Session) -> JSONResponse:
