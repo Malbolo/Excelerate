@@ -1,11 +1,22 @@
 from fastapi import FastAPI, Request, Header
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 import jwt
 import time
 import os
 import base64
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["X-User-Id", "X-User-Role"]
+)
+
 encoded_key = os.getenv("JWT_SECRET")
 JWT_SECRET = base64.b64decode(encoded_key)
 
