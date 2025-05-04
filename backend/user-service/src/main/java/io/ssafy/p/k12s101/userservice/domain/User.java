@@ -4,10 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Getter
-@Builder
 @Entity
 @Table(name = "users")
-@AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User {
 
@@ -26,6 +24,19 @@ public class User {
 
     @Column(nullable = false, length = 100)
     private String department;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private UserRole role;
+
+    @Builder
+    public User(String email, String password, String name, String department, UserRole role) {
+        this.email = email;
+        this.password = password;
+        this.name = name;
+        this.department = department;
+        this.role = role;
+    }
 
     public void updateProfile(String name, String department) {
         this.name = name;
