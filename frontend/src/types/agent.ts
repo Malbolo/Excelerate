@@ -7,6 +7,7 @@ export interface TLog {
   output: string;
   timestamp: string;
   metadata: Record<string, string>;
+  subEvents: TLog[];
 }
 
 export type TJobType = (typeof JOB_TYPE)[keyof typeof JOB_TYPE];
