@@ -2,6 +2,9 @@ spring:
   application:
     name: user-service
 
+  jackson:
+    property-naming-strategy: ${NAMING_STRATEGY:SNAKE_CASE}
+
   datasource:
     url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DB:userdb}?autoReconnect=true&useUnicode=true&serverTimezone=Asia/Seoul
     username: ${MYSQL_USER:root}
