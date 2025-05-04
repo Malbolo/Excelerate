@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, Header
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 import jwt
 import time
@@ -19,6 +19,10 @@ app.add_middleware(
 
 encoded_key = os.getenv("JWT_SECRET")
 JWT_SECRET = base64.b64decode(encoded_key)
+
+@app.options("/auth")
+def options_handler():
+    return Response(status_code=204)
 
 @app.get("/auth")
 def forward_auth(Authorization: str = Header(None)):
