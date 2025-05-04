@@ -42,14 +42,14 @@ public class UserController {
     }
 
     @GetMapping("/me/profile")
-    public ResponseEntity<SuccessResponse<FindUserProfileResult>> getProfile(@RequestHeader("userId") Long userId) {
+    public ResponseEntity<SuccessResponse<FindUserProfileResult>> getProfile(@RequestHeader("X-User-Id") Long userId) {
         FindUserProfileResult result = findUserProfileService.handle(userId);
         return ResponseEntity.ok(SuccessResponse.success(result));
     }
 
     @PatchMapping("/me/profile")
     public HttpEntity<SuccessResponse<Void>> updateProfile(
-        @RequestHeader("userId") Long userId,
+        @RequestHeader("X-User-Id") Long userId,
         @RequestBody UpdateUserProfileCommand body
     ) {
         UpdateUserProfileCommand command = new UpdateUserProfileCommand(
@@ -63,7 +63,7 @@ public class UserController {
 
     @PatchMapping("/me/password")
     public ResponseEntity<SuccessResponse<Void>> changePassword(
-        @RequestHeader("userId") Long userId,
+        @RequestHeader("X-User-Id") Long userId,
         @RequestBody ChangeUserPasswordCommand body
     ) {
         ChangeUserPasswordCommand command = new ChangeUserPasswordCommand(
