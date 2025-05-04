@@ -3,9 +3,11 @@ from fastapi.responses import JSONResponse
 import jwt
 import time
 import os
+import base64
 
 app = FastAPI()
-JWT_SECRET = os.getenv("JWT_SECRET")
+encoded_key = os.getenv("JWT_SECRET")
+JWT_SECRET = base64.b64decode(encoded_key)
 
 @app.get("/auth")
 def forward_auth(Authorization: str = Header(None)):
