@@ -15,6 +15,8 @@ from app.utils.memory_logger import MemoryLogger
 from app.services.code_gen.graph_util import extract_error_info, make_code_template, make_classify_template, make_excel_template, insert_df_to_excel
 from app.utils.minio_client import MinioClient
 
+from app.models.log import LogDetail
+
 load_dotenv()
 
 class AgentState(MessagesState):
@@ -26,7 +28,7 @@ class AgentState(MessagesState):
     dataframe: List[pd.DataFrame]
     retry_count: int
     error_msg: dict | None
-    logs: List[dict]
+    logs: List[LogDetail]
 
 class CodeGenerator:
     def __init__(self):
@@ -63,9 +65,9 @@ class CodeGenerator:
             new_list = cmds
 
         # 가장 마지막 LLM 로그 항목 추출
-        llm_entry = self.logger.logs[-1] if self.logger.logs else {}
+        llm_entry = self.logger.get_logs()[-1] if self.logger.get_logs() else None
         # state 업데이트
-        new_logs = state.get("logs", []) + [llm_entry]
+        new_logs = state.get("logs", []) + [llm_entry] if llm_entry else state.get("logs", [])
 
 
         # ########### 겸사겸사 엑셀 조작 테스트
@@ -142,9 +144,9 @@ class CodeGenerator:
         response = schain.invoke(llm_input)
 
         # 가장 마지막 LLM 로그 항목 추출
-        llm_entry = self.logger.logs[-1] if self.logger.logs else {}
+        llm_entry = self.logger.get_logs()[-1] if self.logger.get_logs() else None
         # state 업데이트
-        new_logs = state.get("logs", []) + [llm_entry]
+        new_logs = state.get("logs", []) + [llm_entry] if llm_entry else state.get("logs", [])
 
         # 응답 메시지를 포함하는 새로운 state를 반환합니다.
         return {'messages': [response], 'python_code': response.content, 'logs': new_logs}
