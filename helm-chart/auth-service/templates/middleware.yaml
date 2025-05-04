@@ -4,7 +4,7 @@ metadata:
   name: forward-auth
 spec:
   forwardAuth:
-    address: http://auth-service.auth-service.svc.cluster.local:8080/api/auth/ping
+    address: http://auth-service.auth-service.svc.cluster.local:8080/
     trustForwardHeader: true
     authResponseHeaders:
       - "X-User-Id"

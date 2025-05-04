@@ -32,7 +32,3 @@ async def auth_middleware(request: Request, call_next):
     response.headers["X-User-Id"] = user_id
     response.headers["X-User-Role"] = user_role
     return response
-
-@app.get("/api/auth/ping")
-def ping():
-    return {"message": "auth-service is up"}
