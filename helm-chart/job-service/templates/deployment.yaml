@@ -12,6 +12,10 @@ spec:
       labels:
         app: job-service
     spec:
+      initContainers:
+        - name: wait-for-mysql
+          image: busybox
+          command: [ 'sh', '-c', 'until nc -z job-mysql 3306; do echo waiting for mysql...; sleep 2; done' ]
       containers:
         - name: job-service
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
