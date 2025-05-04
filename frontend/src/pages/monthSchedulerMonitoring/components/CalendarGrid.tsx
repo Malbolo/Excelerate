@@ -1,3 +1,5 @@
+import { useGetMonthSchedules } from '@/apis/schedulerMonitoring';
+
 import { getCalendarMatrix } from '../utils/getCalendarMatrix';
 import CalendarDay from './CalendarDay';
 
@@ -6,28 +8,42 @@ interface CalendarGridProps {
   month: number;
 }
 
+interface DailySummary {
+  day: number;
+  pending: number;
+  success: number;
+  fail: number;
+}
+
 const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const CalendarGrid = ({ year, month }: CalendarGridProps) => {
-  const matrix = getCalendarMatrix(year, month);
+  const { data } = useGetMonthSchedules(year.toString(), month.toString());
+
+  const monthSchedules: DailySummary[] = data.statistics ?? [];
+
+  const matrix = getCalendarMatrix(Number(year), Number(month), monthSchedules);
 
   return (
-    <div className='mx-auto w-[70%]'>
-      <div className='grid grid-cols-7 border-b bg-gray-50'>
+    <div className='mx-auto w-full max-w-4xl'>
+      <div className='grid grid-cols-7 border-b bg-gray-50 text-center text-xs font-medium text-gray-500'>
         {DAYS_OF_WEEK.map(day => (
-          <div key={day} className='py-2 text-center font-semibold'>
+          <div key={day} className='py-2'>
             {day}
           </div>
         ))}
       </div>
-      <div className='grid grid-cols-7 grid-rows-6'>
+      <div className='grid grid-cols-7 grid-rows-6 border border-t-0 border-gray-200'>
         {matrix.map((cell, idx) => (
           <CalendarDay
             key={idx}
-            day={cell.day}
+            day={cell.day.toString()}
             month={month}
             year={year}
             isCurrentMonth={cell.isCurrentMonth}
+            pending={cell.pending}
+            success={cell.success}
+            fail={cell.fail}
           />
         ))}
       </div>

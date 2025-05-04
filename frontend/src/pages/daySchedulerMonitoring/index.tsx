@@ -2,153 +2,69 @@ import { format, parse } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { useParams } from 'react-router-dom';
 
+import { useGetDaySchedules } from '@/apis/schedulerMonitoring';
 import DateNavigator from '@/components/DateNavigator';
 import SchedulerMonitoringLayout from '@/components/Layout/SchedulerMonitoringLayout';
-import { DaySchedule } from '@/types/scheduler';
 
 import ScheduleList from './components/ScheduleList';
 
-// Delete : 더미데이터를 위한 변수, 추후 삭제 예정, 실제 데이터로 변경 필요
-const mockData: DaySchedule = {
-  pending: [
-    {
-      scheduleId: 'schedule1',
-      createdAt: '2025-04-24T09:00:00',
-      title: 'KPI Report',
-      description: 'Create April KPI report',
-      userId: 'user1',
-      status: 'pending',
-      lastRunAt: '2025-04-24T09:00:00',
-      nextRunAt: '2025-04-24T09:00:00',
-      interval: {
-        type: 'daily',
-        time: '09:00',
-      },
-      jobList: [
-        {
-          jobId: 'job1',
-          title: 'Data Collection',
-          description: 'Collect and organize KPI data',
-          createdAt: '2025-04-24T09:00:00',
-          commandList: [
-            {
-              commandId: 'command1',
-              commandTitle: 'Data Collection',
-              commandStatus: 'pending',
-            },
-          ],
-        },
-      ],
-    },
-  ],
-  success: [
-    {
-      scheduleId: 'schedule2',
-      createdAt: '2025-04-24T11:00:00',
-      title: 'CNC Equipment Performance Rate',
-      description: 'Equipment performance measurement complete',
-      userId: 'user3',
-      status: 'success',
-      lastRunAt: '2025-04-24T11:00:00',
-      nextRunAt: '2025-04-24T11:00:00',
-      interval: {
-        type: 'daily',
-        time: '09:00',
-      },
-      jobList: [
-        {
-          jobId: 'job2',
-          title: 'Performance Measurement',
-          description: 'Equipment performance measurement complete',
-          createdAt: '2025-04-24T11:00:00',
-          commandList: [
-            {
-              commandId: 'command2',
-              commandTitle: 'Performance Measurement',
-              commandStatus: 'success',
-            },
-          ],
-        },
-      ],
-    },
-  ],
-  error: [
-    {
-      scheduleId: 'schedule3',
-      createdAt: '2025-04-24T12:00:00',
-      title: 'Product A Defect Rate',
-      description: 'Failed to measure defect rate',
-      userId: 'user4',
-      status: 'error',
-      lastRunAt: '2025-04-24T12:00:00',
-      nextRunAt: '2025-04-24T12:00:00',
-      interval: {
-        type: 'daily',
-        time: '09:00',
-      },
-      jobList: [
-        {
-          jobId: 'job3',
-          title: 'Defect Rate Measurement',
-          description: 'Measurement equipment error',
-          createdAt: '2025-04-24T12:00:00',
-          commandList: [
-            {
-              commandId: 'command3',
-              commandTitle: 'Defect Rate Measurement',
-              commandStatus: 'error',
-            },
-          ],
-        },
-      ],
-    },
-  ],
-};
-
 const DaySchedulePage = () => {
-  const { dayId = format(new Date(), 'yyyy-MM-dd') } = useParams<{
-    dayId?: string;
-  }>();
+  const { dayId } = useParams() as { dayId: string };
 
-  // Info : params에서 받아온 dayId를 파싱하여 년, 월, 일을 구함
-
+  const [year, month, date] = dayId.split('-');
   const parsedDate = parse(dayId, 'yyyy-MM-dd', new Date());
-  const year = parsedDate.getFullYear();
-  const monthString = String(parsedDate.getMonth() + 1).padStart(2, '0');
+  const title = `Daily Schedule - ${format(parsedDate, 'MM/dd/yyyy', {
+    locale: enUS,
+  })}`;
+  const backPath = `/scheduler-monitoring/month/${year}-${month}`;
 
-  const title = `Daily Schedule - ${format(parsedDate, 'MM/dd/yyyy', { locale: enUS })}`;
+  const { data: daySchedules } = useGetDaySchedules(year, month, date);
 
-  const backPath = `/scheduler-monitoring/month/${year}-${monthString}`;
+  const { schedules } = daySchedules;
 
-  // year, month, date를 기준으로 데이터를 가져옴
-  // const data = await getDaySchedule(year, month, date);
+  // 대기 스케쥴
+  const pendingSchedules = schedules.filter(
+    schedule => schedule.status === 'pending',
+  );
+
+  // 성공 스케쥴
+  const successSchedules = schedules.filter(
+    schedule => schedule.status === 'success',
+  );
+
+  // 실패 스케쥴
+  const errorSchedules = schedules.filter(
+    schedule => schedule.status === 'error',
+  );
 
   return (
     <SchedulerMonitoringLayout title={title} backPath={backPath}>
       <DateNavigator />
       <div className='mt-8 grid grid-cols-1 gap-6 md:grid-cols-3'>
-        <div className='overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm'>
-          <div className='border-b border-gray-200 bg-yellow-600 px-4 py-3'>
-            <h2 className='text-lg font-semibold text-white'>Pending</h2>
+        <div className='flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm'>
+          <div className='border-b border-yellow-200 bg-yellow-50 px-5 py-4'>
+            <h2 className='text-lg font-semibold text-yellow-800'>Pending</h2>
           </div>
-          <div className='p-4'>
-            <ScheduleList items={mockData.pending} />
-          </div>
-        </div>
-        <div className='overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm'>
-          <div className='border-b border-gray-200 bg-green-600 px-4 py-3'>
-            <h2 className='text-lg font-semibold text-white'>Success</h2>
-          </div>
-          <div className='p-4'>
-            <ScheduleList items={mockData.success} />
+          <div className='flex-grow p-4'>
+            <ScheduleList items={pendingSchedules} />
           </div>
         </div>
-        <div className='overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm'>
-          <div className='border-b border-gray-200 bg-red-600 px-4 py-3'>
-            <h2 className='text-lg font-semibold text-white'>Error</h2>
+
+        <div className='flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm'>
+          <div className='border-b border-green-200 bg-green-50 px-5 py-4'>
+            <h2 className='text-lg font-semibold text-green-800'>Success</h2>
           </div>
-          <div className='p-4'>
-            <ScheduleList items={mockData.error} />
+          <div className='flex-grow p-4'>
+            <ScheduleList items={successSchedules} />
+          </div>
+        </div>
+
+        <div className='flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm'>
+          <div className='border-b border-red-200 bg-red-50 px-5 py-4'>
+            <h2 className='text-lg font-semibold text-red-800'>Error</h2>
+          </div>
+          <div className='flex-grow p-4'>
+            <ScheduleList items={errorSchedules} />
           </div>
         </div>
       </div>

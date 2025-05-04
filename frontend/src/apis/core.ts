@@ -34,9 +34,9 @@ export async function api<T>(
   };
 
   const res = await fetch(url, { ...init, headers });
-  const { data, result } = (await res.json()) as DataResponse<T>;
+  const { data } = (await res.json()) as DataResponse<T>;
 
-  if (!res.ok && result === 'error') {
+  if (!res.ok) {
     return {
       data: null,
       success: false,

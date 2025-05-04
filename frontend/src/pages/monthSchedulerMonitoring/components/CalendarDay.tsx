@@ -8,13 +8,14 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-import { isBeforeDate, isSameDate } from '../utils/getCalendarMatrix';
-
 interface CalendarDayProps {
-  day: number;
+  day: string;
   month: number;
   year: number;
   isCurrentMonth: boolean;
+  pending: number;
+  success: number;
+  fail: number;
 }
 
 const CalendarDay: React.FC<CalendarDayProps> = ({
@@ -22,37 +23,21 @@ const CalendarDay: React.FC<CalendarDayProps> = ({
   month,
   year,
   isCurrentMonth,
+  pending,
+  success,
+  fail,
 }) => {
   const today = new Date();
   const navigate = useNavigate();
 
-  const cellDate = new Date(year, month - 1, day);
-  const isToday = isSameDate(cellDate, today);
+  const cellDate = new Date(year, month - 1, Number(day));
+  const isToday =
+    isCurrentMonth &&
+    cellDate.getDate() === today.getDate() &&
+    cellDate.getMonth() === today.getMonth() &&
+    cellDate.getFullYear() === today.getFullYear();
 
-  const isPast = isBeforeDate(cellDate, today);
-  const isFuture = !isToday && !isPast;
-
-  let waitingCount = 0;
-  let successCount = 0;
-  let failCount = 0;
-
-  if (isCurrentMonth) {
-    if (isPast) {
-      waitingCount = Math.random() < 0.1 ? Math.floor(Math.random() * 2) : 0;
-      successCount = Math.floor(Math.random() * 15);
-      failCount = Math.floor(Math.random() * 4);
-    } else if (isFuture) {
-      waitingCount = Math.floor(Math.random() * 20);
-      successCount = 0;
-      failCount = 0;
-    } else {
-      waitingCount = Math.floor(Math.random() * 10);
-      successCount = Math.floor(Math.random() * 12);
-      failCount = Math.floor(Math.random() * 3);
-    }
-  }
-
-  const hasData = waitingCount + successCount + failCount > 0;
+  const hasData = pending + success + fail > 0;
 
   const handleDetailClick = (dayId: string) => {
     navigate(`/scheduler-monitoring/day/${dayId}`);
@@ -63,38 +48,42 @@ const CalendarDay: React.FC<CalendarDayProps> = ({
   return (
     <div
       className={cn(
-        'relative flex min-h-20 flex-col border p-2',
-        isCurrentMonth ? 'bg-white text-gray-900' : 'bg-gray-100 text-gray-400',
+        'group relative flex min-h-[6rem] flex-col border-t border-l border-gray-200 p-2 first:border-l-0 sm:min-h-28',
+        isCurrentMonth ? 'bg-white' : 'bg-gray-50 text-gray-400',
         isCurrentMonth &&
           isToday &&
           'border-2 border-blue-500 ring-1 ring-blue-500',
+        !isCurrentMonth && 'pointer-events-none',
       )}
     >
       <span
         className={cn(
-          'mb-1 self-start text-sm',
-          isCurrentMonth ? 'text-gray-800' : 'text-gray-400',
-          isToday ? 'font-bold text-blue-700' : 'font-medium',
+          'self-start text-xs font-medium sm:text-sm',
+          isCurrentMonth ? 'text-gray-900' : 'text-gray-400',
+          isToday ? 'rounded-full bg-blue-600 px-2 py-0.5 text-white' : '',
         )}
       >
         {day}
       </span>
 
-      {isCurrentMonth && hasData && (
-        <div className='flex w-full flex-grow flex-col items-start justify-center gap-0.5 pl-1 text-xs md:text-sm'>
-          {waitingCount > 0 && (
-            <div className='flex items-center gap-1.5 text-orange-600'>
-              <span>{waitingCount} Pending</span>
+      {hasData && (
+        <div className='mt-1 flex flex-grow flex-col items-start justify-center gap-0.5 pl-1 text-[0.7rem] leading-tight sm:text-xs'>
+          {pending > 0 && (
+            <div className='flex items-center gap-1 text-yellow-600'>
+              <span className='font-medium'>{pending}</span>
+              <span>Pending</span>
             </div>
           )}
-          {successCount > 0 && (
-            <div className='flex items-center gap-1.5 text-green-600'>
-              <span>{successCount} Success</span>
+          {success > 0 && (
+            <div className='flex items-center gap-1 text-green-600'>
+              <span className='font-medium'>{success}</span>
+              <span>Success</span>
             </div>
           )}
-          {failCount > 0 && (
-            <div className='flex items-center gap-1.5 text-red-600'>
-              <span>{failCount} Failed</span>
+          {fail > 0 && (
+            <div className='flex items-center gap-1 text-red-600'>
+              <span className='font-medium'>{fail}</span>
+              <span>Failed</span>
             </div>
           )}
         </div>
@@ -102,11 +91,17 @@ const CalendarDay: React.FC<CalendarDayProps> = ({
 
       {isCurrentMonth && hasData && (
         <Button
-          variant='ghost'
+          variant='outline'
           size='icon'
-          className='absolute right-1 bottom-1 h-6 w-6 text-gray-400 hover:text-gray-700'
+          className={cn(
+            'absolute right-1.5 bottom-1.5 h-7 w-7 rounded-full',
+            'opacity-0 transition-all group-hover:scale-110 group-hover:opacity-100',
+            'hover:bg-accent hover:text-accent-foreground',
+          )}
           onClick={() => handleDetailClick(formattedDayId)}
-          aria-label={`View details for ${format(cellDate, 'MMMM d, yyyy', { locale: enUS })}`}
+          aria-label={`View details for ${format(cellDate, 'MMMM d, yyyy', {
+            locale: enUS,
+          })}`}
         >
           <ArrowRight className='h-4 w-4' />
         </Button>
