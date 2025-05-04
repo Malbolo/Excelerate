@@ -1,7 +1,9 @@
 package io.ssafy.p.k12s101.userservice.controller;
 
+import io.ssafy.p.k12s101.userservice.controller.dto.ChangeUserPasswordRequest;
 import io.ssafy.p.k12s101.userservice.controller.dto.CheckEmailDuplicationResponse;
 import io.ssafy.p.k12s101.userservice.controller.dto.SuccessResponse;
+import io.ssafy.p.k12s101.userservice.controller.dto.UpdateUserProfileRequest;
 import io.ssafy.p.k12s101.userservice.service.*;
 import io.ssafy.p.k12s101.userservice.service.dto.*;
 import lombok.RequiredArgsConstructor;
@@ -50,7 +52,7 @@ public class UserController {
     @PatchMapping("/me/profile")
     public HttpEntity<SuccessResponse<Void>> updateProfile(
         @RequestHeader("X-User-Id") Long userId,
-        @RequestBody UpdateUserProfileCommand body
+        @RequestBody UpdateUserProfileRequest body
     ) {
         UpdateUserProfileCommand command = new UpdateUserProfileCommand(
             userId,
@@ -64,7 +66,7 @@ public class UserController {
     @PatchMapping("/me/password")
     public ResponseEntity<SuccessResponse<Void>> changePassword(
         @RequestHeader("X-User-Id") Long userId,
-        @RequestBody ChangeUserPasswordCommand body
+        @RequestBody ChangeUserPasswordRequest body
     ) {
         ChangeUserPasswordCommand command = new ChangeUserPasswordCommand(
             userId,
