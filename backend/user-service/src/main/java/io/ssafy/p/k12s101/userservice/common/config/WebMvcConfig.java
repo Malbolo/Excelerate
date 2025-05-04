@@ -4,6 +4,7 @@ import io.ssafy.p.k12s101.userservice.common.interceptor.AdminAuthorizationInter
 import io.ssafy.p.k12s101.userservice.common.interceptor.UserAuthenticationInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -21,5 +22,15 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
         registry.addInterceptor(adminAuthorizationInterceptor)
             .addPathPatterns("/api/users");
+    }
+
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**")
+            .allowedOrigins("http://localhost:5173")
+            .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+            .allowedHeaders("*")
+            .exposedHeaders("X-User-Id", "X-User-Role")
+            .allowCredentials(true);
     }
 }
