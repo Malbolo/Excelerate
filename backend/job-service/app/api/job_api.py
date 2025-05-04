@@ -12,7 +12,7 @@ router = APIRouter(
 )
 
 
-@router.post("/")
+@router.post("")
 async def create_job(request: Request, job_request: JobCreateRequest) -> JSONResponse:
     user_id = request.headers.get("x-user-id")
     if user_id is None:
