@@ -2,10 +2,10 @@ from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from datetime import datetime
-from models import models
-from models.models import JobCommand, Job
-from schemas.job_create_schema import JobCreateRequest
-from schemas.job_update_schema import JobUpdateRequest
+from app.models import models
+from app.models.models import JobCommand, Job
+from app.schemas.job_create_schema import JobCreateRequest
+from app.schemas.job_update_schema import JobUpdateRequest
 
 
 def create_job(db: Session, job: JobCreateRequest, user_id: int):

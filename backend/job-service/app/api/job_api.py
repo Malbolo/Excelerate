@@ -2,10 +2,10 @@ from typing import Optional
 from fastapi import APIRouter, Request, Depends, Query
 from sqlalchemy.orm import Session
 from starlette.responses import JSONResponse
-from db.database import get_db
-from schemas.job_create_schema import JobCreateRequest
-from schemas.job_update_schema import JobUpdateRequest
-from services import job_service
+from app.db.database import get_db
+from app.schemas.job_create_schema import JobCreateRequest
+from app.schemas.job_update_schema import JobUpdateRequest
+from app.services import job_service
 
 router = APIRouter(
     prefix="/api/jobs"
