@@ -15,7 +15,6 @@ router = APIRouter(
 @router.post("")
 async def create_job(request: Request, job_request: JobCreateRequest) -> JSONResponse:
     user_id = request.headers.get("x-user-id")
-    print(user_id)
     if user_id is None:
         return JSONResponse(status_code=400, content={"error": "Missing x-user-id header"})
 
