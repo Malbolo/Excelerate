@@ -17,14 +17,14 @@ interface GetSourceDataResponse {
   dataframe: DataFrame;
 }
 
-const sendCommandList = async (commandList: string[], sourceData: string) => {
+const sendCommandList = async (command_list: string[], dataframe: string) => {
   const { data, error, success } = await api<SendCommandListResponse>(
     '/code/generate',
     {
       method: 'POST',
       body: JSON.stringify({
-        command_list: commandList,
-        dataframe: sourceData,
+        command_list,
+        dataframe,
       }),
     },
   );
@@ -58,7 +58,7 @@ export const useSendCommandList = () => {
       commandList: string[];
       sourceData: string;
     }) => sendCommandList(commandList, sourceData),
-    onError: error => {
+    onError: (error: Error) => {
       toast.error(error.message);
     },
   });
@@ -69,7 +69,7 @@ export const useSendCommandList = () => {
 export const useGetSourceData = () => {
   const { mutateAsync } = useMutation({
     mutationFn: (command: string) => getSourceData(command),
-    onError: error => {
+    onError: (error: Error) => {
       toast.error(error.message);
     },
   });
