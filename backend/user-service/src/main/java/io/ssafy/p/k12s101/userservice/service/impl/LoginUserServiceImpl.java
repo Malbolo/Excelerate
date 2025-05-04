@@ -30,7 +30,7 @@ public class LoginUserServiceImpl implements LoginUserService {
             throw new InvalidUserCredentialsException();
         }
 
-        String token = jwtProvider.generateToken(user.getId());
+        String token = jwtProvider.generateToken(user.getId(), user.getRole().name());
         return new LoginUserResult(token);
     }
 }

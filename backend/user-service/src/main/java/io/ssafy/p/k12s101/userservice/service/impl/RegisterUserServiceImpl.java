@@ -3,6 +3,7 @@ package io.ssafy.p.k12s101.userservice.service.impl;
 import io.ssafy.p.k12s101.userservice.common.exception.EmailAlreadyUsedException;
 import io.ssafy.p.k12s101.userservice.domain.User;
 import io.ssafy.p.k12s101.userservice.domain.UserRepository;
+import io.ssafy.p.k12s101.userservice.domain.UserRole;
 import io.ssafy.p.k12s101.userservice.service.RegisterUserService;
 import io.ssafy.p.k12s101.userservice.service.dto.RegisterUserCommand;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class RegisterUserServiceImpl implements RegisterUserService {
             .password(passwordEncoder.encode(command.password()))
             .name(command.name())
             .department(command.department())
+            .role(UserRole.USER)
             .build();
 
         userRepository.save(user);

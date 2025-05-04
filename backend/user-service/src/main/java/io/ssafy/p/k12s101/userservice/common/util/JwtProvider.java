@@ -22,7 +22,7 @@ public class JwtProvider {
         this.secretKey = new SecretKeySpec(Base64.getDecoder().decode(jwtProperties.secret()), "HmacSHA256");
     }
 
-    public String generateToken(Long userId) {
+    public String generateToken(Long userId, String userRole) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + jwtProperties.expirationSeconds() * 1000);
 
@@ -30,6 +30,7 @@ public class JwtProvider {
             .subject(userId.toString())
             .issuedAt(now)
             .expiration(expiry)
+            .claim("role", userRole)
             .signWith(secretKey)
             .compact();
     }
