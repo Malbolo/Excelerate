@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, func
 from sqlalchemy.dialects.mysql import LONGTEXT
 from sqlalchemy.orm import relationship
-from db.database import Base
+from app.db.database import Base
 
 class Job(Base):
     __tablename__ = "jobs"

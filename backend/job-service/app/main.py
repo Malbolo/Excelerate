@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-import api.job_api
+import app.api.job_api
 
 app = FastAPI()
 

@@ -2,11 +2,11 @@ from typing import Optional
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from starlette.responses import JSONResponse
-from crud import crud
-from db.database import get_db
-from models import models
-from schemas.job_create_schema import JobCreateRequest
-from schemas.job_update_schema import JobUpdateRequest
+from app.crud import crud
+from app.db.database import get_db
+from app.models import models
+from app.schemas.job_create_schema import JobCreateRequest
+from app.schemas.job_update_schema import JobUpdateRequest
 
 
 async def create_job(request: JobCreateRequest, user_id: int) -> JSONResponse:
