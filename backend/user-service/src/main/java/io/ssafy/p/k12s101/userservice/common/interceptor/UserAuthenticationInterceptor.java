@@ -1,6 +1,6 @@
 package io.ssafy.p.k12s101.userservice.common.interceptor;
 
-import io.ssafy.p.k12s101.userservice.common.exception.UnauthorizedException;
+import io.ssafy.p.k12s101.userservice.common.exception.UnauthenticatedException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.lang.NonNull;
@@ -26,7 +26,7 @@ public class UserAuthenticationInterceptor implements HandlerInterceptor {
 
         String userId = request.getHeader(USER_ID_HEADER);
         if (userId == null || userId.isBlank()) {
-            throw new UnauthorizedException();
+            throw new UnauthenticatedException();
         }
 
         return true;
