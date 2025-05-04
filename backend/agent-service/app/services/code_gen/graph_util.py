@@ -3,6 +3,9 @@ import re
 import traceback
 from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate, AIMessagePromptTemplate
 
+import pandas as pd
+from openpyxl import load_workbook
+
 def make_code_template() -> ChatPromptTemplate:
     # 2) 시스템 메시지: df와 파라미터를 받아 필터링 코드를 생성한다는 역할 정의
     system_template = SystemMessagePromptTemplate.from_template(
@@ -80,6 +83,83 @@ def make_classify_template() -> ChatPromptTemplate:
     ])
     return prompt
 
+def make_excel_template() -> ChatPromptTemplate:
+    """
+    openpyxl을 활용해 기존 .xlsx 파일에 DataFrame을 지정된 위치에 삽입
+    - 항상 keep_vba=False
+    - few-shot 예시 2개 포함
+    """
+    return ChatPromptTemplate.from_messages([
+        # 시스템 메시지: 역할 명세
+        SystemMessagePromptTemplate.from_template(
+            "당신은 openpyxl을 사용해 기존 .xlsx 파일을 load → "
+            "DataFrame을 지정된 셀 위치에 삽입 → 보존된 서식으로 저장하는 코드 전문가입니다. "
+        ),
+
+        # 1번째 페어: 기본 B2 삽입 예시
+        HumanMessagePromptTemplate.from_template(
+            "템플릿 template.xlsx 의 B2 위치부터 dataframe을 삽입 후 `out1.xlsx` 로 저장:\n"
+            "{'Name':['Alice','Bob'], 'Score':[85,92]}"
+        ),
+        AIMessagePromptTemplate.from_template(
+            """```python
+from openpyxl import load_workbook
+
+def excel_insert(df, input_path, output_path, start_row=2, start_col=2):
+    # 1) 워크북 로드 (keep_vba=False)
+    wb = load_workbook(input_path)
+    ws = wb.active
+
+    # 2) 헤더 삽입
+    for j, col in enumerate(df.columns, start=start_col):
+        ws.cell(row=start_row, column=j, value=col)
+
+    # 3) 데이터 삽입
+    for i, row in enumerate(df.itertuples(index=False), start=start_row+1):
+        for j, val in enumerate(row, start=start_col):
+            ws.cell(row=i, column=j, value=val)
+
+    # 4) 저장
+    wb.save(output_path)
+```"""
+        ),
+
+        # 2번째 페어: C5 삽입 예시
+        HumanMessagePromptTemplate.from_template(
+            "템플릿 report.xlsx 의 C5 위치에 dataFrame을 삽입 후 동일 파일에 덮어쓰기:\n"
+            "{'Item':['X','Y','Z'], 'Value':[10,20,30]}"
+        ),
+        AIMessagePromptTemplate.from_template(
+            """```python
+from openpyxl import load_workbook
+
+def excel_insert(df, input_path, output_path=None, start_row=5, start_col=3):
+    # 1) 워크북 로드 (keep_vba=False)
+    wb = load_workbook(input_path)
+    ws = wb.active
+
+    # 2) 헤더 삽입
+    for j, col in enumerate(df.columns, start=start_col):
+        ws.cell(row=start_row, column=j, value=col)
+
+    # 3) 데이터 삽입
+    for i, row in enumerate(df.itertuples(index=False), start=start_row+1):
+        for j, val in enumerate(row, start=start_col):
+            ws.cell(row=i, column=j, value=val)
+
+    # 4) 동일 파일 덮어쓰기
+    save_path = output_path or input_path
+    wb.save(save_path)
+```"""
+        ),
+
+        # 실제 사용자 요청
+        HumanMessagePromptTemplate.from_template(
+            "{input}",
+            "{df}"
+            )
+    ])
+
 def extract_error_info(exc: Exception, code_body: str, stage: str ) -> dict:
     """
     Exception과 원본 코드 문자열, 실패 단계를 받아서
@@ -122,3 +202,38 @@ def extract_error_info(exc: Exception, code_body: str, stage: str ) -> dict:
             "code":    snippet,
         }
     }
+
+def insert_df_to_excel(df: pd.DataFrame,
+                       input_path: str,
+                       output_path: str = None,
+                       sheet_name: str = None,
+                       start_row: int = 6,
+                       start_col: int = 2):
+    """
+    기존 Excel 파일에 df를 특정 위치에 삽입하고 저장합니다.
+    
+    Parameters:
+    - df: 삽입할 pandas.DataFrame
+    - input_path: 원본 엑셀 파일 경로(.xlsx, .xlsm)
+    - output_path: 저장할 경로. None이면 input_path에 덮어쓰기
+    - sheet_name: None이면 active sheet
+    - start_row: 1부터 시작하는 삽입 시작 행 (기본 6)
+    - start_col: 1부터 시작하는 삽입 시작 열 (기본 2 → B열)
+    """
+    # 1) 워크북 로드 (매크로 보존이 필요하면 keep_vba=True)
+    wb = load_workbook(filename=input_path, keep_vba=False)
+    ws = wb[sheet_name] if sheet_name else wb.active
+
+    # 2) 헤더 삽입
+    for j, col_name in enumerate(df.columns, start=start_col):
+        ws.cell(row=start_row, column=j, value=col_name)
+
+    # 3) 데이터 삽입
+    for i, row in enumerate(df.itertuples(index=False), start=start_row + 1):
+        for j, value in enumerate(row, start=start_col):
+            ws.cell(row=i, column=j, value=value)
+
+    # 4) 파일 저장
+    save_path = output_path or input_path
+    wb.save(save_path)
+    print(f"Saved to: {save_path}")

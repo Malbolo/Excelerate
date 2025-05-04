@@ -34,6 +34,13 @@ class Settings(BaseSettings):
     MILVUS_PORT: str
     MILVUS_COLLECTION: str
 
+    # Minio 설정
+    MINIO_ENDPOINT: str
+    MINIO_ACCESS_KEY: str
+    MINIO_SECRET_KEY: str
+    MINIO_USE_SSL: bool
+    MINIO_BUCKET_NAME: str
+
     # Filesystem URL 설정
     FILESYSTEM_URL: str
 
