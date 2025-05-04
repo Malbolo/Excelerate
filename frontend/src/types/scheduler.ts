@@ -1,5 +1,3 @@
-// command -> job -> schedule
-
 export type Status = 'pending' | 'success' | 'error';
 
 export type Interval = {
@@ -21,6 +19,8 @@ export interface Job {
   createdAt: string;
   jobId: string;
   commandList: Command[];
+  sourceData?: string;
+  userName?: string;
 }
 
 export interface Schedule {

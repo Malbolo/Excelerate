@@ -24,7 +24,7 @@ const MainPage: React.FC = () => {
   const [code, setCode] = useState<string>('');
   const [trace] = useState<string>('');
 
-  const [step, setStep] = useState<'source' | 'command'>('command');
+  const [step, setStep] = useState<'source' | 'command'>('source');
   const { isEditMode, canSaveJob, setCanSaveJob } = useJobStore();
 
   const commandMutation = useSendCommandList();
@@ -45,8 +45,8 @@ const MainPage: React.FC = () => {
   const handleSendCommandList = async () => {
     const commands = commandList.map(cmd => cmd.title);
     const response = await commandMutation({
-      commandList: commands,
-      sourceData: data!,
+      command_list: commands,
+      dataframe: sourceData,
     });
 
     const columns: ColumnDef<DataFrameRow>[] = response.dataframe[0]

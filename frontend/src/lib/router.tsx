@@ -5,6 +5,7 @@ import { createBrowserRouter } from 'react-router-dom';
 import Layout from '@/components/Layout/Layout';
 import MainPage from '@/pages';
 import AgentMonitoringPage from '@/pages/agentMonitoring';
+import JobAgentMonitoringPage from '@/pages/agentMonitoring/job';
 import CreateSchedulerPage from '@/pages/createScheduler';
 import DaySchedulePage from '@/pages/daySchedulerMonitoring';
 import JobManagementPage from '@/pages/jobManagement';
@@ -127,6 +128,17 @@ const routes = [
       </Layout>
     ),
     name: 'CreateScheduler',
+  },
+  {
+    path: '/agent-monitoring/job/:jobId',
+    element: (
+      <Layout>
+        <Suspense fallback={<div>로딩중...</div>}>
+          <JobAgentMonitoringPage />
+        </Suspense>
+      </Layout>
+    ),
+    name: 'JobAgentMonitoring',
   },
 ];
 
