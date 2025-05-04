@@ -1,34 +1,30 @@
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request, Header
 from fastapi.responses import JSONResponse
-import os
 import jwt
 import time
+import os
 
 app = FastAPI()
-
 JWT_SECRET = os.getenv("JWT_SECRET")
 
 @app.get("/auth")
-async def auth_middleware(request: Request, call_next):
+def forward_auth(Authorization: str = Header(None)):
     user_id = ""
     user_role = ""
 
-    auth_header = request.headers.get("Authorization")
-    if auth_header and auth_header.startswith("Bearer "):
-        token = auth_header[7:]
+    if Authorization and Authorization.startswith("Bearer "):
+        token = Authorization[7:]
         try:
             payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
-
             if "exp" in payload and payload["exp"] < time.time():
                 return JSONResponse(status_code=401, content={"detail": "Token expired"})
 
             user_id = str(payload.get("sub", ""))
             user_role = str(payload.get("role", ""))
-
         except jwt.InvalidTokenError:
             return JSONResponse(status_code=401, content={"detail": "Invalid token"})
 
-    response: Response = await call_next(request)
+    response = JSONResponse(content={"status": "ok"})
     response.headers["X-User-Id"] = user_id
     response.headers["X-User-Role"] = user_role
     return response
