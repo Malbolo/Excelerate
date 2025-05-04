@@ -25,7 +25,6 @@ public class ChangeUserPasswordServiceImpl implements ChangeUserPasswordService 
         if (!passwordEncoder.matches(command.currentPassword(), user.getPassword())) {
             throw new InvalidPasswordException();
         }
-
-        user.changePassword(command.newPassword());
+        user.changePassword(passwordEncoder.encode(command.newPassword()));
     }
 }
