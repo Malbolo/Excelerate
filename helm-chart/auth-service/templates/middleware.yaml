@@ -4,7 +4,8 @@ metadata:
   name: forward-auth
 spec:
   forwardAuth:
-    address: http://auth-service.auth-service.svc.cluster.local:8080/
+    address: http://auth-service.auth-service.svc.cluster.local:8080/auth
     trustForwardHeader: true
     authResponseHeaders:
       - "X-User-Id"
+      - "X-User-Role"

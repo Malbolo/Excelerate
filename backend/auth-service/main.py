@@ -8,7 +8,7 @@ app = FastAPI()
 
 JWT_SECRET = os.getenv("JWT_SECRET")
 
-@app.middleware("http")
+@app.get("/auth")
 async def auth_middleware(request: Request, call_next):
     user_id = ""
     user_role = ""
