@@ -6,6 +6,7 @@ import Layout from '@/components/Layout/Layout';
 import MainPage from '@/pages';
 import AgentMonitoringPage from '@/pages/agentMonitoring';
 import JobAgentMonitoringPage from '@/pages/agentMonitoring/job';
+import LoginPage from '@/pages/auth';
 import CreateSchedulerPage from '@/pages/createScheduler';
 import DaySchedulePage from '@/pages/daySchedulerMonitoring';
 import JobManagementPage from '@/pages/jobManagement';
@@ -139,6 +140,17 @@ const routes = [
       </Layout>
     ),
     name: 'JobAgentMonitoring',
+  },
+  {
+    path: '/auth',
+    element: (
+      <Layout>
+        <Suspense fallback={<div>로딩중...</div>}>
+          <LoginPage />
+        </Suspense>
+      </Layout>
+    ),
+    name: 'Auth',
   },
 ];
 
