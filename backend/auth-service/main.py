@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Header
+from fastapi import FastAPI, Header
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import jwt
@@ -30,12 +30,18 @@ def forward_auth(Authorization: str = Header(None)):
         try:
             payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
             if "exp" in payload and payload["exp"] < time.time():
-                return JSONResponse(status_code=401, content={"detail": "Token expired"})
-
+                return JSONResponse(
+                    status_code=401,
+                    content={
+                        "result": "error",
+                        "code": "002",
+                        "message": "Token expired"
+                    }
+                )
             user_id = str(payload.get("sub", ""))
             user_role = str(payload.get("role", ""))
         except jwt.InvalidTokenError:
-            return JSONResponse(status_code=401, content={"detail": "Invalid token"})
+            pass
 
     response = JSONResponse(content={"status": "ok"})
     response.headers["X-User-Id"] = user_id
