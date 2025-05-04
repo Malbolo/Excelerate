@@ -45,8 +45,8 @@ const MainPage: React.FC = () => {
   const handleSendCommandList = async () => {
     const commands = commandList.map(cmd => cmd.title);
     const response = await commandMutation({
-      commandList: commands,
-      sourceData,
+      command_list: commands,
+      dataframe: sourceData,
     });
 
     const columns: ColumnDef<DataFrameRow>[] = response.dataframe[0]
