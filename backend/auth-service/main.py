@@ -25,9 +25,8 @@ async def auth_middleware(request: Request, call_next):
         except jwt.InvalidTokenError:
             return JSONResponse(status_code=401, content={"detail": "Invalid token"})
 
-    # x-user-id 헤더 삽입
     response: Response = await call_next(request)
-    response.headers["x-user-id"] = user_id
+    response.headers["X-User-Id"] = user_id
     return response
 
 @app.get("/api/auth/ping")
