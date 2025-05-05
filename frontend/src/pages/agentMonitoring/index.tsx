@@ -51,7 +51,10 @@ const AgentMonitoringPage: React.FC = () => {
     <div className='flex w-full flex-col gap-4 p-8'>
       <div className='flex items-center gap-4'>
         <div className='flex-1'>
-          <Select value={jobType} onValueChange={setJobType}>
+          <Select
+            value={jobType || ''}
+            onValueChange={(value: string) => setJobType(value as TJobType)}
+          >
             <SelectTrigger className='w-full'>
               <SelectValue placeholder='Job Type' />
             </SelectTrigger>
