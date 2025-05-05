@@ -133,6 +133,7 @@ const MainPage: React.FC = () => {
                   sourceData={sourceData}
                   sourceDataCommand={sourceDataCommand}
                   commandList={commandList}
+                  code={code}
                 />
               </div>
             </div>

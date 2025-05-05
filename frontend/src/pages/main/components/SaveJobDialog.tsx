@@ -1,8 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
 import { z } from 'zod';
 
+import { SaveJobRequest, useSaveJob } from '@/apis/job';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -55,14 +55,17 @@ interface SaveJobDialogProps {
   sourceData: string;
   sourceDataCommand: string;
   commandList: TCommand[];
+  code: string;
 }
 
 const SaveJobDialog: React.FC<SaveJobDialogProps> = ({
   sourceData,
   sourceDataCommand,
   commandList,
+  code,
 }) => {
   const { isEditMode, canSaveJob } = useJobStore();
+  const jobMutation = useSaveJob();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -75,30 +78,22 @@ const SaveJobDialog: React.FC<SaveJobDialogProps> = ({
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (!values.jobType || !values.jobName || !values.jobDescription) {
-      toast.error('Please fill in all fields.');
-      return;
-    }
-
     // TODO: 이메일 전송
     const { jobType, jobName, jobDescription } = values;
 
-    const request = {
+    const request: SaveJobRequest = {
       type: jobType,
       name: jobName,
       description: jobDescription,
       data_load_command: sourceDataCommand,
       data_load_url: sourceData,
       commands: commandList.map(command => command.title),
+      code,
     };
 
-    toast.success('You submitted the following values:', {
-      description: (
-        <pre className='mt-2 w-[300px] rounded-md bg-slate-950 p-4'>
-          <code className='text-white'>{JSON.stringify(request, null, 2)}</code>
-        </pre>
-      ),
-    });
+    const response = await jobMutation(request);
+
+    console.log(response); // 추후 제거
   };
 
   return (
