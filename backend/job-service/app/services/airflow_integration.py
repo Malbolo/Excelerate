@@ -5,10 +5,10 @@ from datetime import datetime
 from typing import List, Dict, Any
 
 # Airflow API 설정
-AIRFLOW_API_URL = os.environ.get('AIRFLOW_API_URL', 'http://airflow-webserver:8080/api/v1')
-AIRFLOW_USERNAME = os.environ.get('AIRFLOW_USERNAME', 'airflow')
-AIRFLOW_PASSWORD = os.environ.get('AIRFLOW_PASSWORD', 'airflow')
-AIRFLOW_DAGS_FOLDER = os.environ.get('AIRFLOW__CORE__DAGS_FOLDER', '/opt/airflow/dags')
+AIRFLOW_API_URL = os.environ.get('AIRFLOW_API_URL')
+AIRFLOW_USERNAME = os.environ.get('AIRFLOW_USERNAME')
+AIRFLOW_PASSWORD = os.environ.get('AIRFLOW_PASSWORD')
+AIRFLOW_DAGS_FOLDER = os.environ.get('AIRFLOW__CORE__DAGS_FOLDER')
 
 def create_schedule_dag(schedule_id: str, title: str, description: str, 
                        frequency: str, start_date: datetime, end_date: datetime, 
