@@ -20,7 +20,12 @@ export const RootNode = forwardRef<HTMLDivElement, { jobName: string }>(
   },
 );
 
-export const Node: React.FC<{ log: TLog }> = ({ log }) => {
+interface NodeProps {
+  log: TLog;
+  onLogClick: (log: TLog) => void;
+}
+
+export const Node: React.FC<NodeProps> = ({ log, onLogClick }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const rootNodeRef = useRef<HTMLDivElement>(null);
 
@@ -48,10 +53,11 @@ export const Node: React.FC<{ log: TLog }> = ({ log }) => {
       {/* 노드 오른쪽의 가로선 */}
       <div className='h-5 w-5 translate-y-2 rounded-bl-md border-b border-l border-[#AEAEAE]'></div>
       <div>
-        <div className='flex translate-y-3 cursor-pointer items-center gap-2'>
+        <div className='flex translate-y-3 items-center gap-2'>
           <div
             ref={rootNodeRef}
-            className='flex h-8 w-8 items-center justify-center rounded-md bg-[#00A2FF]'
+            className='z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-md bg-[#00A2FF]'
+            onClick={() => onLogClick(log)}
           >
             <Link color='white' className='h-4 w-4' />
           </div>
@@ -60,7 +66,7 @@ export const Node: React.FC<{ log: TLog }> = ({ log }) => {
         {log.subEvents && log.subEvents.length > 0 && (
           <>
             {/* Node로부터 아래로 뻗어나가는 세로선 */}
-            <svg className='absolute inset-0 h-full w-full'>
+            <svg className='pointer-events-none absolute inset-0 h-full w-full'>
               <line
                 x1={rootNodePosition.x}
                 y1={rootNodePosition.y}
@@ -73,8 +79,12 @@ export const Node: React.FC<{ log: TLog }> = ({ log }) => {
 
             {/* 해당 노드의 자식 노드들을 재귀적으로 표시 */}
             <div className='flex flex-col gap-4'>
-              {log.subEvents.map(log => (
-                <Node key={`${log.name}-${log.timestamp}`} log={log} />
+              {log.subEvents.map(subLog => (
+                <Node
+                  key={`${subLog.name}-${subLog.timestamp}`}
+                  log={subLog}
+                  onLogClick={onLogClick}
+                />
               ))}
             </div>
           </>
