@@ -17,7 +17,7 @@ pipeline {
               targets << 'frontend'
             } else if (path.startsWith('backend/')) {
               def subdir = path.split('/')[1]
-              if (['agent-service', 'storage-service', 'notification-service', 'user-service', 'auth-service'].contains(subdir)) {
+              if (['agent-service', 'storage-service', 'notification-service', 'user-service', 'auth-service', 'job-service'].contains(subdir)) {
                 targets << "backend-${subdir}"
               }
             }

@@ -22,7 +22,8 @@ public class FindUserProfileServiceImpl implements FindUserProfileService {
         return new FindUserProfileResult(
             user.getName(),
             user.getEmail(),
-            user.getDepartment()
+            user.getDepartment(),
+            user.getRole().name()
         );
     }
 }

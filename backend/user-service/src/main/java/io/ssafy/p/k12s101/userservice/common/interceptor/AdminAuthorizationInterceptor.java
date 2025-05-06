@@ -21,6 +21,10 @@ public class AdminAuthorizationInterceptor implements HandlerInterceptor {
         @NonNull HttpServletResponse response,
         @NonNull Object handler
     ) {
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return true;
+        }
+
         if (!"GET".equalsIgnoreCase(request.getMethod())) {
             return true;
         }
