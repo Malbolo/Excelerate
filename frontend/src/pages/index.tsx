@@ -49,7 +49,7 @@ const MainPage: React.FC = () => {
     const commands = commandList.map(cmd => cmd.title);
     const response = await commandMutation({
       command_list: commands,
-      dataframe: sourceData,
+      url: sourceData,
     });
 
     const columns: ColumnDef<DataFrameRow>[] = response.dataframe[0]

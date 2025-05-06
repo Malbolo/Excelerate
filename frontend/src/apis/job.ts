@@ -47,10 +47,10 @@ const saveJob = async (request: SaveJobRequest) => {
 
 const sendCommandList = async ({
   command_list,
-  dataframe,
+  url,
 }: {
   command_list: string[];
-  dataframe: string;
+  url: string;
 }) => {
   const { data, error, success } = await api<SendCommandListResponse>(
     '/api/agent/code/generate',
@@ -58,7 +58,7 @@ const sendCommandList = async ({
       method: 'POST',
       body: JSON.stringify({
         command_list,
-        dataframe,
+        url,
       }),
     },
   );
@@ -101,11 +101,11 @@ export const useSendCommandList = () => {
   const { mutateAsync } = useMutation({
     mutationFn: ({
       command_list,
-      dataframe,
+      url,
     }: {
       command_list: string[];
-      dataframe: string;
-    }) => sendCommandList({ command_list, dataframe }),
+      url: string;
+    }) => sendCommandList({ command_list, url }),
     onError: (error: Error) => {
       toast.error(error.message);
     },
