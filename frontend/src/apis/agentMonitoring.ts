@@ -9,8 +9,15 @@ interface GetJobListRequest {
   size: string;
 }
 
+interface GetJobListResponse {
+  jobs: Job[];
+  page: number;
+  size: number;
+  total: number;
+}
+
 const getJobList = async (request: GetJobListRequest) => {
-  const { data, error, success } = await api<Job[]>(
+  const { data, error, success } = await api<GetJobListResponse>(
     `/api/jobs?uid=${request.uid}&page=${request.page}&size=${request.size}`,
   );
 
