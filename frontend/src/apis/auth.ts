@@ -3,9 +3,9 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
+import useInternalRouter from '@/hooks/useInternalRouter';
 import { LoginFormValues, SignupFormValues } from '@/pages/auth';
 
 import { api } from './core';
@@ -69,14 +69,15 @@ export const useGetUserInfoAPI = () =>
 
 export const useLoginAPI = () => {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
+  const { replace } = useInternalRouter();
+
   const { mutate } = useMutation({
     mutationFn: (request: LoginFormValues) => login(request),
     onSuccess: data => {
       localStorage.setItem('token', data.token);
       toast.success('로그인이 완료되었습니다.');
       queryClient.invalidateQueries({ queryKey: ['userInfo'] });
-      navigate('/');
+      replace('/');
     },
     onError: error => {
       toast.error(error.message);

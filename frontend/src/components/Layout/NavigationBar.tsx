@@ -1,9 +1,10 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { useGetUserInfoAPI } from '@/apis/auth';
 import { Button } from '@/components/ui/button';
+import useInternalRouter from '@/hooks/useInternalRouter';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -23,7 +24,7 @@ const NavigationBar = () => {
   // 닉네임은 추후에 실제 데이터를 사용할 예정
   const { data: userInfo } = useGetUserInfoAPI();
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
+  const { replace } = useInternalRouter();
 
   const { name } = userInfo || {};
 
@@ -33,7 +34,7 @@ const NavigationBar = () => {
     localStorage.removeItem('token');
     toast.success('로그아웃이 완료되었습니다.');
     queryClient.invalidateQueries({ queryKey: ['userInfo'] });
-    navigate('/');
+    replace('/');
   };
 
   return (
