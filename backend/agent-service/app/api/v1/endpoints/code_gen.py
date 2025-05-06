@@ -40,7 +40,7 @@ async def command_code(
                 'retry_count': 0,
                 'error_msg': None,
                 'logs': [],
-                'output_url': ''
+                'download_url': ''
             }
 
         answer = graph.invoke(query)
@@ -56,11 +56,11 @@ async def command_code(
         ]
 
         payload = {
-            "code":      answer["python_code"],
+            "codes":      answer["python_codes_list"],
             "dataframe": serialized,      # 여전히 to_dict 직후의 리스트
             "error_msg": answer["error_msg"],
             "logs":      answer["logs"],
-            "output_url":answer["output_url"],
+            "download_url":answer["download_url"],
         }
         # logs는 redis에 따로 저장하는 것을 고려
 

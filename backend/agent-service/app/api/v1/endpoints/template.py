@@ -3,7 +3,7 @@
 import os
 import uuid
 import tempfile
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
+from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
 from fastapi.responses import JSONResponse
 from app.utils.depend import get_minio_client
 from app.utils.minio_client import MinioClient
@@ -12,7 +12,7 @@ router = APIRouter()
 
 @router.post("/", summary="새 엑셀 템플릿 업로드")
 async def upload_template(
-    template_name: str,
+    template_name: str = Form(...),
     file: UploadFile = File(...),
     minio: MinioClient = Depends(get_minio_client),
 ):

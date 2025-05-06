@@ -35,7 +35,7 @@ class AgentState(MessagesState):
     retry_count: int
     error_msg: dict | None
     logs: List[LogDetail]
-    output_url: str
+    download_url: str
 
 class CodeGenerator:
     def __init__(self):
@@ -271,7 +271,7 @@ class CodeGenerator:
         # state 업데이트
         new_logs = state.get("logs", []) + [llm_entry] if llm_entry else state.get("logs", [])
 
-        return {"output_url": url, "error_msg": None, "logs": new_logs, "python_code":code_snippet, "python_codes_list": codes}
+        return {"download_url": url, "error_msg": None, "logs": new_logs, "python_code":code_snippet, "python_codes_list": codes}
 
     def build(self):
         graph_builder = StateGraph(AgentState)
