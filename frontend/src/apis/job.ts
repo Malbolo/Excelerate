@@ -53,7 +53,7 @@ const sendCommandList = async ({
   dataframe: string;
 }) => {
   const { data, error, success } = await api<SendCommandListResponse>(
-    '/code/generate',
+    '/api/agent/code/generate',
     {
       method: 'POST',
       body: JSON.stringify({
@@ -72,7 +72,7 @@ const sendCommandList = async ({
 
 const getSourceData = async (command: string) => {
   const { data, error, success } = await api<GetSourceDataResponse>(
-    '/data/load',
+    '/api/agent/data/load',
     { method: 'POST', body: JSON.stringify({ command }) },
   );
 
