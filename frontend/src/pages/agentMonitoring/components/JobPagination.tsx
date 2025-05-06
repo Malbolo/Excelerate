@@ -1,3 +1,6 @@
+import { useSearchParams } from 'react-router-dom';
+
+import { useGetJobList } from '@/apis/agentMonitoring';
 import {
   Card,
   CardContent,
@@ -15,29 +18,28 @@ import {
 } from '@/components/ui/pagination';
 import useInternalRouter from '@/hooks/useInternalRouter';
 import usePagination from '@/hooks/usePagination';
-import { MJobTable } from '@/mocks/datas/dataframe';
-import { Job } from '@/types/scheduler';
 
 const JobPagination: React.FC = () => {
   // TODO: 백엔드 서버 API 연동 시 사용
-  // const [searchParams] = useSearchParams();
-  // const uid = searchParams.get('uid') || '';
+  const [searchParams] = useSearchParams();
+  const uid = searchParams.get('uid') || '';
 
-  // const { data: jobList } = useGetJobList({
-  //   uid,
-  //   page: '1',
-  //   size: String(PAGE_SIZE),
-  // });
+  const {
+    data: { jobs, total },
+  } = useGetJobList({
+    uid,
+    page: '1',
+    size: '4',
+  });
 
-  const { curPage, totalPages, pagedItems, handlePageChange } =
-    usePagination<Job>(MJobTable);
+  const { curPage, handlePageChange } = usePagination(total);
 
   const { push } = useInternalRouter();
 
   return (
     <>
       <section className='flex flex-1 flex-col gap-4'>
-        {pagedItems.map(job => (
+        {jobs.map(job => (
           <Card
             key={job.jobId}
             onClick={() => push(`/agent-monitoring/job/${job.jobId}`)}
@@ -63,7 +65,7 @@ const JobPagination: React.FC = () => {
               aria-disabled={curPage === 1}
             />
           </PaginationItem>
-          {Array.from({ length: totalPages }).map((_, index) => (
+          {Array.from({ length: total }).map((_, index) => (
             <PaginationItem key={index}>
               <PaginationLink
                 isActive={curPage === index + 1}
@@ -75,10 +77,8 @@ const JobPagination: React.FC = () => {
           ))}
           <PaginationItem>
             <PaginationNext
-              onClick={() =>
-                handlePageChange(Math.min(totalPages, curPage + 1))
-              }
-              aria-disabled={curPage === totalPages}
+              onClick={() => handlePageChange(Math.min(total, curPage + 1))}
+              aria-disabled={curPage === total}
             />
           </PaginationItem>
         </PaginationContent>
