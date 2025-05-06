@@ -38,8 +38,9 @@ async def command_code(
                 'queue_idx': 0,
                 'dataframe': [pd.DataFrame(checkdata)],
                 'retry_count': 0,
-                "error_msg": None,
-                "logs": []
+                'error_msg': None,
+                'logs': [],
+                'output_url': ''
             }
 
         answer = graph.invoke(query)
@@ -59,6 +60,7 @@ async def command_code(
             "dataframe": serialized,      # 여전히 to_dict 직후의 리스트
             "error_msg": answer["error_msg"],
             "logs":      answer["logs"],
+            "output_url":answer["output_url"],
         }
         # logs는 redis에 따로 저장하는 것을 고려
 

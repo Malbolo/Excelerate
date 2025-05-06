@@ -13,7 +13,10 @@ from langchain_openai import ChatOpenAI
 from langgraph.graph import START, END
 
 from app.utils.memory_logger import MemoryLogger
-from app.services.code_gen.graph_util import extract_error_info, make_code_template, make_classify_template, make_excel_template, insert_df_to_excel
+from app.services.code_gen.graph_util import (
+    extract_error_info, make_code_template, make_classify_template,
+    make_extract_excel_params_template, insert_df_to_excel, make_excel_code_snippet
+)
 from app.utils.minio_client import MinioClient
 from tempfile import TemporaryDirectory
 
@@ -32,6 +35,7 @@ class AgentState(MessagesState):
     retry_count: int
     error_msg: dict | None
     logs: List[LogDetail]
+    output_url: str
 
 class CodeGenerator:
     def __init__(self):
@@ -219,29 +223,55 @@ class CodeGenerator:
         }
 
     def excel_manipulate(self, state: AgentState) -> AgentState:
+        """
+        'excel' 타입 명령 처리:
+        - 커맨드에서 템플릿 이름 추출
+        - MinIO에서 템플릿 다운로드
+        - 마지막 DataFrame을 템플릿에 삽입
+        - 결과 엑셀을 MinIO에 업로드하고 presigned URL 반환
+        """
+        self.logger.set_name("LLM Call: Manipulate Excel")
+        self.logger.reset()
+        unit = state['current_unit']
+        cmd = unit.get("cmd", "")
+
+        prompt = make_extract_excel_params_template()
+        params = json.loads((prompt | self.sllm).invoke({"command": str(cmd)}).content)
+
         with TemporaryDirectory() as workdir:
             tpl_path = f"{workdir}/template.xlsx"
             out_path = f"{workdir}/result.xlsx"
-        #     self.minio_client.download_template(template_name="test", local_path=tpl_path)
-        #     # 불러온 템플릿으로 뭔가 수행하기
-        #     ########## 겸사겸사 엑셀 조작 테스트
-        #     print(tpl_path)
-        #     print(out_path)
 
-        #     df_sample = state['dataframe'][-1]
-        #     df_sample.drop("defect_types", axis=1, inplace=True)
+            self.minio_client.download_template(params["template_name"], tpl_path)
+            df = state["dataframe"][-1]
+            insert_df_to_excel(
+                df,
+                input_path=tpl_path,
+                output_path=out_path,
+                sheet_name=params.get("sheet_name"),
+                start_row=params["start_row"],
+                start_col=params["start_col"]
+            )
+            url = self.minio_client.upload_result(user_id="test", template_name=params["output_name"], local_path=out_path)
+        print(url)
 
-        #     insert_df_to_excel(
-        #         df=df_sample,
-        #         input_path=tpl_path,
-        #         output_path=out_path,
-        #         start_row=5,
-        #         start_col=2
-        #     )
-        #     # 수행된 결과 엑셀로 만들기
-        #     url = self.minio_client.upload_result(user_id="tester", template_name="test_merged", local_path=out_path)
-        # print(url)
-        return {}
+        code_snippet = make_excel_code_snippet(
+            template_name=params['template_name'],
+            output_name=params['output_name'],
+            start_row=params['start_row'],
+            start_col=params['start_col'],
+            sheet_name=params.get('sheet_name'),
+            user_id="auto"
+        )
+
+        codes = state.get("python_codes_list", []) + [code_snippet]
+
+        # 가장 마지막 LLM 로그 항목 추출
+        llm_entry = self.logger.get_logs()[-1] if self.logger.get_logs() else None
+        # state 업데이트
+        new_logs = state.get("logs", []) + [llm_entry] if llm_entry else state.get("logs", [])
+
+        return {"output_url": url, "error_msg": None, "logs": new_logs, "python_code":code_snippet, "python_codes_list": codes}
 
     def build(self):
         graph_builder = StateGraph(AgentState)

@@ -214,6 +214,26 @@ def extract_error_info(exc: Exception, code_body: str, stage: str ) -> dict:
         }
     }
 
+def make_extract_excel_params_template() -> ChatPromptTemplate:
+    system = SystemMessagePromptTemplate.from_template(
+        "사용자 명령어에서 엑셀 템플릿 이름, 시트 이름(선택), 삽입 시작 위치, 결과 파일명을"
+        " JSON으로 추출해 주세요."
+    )
+    example_h = HumanMessagePromptTemplate.from_template(
+        "\"KPIreport 템플릿을 불러와서 3열 4행부터 데이터를 꽉 차게 삽입한 뒤 KPI_결과.xlsx로 저장해줘\""
+    )
+    example_a = AIMessagePromptTemplate.from_template(
+        "{{\n"
+        "  \"template_name\": \"KPIreport\",\n"
+        "  \"sheet_name\": null,\n"
+        "  \"start_row\": 4,\n"
+        "  \"start_col\": 3,\n"
+        "  \"output_name\": \"KPI_결과.xlsx\"\n"
+        "}}"
+    )
+    user = HumanMessagePromptTemplate.from_template("{command}")
+    return ChatPromptTemplate.from_messages([system, example_h, example_a, user])
+
 def insert_df_to_excel(df: pd.DataFrame,
                        input_path: str,
                        output_path: str = None,
@@ -235,6 +255,9 @@ def insert_df_to_excel(df: pd.DataFrame,
     wb = load_workbook(filename=input_path, keep_vba=False)
     ws = wb[sheet_name] if sheet_name else wb.active
 
+    # 병합 셀 범위 리스트
+    merged_ranges = list(ws.merged_cells.ranges)
+
     # 2) 헤더 삽입
     for j, col_name in enumerate(df.columns, start=start_col):
         ws.cell(row=start_row, column=j, value=col_name)
@@ -242,9 +265,51 @@ def insert_df_to_excel(df: pd.DataFrame,
     # 3) 데이터 삽입
     for i, row in enumerate(df.itertuples(index=False), start=start_row + 1):
         for j, value in enumerate(row, start=start_col):
-            ws.cell(row=i, column=j, value=value)
+            # 병합 셀 내 포함 여부 확인: numeric bounds 검사
+            target = None
+            for merged in merged_ranges:
+                if merged.min_row <= i <= merged.max_row and merged.min_col <= j <= merged.max_col:
+                    target = (merged.min_row, merged.min_col)
+                    break
+            if target:
+                ws.cell(row=target[0], column=target[1], value=value)
+            else:
+                ws.cell(row=i, column=j, value=value)
 
     # 4) 파일 저장
     save_path = output_path or input_path
     wb.save(save_path)
     print(f"Saved to: {save_path}")
+
+def make_excel_code_snippet(template_name: str,
+                             output_name: str,
+                             start_row: int,
+                             start_col: int,
+                             sheet_name: str = None,
+                             user_id: str = "test") -> str:
+    """
+    Excel 작업을 Airflow 등에서 재실행할 수 있도록 하는 Python 코드 스니펫을 생성합니다.
+    airflow와 연결 시, insert_df_to_excel과 MinioClient를 연결할 필요가 있습니다.(주입해도 되고)
+    """
+    sheet_repr = repr(sheet_name) if sheet_name is not None else 'None'
+    return f"""
+from tempfile import TemporaryDirectory
+import os, pandas as pd
+from app.services.code_gen.graph_util import insert_df_to_excel
+from app.utils.minio_client import MinioClient
+
+def df_manipulate(df):
+    minio = MinioClient()
+    with TemporaryDirectory() as workdir:
+        tpl = os.path.join(workdir, "{template_name}.xlsx")
+        out = os.path.join(workdir, "{output_name}")
+        # 다운로드
+        minio.download_template("{template_name}", tpl)
+        # 삽입
+        insert_df_to_excel(df, tpl, out,
+                        sheet_name={sheet_repr},
+                        start_row={start_row},
+                        start_col={start_col})
+        # 업로드
+        minio.upload_result("{user_id}", "{template_name}", out)
+"""

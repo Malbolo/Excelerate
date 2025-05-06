@@ -4,8 +4,10 @@ from app.core.config import settings
 import json
 import io
 import logging
-from typing import Optional, List
+from typing import Optional, List, Union
 from uuid import uuid4
+from datetime import timedelta
+
 
 logger = logging.getLogger("minio-client")
 
@@ -97,12 +99,17 @@ class MinioClient:
             logger.error(f"Excel upload failed ({local_path}): {e}")
             raise
 
-    def presigned_download_url(self, object_name: str, expires: int = 3600) -> str:
+    def presigned_download_url(self, object_name: str, expires: Union[int, timedelta] = 3600) -> str:
         """
-        해당 object 에 대한 presigned GET URL 생성 (초 단위 만료)
+        해당 object에 대한 presigned GET URL 생성 (초 단위 만료).
+        expires는 초(int) 또는 timedelta로 지정할 수 있으며,
+        내부적으로 timedelta로 변환됩니다.
         """
+        # expires를 timedelta로 변환
+        expires_td = timedelta(seconds=expires) if isinstance(expires, (int, float)) else expires
+
         try:
-            url = self.client.presigned_get_object(self.bucket, object_name, expires=expires)
+            url = self.client.presigned_get_object(self.bucket, object_name, expires=expires_td)
             logger.info(f"Presigned URL created: {object_name}")
             return url
         except Exception as e:
