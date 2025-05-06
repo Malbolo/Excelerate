@@ -9,6 +9,14 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
@@ -33,6 +41,11 @@ const AgentMonitoringPage: React.FC = () => {
   const [searchNameList] = useState<string[]>(MUserNameList);
   const [isOpenScrollArea, setIsOpenScrollArea] = useState<boolean>(false);
 
+  const PAGE_SIZE = 4;
+  const [page, setPage] = useState(1);
+  const totalPages = Math.ceil(MJobTable.length / PAGE_SIZE);
+  const pagedJobs = MJobTable.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   const { push } = useInternalRouter();
 
   const scrollAreaRef = useClickOutsideRef<HTMLDivElement>(() =>
@@ -48,7 +61,7 @@ const AgentMonitoringPage: React.FC = () => {
   const handleSearchJobList = () => {};
 
   return (
-    <div className='flex w-full flex-col gap-4 p-8'>
+    <div className='flex h-screen w-full flex-col justify-between gap-5 p-8'>
       <div className='flex items-center gap-4'>
         <div className='flex-1'>
           <Select
@@ -114,12 +127,12 @@ const AgentMonitoringPage: React.FC = () => {
         </Button>
       </div>
 
-      <div className='flex flex-1 flex-col gap-4'>
-        {MJobTable.map(job => (
+      <section className='flex flex-1 flex-col gap-4'>
+        {pagedJobs.map(job => (
           <Card
             key={job.jobId}
             onClick={() => push(`/agent-monitoring/job/${job.jobId}`)}
-            className='cursor-pointer'
+            className='cursor-pointer p-5'
           >
             <CardHeader>
               <CardTitle>{job.title}</CardTitle>
@@ -131,7 +144,34 @@ const AgentMonitoringPage: React.FC = () => {
             </CardContent>
           </Card>
         ))}
-      </div>
+      </section>
+
+      <Pagination>
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              aria-disabled={page === 1}
+            />
+          </PaginationItem>
+          {Array.from({ length: totalPages }).map((_, index) => (
+            <PaginationItem key={index}>
+              <PaginationLink
+                isActive={page === index + 1}
+                onClick={() => setPage(index + 1)}
+              >
+                {index + 1}
+              </PaginationLink>
+            </PaginationItem>
+          ))}
+          <PaginationItem>
+            <PaginationNext
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              aria-disabled={page === totalPages}
+            />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
     </div>
   );
 };
