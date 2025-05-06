@@ -64,7 +64,7 @@ export const useDeleteJob = () => {
 // 페이지네이션에서 데이터가 없는경우 1페이지 빈문자열로 조회하는게 좋아서 기본값을 1, 6, '' 로 설정
 const getJobList = async (page = 1, size = 6, title = '') => {
   const { data, error, success } = await api<JobListResponse>(
-    `/api/jobs?page=${page}&size=${size}&title=${title}`,
+    `/api/jobs/mine?page=${page}&size=${size}&title=${title}`,
   );
 
   if (!success) {

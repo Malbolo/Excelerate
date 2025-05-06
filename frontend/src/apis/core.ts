@@ -1,7 +1,4 @@
 const BASE_URL = import.meta.env.VITE_BASE_URL;
-const ACCESS_TOKEN =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
-
 interface DataResponse<T> {
   result: 'success' | 'error';
   data: T;
@@ -29,8 +26,10 @@ export async function api<T>(
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...{ Authorization: 'Bearer ' + ACCESS_TOKEN },
     ...(init?.headers as Record<string, string>),
+    ...(localStorage.getItem('token')
+      ? { Authorization: 'Bearer ' + localStorage.getItem('token') }
+      : {}),
   };
 
   const res = await fetch(url, { ...init, headers });
