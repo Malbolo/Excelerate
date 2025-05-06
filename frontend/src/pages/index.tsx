@@ -52,12 +52,12 @@ const MainPage: React.FC = () => {
       url: sourceData,
     });
 
-    const columns: ColumnDef<DataFrameRow>[] = response.dataframe[0]
-      ? createSortableColumns(response.dataframe[0])
+    const columns: ColumnDef<DataFrameRow>[] = response.dataframe[0][0]
+      ? createSortableColumns(response.dataframe[0][0])
       : [];
 
     setData(response.dataframe[response.dataframe.length - 1]);
-    setCode(response.code);
+    setCode(response.codes[response.codes.length - 1]);
     setColumns(columns);
   };
 
