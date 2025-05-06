@@ -14,6 +14,7 @@ from langgraph.graph import START, END
 from app.utils.memory_logger import MemoryLogger
 from app.services.code_gen.graph_util import extract_error_info, make_code_template, make_classify_template, make_excel_template, insert_df_to_excel
 from app.utils.minio_client import MinioClient
+from tempfile import TemporaryDirectory
 
 from app.models.log import LogDetail
 
@@ -37,10 +38,6 @@ class CodeGenerator:
         self.cllm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0, callbacks=[self.logger])
         self.llm = ChatOpenAI(model_name="gpt-4o", temperature=0, callbacks=[self.logger])
         self.sllm = ChatOpenAI(model_name="gpt-4.1-nano", temperature=0, callbacks=[self.logger])
-
-        BASE_TEMPLATE_DIR = os.path.dirname(__file__)
-        self.file_path = os.path.join(BASE_TEMPLATE_DIR, "test.xlsx")
-        self.output_path = os.path.join(BASE_TEMPLATE_DIR, "test_merged.xlsx")
 
     def classify_and_group(self, state: AgentState) -> AgentState:
         # 로그 이름 설정 & 초기화
@@ -68,24 +65,6 @@ class CodeGenerator:
         llm_entry = self.logger.get_logs()[-1] if self.logger.get_logs() else None
         # state 업데이트
         new_logs = state.get("logs", []) + [llm_entry] if llm_entry else state.get("logs", [])
-
-
-        # ########### 겸사겸사 엑셀 조작 테스트
-        # print(self.file_path)
-        # print(self.output_path)
-
-        # df_sample = state['dataframe'][-1]
-        # df_sample.drop("defect_types", axis=1, inplace=True)
-
-        # insert_df_to_excel(
-        #     df=df_sample,
-        #     input_path=self.file_path,
-        #     output_path=self.output_path,
-        #     start_row=5,
-        #     start_col=2
-        # )
-        # ########### git에 주석 풀고 올리지 마세요!
-
 
         # 커맨드 스플릿, queue_idx 명시적 초기화
         return {'command_list': new_list, 'queue_idx': 0, 'logs': new_logs}
@@ -215,11 +194,28 @@ class CodeGenerator:
         }
 
     def excel_manipulate(self, state: AgentState) -> AgentState:
-        self.minio_client.download_template(template_name="원본", local_path="/tmp/template.xlsx")
-        ## 불러온 템플릿으로 뭔가 수행하기
-        ## 수행된 결과 엑셀로 만들기
-        url = self.minio_client.upload_result(user_id="tester", template_name="변경", local_path="/tmp/output.xlsx")
-        print(url)
+        with TemporaryDirectory() as workdir:
+            tpl_path = f"{workdir}/template.xlsx"
+            out_path = f"{workdir}/result.xlsx"
+        #     self.minio_client.download_template(template_name="test", local_path=tpl_path)
+        #     # 불러온 템플릿으로 뭔가 수행하기
+        #     ########## 겸사겸사 엑셀 조작 테스트
+        #     print(tpl_path)
+        #     print(out_path)
+
+        #     df_sample = state['dataframe'][-1]
+        #     df_sample.drop("defect_types", axis=1, inplace=True)
+
+        #     insert_df_to_excel(
+        #         df=df_sample,
+        #         input_path=tpl_path,
+        #         output_path=out_path,
+        #         start_row=5,
+        #         start_col=2
+        #     )
+        #     # 수행된 결과 엑셀로 만들기
+        #     url = self.minio_client.upload_result(user_id="tester", template_name="test_merged", local_path=out_path)
+        # print(url)
         return {}
 
     def build(self):
