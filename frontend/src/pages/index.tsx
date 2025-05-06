@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import CommandList from '@/pages/main/components/CommandList';
 import MainSideBar from '@/pages/main/components/MainSideBar';
+import SaveJobDialog from '@/pages/main/components/SaveJobDialog';
 import SourceData from '@/pages/main/components/SourceData';
 import TemplateList from '@/pages/main/components/TemplateList';
 import { useJobStore } from '@/store/useJobStore';
@@ -16,6 +17,7 @@ import { createSortableColumns } from '@/utils/dataframe';
 
 const MainPage: React.FC = () => {
   const [sourceData, setSourceData] = useState<string>('');
+  const [sourceDataCommand, setSourceDataCommand] = useState<string>('');
   const [commandList, setCommandList] = useState<TCommand[]>([]);
   const [command, setCommand] = useState<string>('');
 
@@ -25,7 +27,7 @@ const MainPage: React.FC = () => {
   const [trace] = useState<string>('');
 
   const [step, setStep] = useState<'source' | 'command'>('source');
-  const { isEditMode, canSaveJob, setCanSaveJob } = useJobStore();
+  const { isEditMode, setCanSaveJob } = useJobStore();
 
   const commandMutation = useSendCommandList();
   const sourceDataMutation = useGetSourceData();
@@ -37,6 +39,7 @@ const MainPage: React.FC = () => {
       ? createSortableColumns(response.dataframe[0])
       : [];
 
+    setSourceDataCommand(command);
     setData(response.dataframe);
     setSourceData(response.url);
     setColumns(columns);
@@ -103,9 +106,6 @@ const MainPage: React.FC = () => {
     setCanSaveJob(true);
   };
 
-  // TODO: 모달 표시
-  const handleSaveJob = async () => {};
-
   return (
     <div className='relative mx-auto flex h-full w-full overflow-hidden'>
       <div className='mx-auto flex w-full max-w-[800px] flex-1 flex-col justify-between gap-4 p-8'>
@@ -129,12 +129,12 @@ const MainPage: React.FC = () => {
                 >
                   Run
                 </Button>
-                <Button
-                  variant={canSaveJob && !isEditMode ? 'default' : 'disabled'}
-                  onClick={handleSaveJob}
-                >
-                  Save Job
-                </Button>
+                <SaveJobDialog
+                  sourceData={sourceData}
+                  sourceDataCommand={sourceDataCommand}
+                  commandList={commandList}
+                  code={code}
+                />
               </div>
             </div>
 

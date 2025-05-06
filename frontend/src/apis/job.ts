@@ -5,6 +5,21 @@ import { DataFrame } from '@/types/dataframe';
 
 import { api } from './core';
 
+export interface SaveJobRequest {
+  type: string;
+  name: string;
+  description: string;
+  data_load_command: string;
+  data_load_url: string;
+  commands: string[];
+  code: string;
+}
+
+interface SaveJobResponse {
+  job_id: string;
+  created_at: string;
+}
+
 interface SendCommandListResponse {
   code: string;
   dataframe: DataFrame[];
@@ -16,6 +31,19 @@ interface GetSourceDataResponse {
   url: string;
   dataframe: DataFrame;
 }
+
+const saveJob = async (request: SaveJobRequest) => {
+  const { data, error, success } = await api<SaveJobResponse>('/api/jobs', {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
+
+  if (!success) {
+    throw new Error(error);
+  }
+
+  return data;
+};
 
 const sendCommandList = async ({
   command_list,
@@ -53,6 +81,20 @@ const getSourceData = async (command: string) => {
   }
 
   return data;
+};
+
+export const useSaveJob = () => {
+  const { mutateAsync } = useMutation({
+    mutationFn: (request: SaveJobRequest) => saveJob(request),
+    onSuccess: () => {
+      toast.success('Job saved successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+
+  return mutateAsync;
 };
 
 export const useSendCommandList = () => {
