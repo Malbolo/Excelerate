@@ -57,4 +57,4 @@ app.include_router(endpoints.router, prefix="/api/agent")
     responses=docs.base["res"],
 )
 async def read_root(request: Request):
-    return JSONResponse(status_code=200, content={"message": "Hello, FastAPI!"},)
+    return JSONResponse(status_code=200, content={"result" : "success", "data" : {"message": "Hello, FastAPI!"}})

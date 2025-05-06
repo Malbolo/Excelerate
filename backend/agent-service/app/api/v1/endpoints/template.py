@@ -36,7 +36,7 @@ async def upload_template(
             raise HTTPException(status_code=500, detail=f"템플릿 업로드 실패: {e}")
 
     # with 블록 벗어나면 tmpdir 전체가 자동 삭제됩니다
-    return JSONResponse(status_code=201, content={"message": f"'{template_name}' 업로드 완료."})
+    return JSONResponse(status_code=201, content={"result" : "success", "data" : {"message": f"'{template_name}' 업로드 완료."}})
 
 @router.get("/", summary="등록된 템플릿 목록 조회")
 async def list_templates(
@@ -46,7 +46,7 @@ async def list_templates(
         templates = minio.list_templates()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"템플릿 조회 실패: {e}")
-    return JSONResponse(status_code=200, content={"templates": templates})
+    return JSONResponse(status_code=200, content={"result" : "success", "data" : {"templates": templates}})
 
 @router.delete("/{template_name}", summary="특정 템플릿 삭제")
 async def delete_template(
@@ -57,4 +57,4 @@ async def delete_template(
         minio.delete_template(template_name)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"템플릿 삭제 실패: {e}")
-    return JSONResponse(status_code=200, content={"message": f"'{template_name}' 삭제 완료."})
+    return JSONResponse(status_code=200, content={"result" : "success", "data" : {"message": f"'{template_name}' 삭제 완료."}})

@@ -71,4 +71,4 @@ async def command_code(
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    return JSONResponse(status_code=200, content=jsonable_encoder(payload))
+    return JSONResponse(status_code=200, content={"result" : "success", "data" : jsonable_encoder(payload)})

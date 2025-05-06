@@ -18,4 +18,4 @@ async def query_rag(
         answer = await llm_test.run(request.question)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    return JSONResponse(status_code=200, content={"answer": answer})
+    return JSONResponse(status_code=200, content={"result" : "success", "data" : {"answer": answer}})
