@@ -43,45 +43,56 @@ def make_code_template() -> ChatPromptTemplate:
     return prompt
 
 def make_classify_template() -> ChatPromptTemplate:
+    """
+    사용자 명령어 리스트를 분석하여,
+    1) 연속된 데이터프레임(df) 명령은 하나의 그룹으로 묶어 하나의 JSON 문자열로 'command'에 넣고, 'type'을 'df'로 지정합니다.
+    2) '템플릿'(또는 'template') 키워드가 포함된 명령은 'type'을 'excel'로 지정하고, 개별 문자열로 처리합니다.
+    출력은 JSON 객체 배열이며, 각 객체는 'command'(문자열)와 'type'('df' 또는 'excel') 필드를 가집니다.
+
+    예시 입력:
+      ["압력이 3이상인 것만 필터링 해주세요", "createdAt의 포맷을 YYYY-MM-DD로 바꿔주세요", "KPIreport 템플릿 불러오기"]
+    예시 출력:
+      [
+        {"command":"[\"압력이 3이상인 것만 필터링 해주세요\",\"createdAt의 포맷을 YYYY-MM-DD로 바꿔주세요\"]","type":"df"},
+        {"command":"KPIreport 템플릿 불러오기","type":"excel"}
+      ]
+    """
+    # 시스템 메시지: 분류 규칙 정의
     system = SystemMessagePromptTemplate.from_template(
-        "사용자가 입력한 커맨드 리스트를 다음 규칙에 따라 그룹화하세요:\n"
-        "1) 엑셀 파일 조작 명령(예: '템플릿 불러오기', '데이터 붙여넣기', '파일 저장' 등)은 반드시 개별 요소로 유지합니다.\n"
-        "2) 그 외의 단순 명령은 순서를 유지하며, **두 개 이상의 연속된** 단순 명령만 하나의 리스트로 묶습니다.\n"
-        "   - 단일 단순 명령은 리스트로 묶지 않고 문자열로 그대로 유지합니다.\n"
-        "3) 전체 명령의 순서는 원본 입력과 **완전히 일치**해야 합니다.\n"
-        "4) 출력은 순수 JSON array 형태로만 반환하세요."
+        "당신은 사용자 명령어를 'df'와 'excel'로 분류하는 전문가입니다. "
+        "연속된 df 명령은 그룹으로 묶고, 엑셀 파일을 직접 조작해야 하는 '템플릿'(또는 'template')이 포함된 명령은 'excel'로 분류하세요. "
+        "각 결과는 'command'(문자열)와 'type'('df' 또는 'excel')을 가진 JSON 객체 배열로 반환해야 합니다."
     )
 
-    # 예시 1: 두 개의 연속된 단순 명령이 있으므로 묶이고, 뒤의 엑셀 조작은 개별
+    # 예시 1: 두 개의 df 연속 → 그룹, excel 단일
     example_h1 = HumanMessagePromptTemplate.from_template(
-        '["압력이 3이상인 것만 필터링 해주세요", "createAt의 포맷을 YYYY-MM-DD로 바꿔주세요", '
-        '"KPIreport 템플릿을 불러와 2열에 데이터를 붙여넣어 주세요"]'
+        '["압력이 3이상인 것만 필터링 해주세요", "createdAt의 포맷을 YYYY-MM-DD로 바꿔주세요", "KPIreport 템플릿 불러오기"]'
     )
     example_a1 = AIMessagePromptTemplate.from_template(
-        '[["압력이 3이상인 것만 필터링 해주세요", "createAt의 포맷을 YYYY-MM-DD로 바꿔주세요"], '
-        '"KPIreport 템플릿을 불러와 2열에 데이터를 붙여넣어 주세요"]'
+        '[{{"command":"[\\"압력이 3이상인 것만 필터링 해주세요\\",\\"createdAt의 포맷을 YYYY-MM-DD로 바꿔주세요\\"]","type":"df"}},'
+        '{{"command":"KPIreport 템플릿 불러오기","type":"excel"}}]'
     )
 
-    # 예시 2: 단순 명령이 엑셀 조작 명령 사이에 분리되어 있으므로,
-    # 각 단일 명령은 그대로 문자열로 남고, 묶이지 않습니다.
+    # 예시 2: excel 먼저 → 두 개 df 그룹 → excel
     example_h2 = HumanMessagePromptTemplate.from_template(
-        '["열 이름 소문자로 변환", "sheet2 템플릿 열기", "그룹별 합계 계산"]'
+        '["Report_template 다운로드", "데이터 정렬", "값 범위 필터링", "결과 저장"]'
     )
     example_a2 = AIMessagePromptTemplate.from_template(
-        '["열 이름 소문자로 변환", "sheet2 템플릿 열기", "그룹별 합계 계산"]'
+        '[{{"command":"Report_template 다운로드","type":"excel"}},'
+        '{{"command":"[\\"데이터 정렬\\",\\"값 범위 필터링\\"]","type":"df"}},'
+        '{{"command":"결과 저장","type":"excel"}}]'
     )
 
-    user = HumanMessagePromptTemplate.from_template(
-        "사용자 입력: {cmd_list}"
-    )
+    # 사용자 입력 바인딩
+    user = HumanMessagePromptTemplate.from_template("{cmd_list}")
 
-    prompt = ChatPromptTemplate.from_messages([
+    # 프롬프트 순서 조합
+    return ChatPromptTemplate.from_messages([
         system,
         example_h1, example_a1,
         example_h2, example_a2,
-        user,
+        user
     ])
-    return prompt
 
 def make_excel_template() -> ChatPromptTemplate:
     """
