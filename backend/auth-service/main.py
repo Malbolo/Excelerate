@@ -20,6 +20,10 @@ app.add_middleware(
 encoded_key = os.getenv("JWT_SECRET")
 JWT_SECRET = base64.b64decode(encoded_key)
 
+@app.options("/auth")
+def options_handler():
+    return Response(status_code=204)
+
 @app.get("/auth")
 def forward_auth(Authorization: str = Header(None)):
     user_id = ""

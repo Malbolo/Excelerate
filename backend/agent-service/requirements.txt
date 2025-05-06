@@ -93,6 +93,7 @@ Pygments
 pyproject_hooks
 python-dateutil
 python-dotenv
+python-multipart
 pytz
 PyYAML
 pyzmq

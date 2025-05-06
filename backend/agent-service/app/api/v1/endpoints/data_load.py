@@ -20,7 +20,7 @@ async def command_code(
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    return JSONResponse(status_code=200, content={"url": url, "dataframe" : result.to_dict(orient="records")})
+    return JSONResponse(status_code=200, content={"result" : "success", "data" : {"url": url, "dataframe" : result.to_dict(orient="records")}})
 
 
 @router.post("/make")
@@ -41,4 +41,4 @@ async def make_rag(
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    return JSONResponse(status_code=200, content="vector DB 구성됨")
+    return JSONResponse(status_code=200, content={"result" : "success", "data" : "vector DB 구성됨"})

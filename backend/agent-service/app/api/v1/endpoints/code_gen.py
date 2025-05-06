@@ -33,12 +33,14 @@ async def command_code(
                 'python_code': '',
                 'python_codes_list': [],
                 'command_list': request.command_list,
+                'classified_cmds': [],
+                'current_unit': {},
                 'queue_idx': 0,
-                'current_cmds': [],
                 'dataframe': [pd.DataFrame(checkdata)],
                 'retry_count': 0,
-                "error_msg": None,
-                "logs": []
+                'error_msg': None,
+                'logs': [],
+                'download_url': ''
             }
 
         answer = graph.invoke(query)
@@ -54,10 +56,11 @@ async def command_code(
         ]
 
         payload = {
-            "code":      answer["python_code"],
+            "codes":      answer["python_codes_list"],
             "dataframe": serialized,      # 여전히 to_dict 직후의 리스트
             "error_msg": answer["error_msg"],
             "logs":      answer["logs"],
+            "download_url":answer["download_url"],
         }
         # logs는 redis에 따로 저장하는 것을 고려
 
@@ -68,4 +71,4 @@ async def command_code(
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    return JSONResponse(status_code=200, content=jsonable_encoder(payload))
+    return JSONResponse(status_code=200, content={"result" : "success", "data" : jsonable_encoder(payload)})

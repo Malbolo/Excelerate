@@ -5,15 +5,20 @@ import os
 
 from dotenv import load_dotenv
 
-from typing_extensions import List
+from pydantic import BaseModel, Field
+from typing_extensions import List, Dict, Optional, Any
 from langgraph.graph import StateGraph, MessagesState
 from langchain_core.messages import AIMessage
 from langchain_openai import ChatOpenAI
 from langgraph.graph import START, END
 
 from app.utils.memory_logger import MemoryLogger
-from app.services.code_gen.graph_util import extract_error_info, make_code_template, make_classify_template, make_excel_template, insert_df_to_excel
+from app.services.code_gen.graph_util import (
+    extract_error_info, make_code_template, make_classify_template,
+    make_extract_excel_params_template, insert_df_to_excel, make_excel_code_snippet
+)
 from app.utils.minio_client import MinioClient
+from tempfile import TemporaryDirectory
 
 from app.models.log import LogDetail
 
@@ -22,13 +27,15 @@ load_dotenv()
 class AgentState(MessagesState):
     command_list: List[str]
     queue_idx: int # 현재 진행중인 큐
-    current_cmds: List[str] # 현재 큐의 커맨드 리스트
+    classified_cmds: List[dict] # 타입 분류된 커맨드 리스트
+    current_unit: Optional[Dict[str, str]] = Field(None, description="현재 실행 중인 명령 단위(cmd, type)")
     python_code: str
     python_codes_list: List[str] # 각 단계별 코드 리스트 모음
     dataframe: List[pd.DataFrame]
     retry_count: int
     error_msg: dict | None
     logs: List[LogDetail]
+    download_url: str
 
 class CodeGenerator:
     def __init__(self):
@@ -38,11 +45,12 @@ class CodeGenerator:
         self.llm = ChatOpenAI(model_name="gpt-4o", temperature=0, callbacks=[self.logger])
         self.sllm = ChatOpenAI(model_name="gpt-4.1-nano", temperature=0, callbacks=[self.logger])
 
-        BASE_TEMPLATE_DIR = os.path.dirname(__file__)
-        self.file_path = os.path.join(BASE_TEMPLATE_DIR, "test.xlsx")
-        self.output_path = os.path.join(BASE_TEMPLATE_DIR, "test_merged.xlsx")
-
     def classify_and_group(self, state: AgentState) -> AgentState:
+        """
+        1) 사용자 커맨드 리스트를 LLM에 넘겨
+           [{'command': ..., 'type': 'df'|'excel'}, ...] 형태로 분류
+        2) 실패 시 모든 명령을 'df'로 간주
+        """
         # 로그 이름 설정 & 초기화
         self.logger.set_name("LLM Call: Split Command List")
         self.logger.reset()
@@ -53,58 +61,60 @@ class CodeGenerator:
         cng_chain = prompt | self.sllm
         resp = cng_chain.invoke({"cmd_list": json.dumps(cmds, ensure_ascii=False)})
         
+        # 5. 응답 파싱 & 검증
+        classified: list[dict] = []
         try:
             parsed = json.loads(resp.content)
-            # JSON이 리스트가 아니면 에러
             if not isinstance(parsed, list):
-                raise ValueError("Not a list")
-            # 모든 요소를 문자열로 보장
-            new_list = [str(x) for x in parsed]
-        except (json.JSONDecodeError, ValueError):
-            # 파싱 실패 시 기존 리스트 유지
-            new_list = cmds
+                raise ValueError("Expected a JSON list")
 
-        # 가장 마지막 LLM 로그 항목 추출
+            for item in parsed:
+                cmd = item.get("command")
+                typ = item.get("type")
+                if not cmd or typ not in ("df", "excel"):
+                    raise ValueError(f"Invalid item: {item}")
+                classified.append({"cmd": cmd, "type": typ})
+
+        except Exception:
+            # 파싱 실패 시, 모든 명령을 df로 처리
+            classified = [{"cmd": c, "type": "df"} for c in cmds]
+
+        # 로깅 추출
         llm_entry = self.logger.get_logs()[-1] if self.logger.get_logs() else None
-        # state 업데이트
-        new_logs = state.get("logs", []) + [llm_entry] if llm_entry else state.get("logs", [])
+        new_logs  = state.get("logs", []) + ([llm_entry] if llm_entry else [])
 
-
-        # ########### 겸사겸사 엑셀 조작 테스트
-        # print(self.file_path)
-        # print(self.output_path)
-
-        # df_sample = state['dataframe'][-1]
-        # df_sample.drop("defect_types", axis=1, inplace=True)
-
-        # insert_df_to_excel(
-        #     df=df_sample,
-        #     input_path=self.file_path,
-        #     output_path=self.output_path,
-        #     start_row=5,
-        #     start_col=2
-        # )
-        # ########### git에 주석 풀고 올리지 마세요!
-
-
-        # 커맨드 스플릿, queue_idx 명시적 초기화
-        return {'command_list': new_list, 'queue_idx': 0, 'logs': new_logs}
+        # State 업데이트
+        return {
+            "classified_cmds": classified,
+            "queue_idx":       0,
+            "logs":            new_logs
+        }
 
     def next_unit(self, state: AgentState) -> AgentState:
-        units = state.get("command_list", []) # 전체 커맨드 리스트
-        idx   = state.get("queue_idx", 99) # 현재 처리중인 queue idx
+        """
+        classified_cmds 리스트에서 queue_idx 위치의 유닛을 꺼내
+        state["current_unit"]에 담고,
+        queue_idx는 +1, retry_count는 0으로 초기화하여 반환.
+        """
+        classified = state["classified_cmds"]
+        idx        = state.get("queue_idx", 0)
 
-        # 더 처리할 게 없으면 END 분기로
-        if idx >= len(units):
-            return {"current_cmds": []}
+        # 1) 남은 명령이 없으면 종료 플래그 세팅
+        if idx >= len(classified):
+            return {"current_unit" : {"type":"done"}}
 
-        # 현재 unit 하나 꺼내고, queue_index 증가
-        current = units[idx]
-        return {
-            "current_cmds": [current],   # codegen 이 참조할 리스트
-            "queue_idx":   idx + 1, # 이거 증가하는 타이밍을 차후 execute 완료 시로 수정하여, current_cmds 없이 구현
-            "retry_count": 0, # 다음으로 넘어가며 retry_count 초기화
+        # 2) 현재 유닛 꺼내기
+        unit = classified[idx]
+        #    unit == {"cmd": "...", "type": "df" or "excel"}
+
+        # 3) 다음 인덱스와 retry_count 초기화
+        new_state = {
+            **state,
+            "current_unit": unit,
+            "queue_idx":    idx + 1,
+            "retry_count":  0
         }
+        return new_state
 
     def code_gen(self, state: AgentState) -> AgentState:
         """
@@ -123,11 +133,9 @@ class CodeGenerator:
 
         # 메시지를 state에서 가져옵니다.
         df = state['dataframe'][-1] # 마지막 df
-        input = state["current_cmds"]
+        input = state["current_unit"]["cmd"]
 
         code_gen_prompt = make_code_template()
-
-        
 
         schain = code_gen_prompt | self.sllm
         
@@ -215,12 +223,55 @@ class CodeGenerator:
         }
 
     def excel_manipulate(self, state: AgentState) -> AgentState:
-        self.minio_client.download_template(template_name="원본", local_path="/tmp/template.xlsx")
-        ## 불러온 템플릿으로 뭔가 수행하기
-        ## 수행된 결과 엑셀로 만들기
-        url = self.minio_client.upload_result(user_id="tester", template_name="변경", local_path="/tmp/output.xlsx")
+        """
+        'excel' 타입 명령 처리:
+        - 커맨드에서 템플릿 이름 추출
+        - MinIO에서 템플릿 다운로드
+        - 마지막 DataFrame을 템플릿에 삽입
+        - 결과 엑셀을 MinIO에 업로드하고 presigned URL 반환
+        """
+        self.logger.set_name("LLM Call: Manipulate Excel")
+        self.logger.reset()
+        unit = state['current_unit']
+        cmd = unit.get("cmd", "")
+
+        prompt = make_extract_excel_params_template()
+        params = json.loads((prompt | self.sllm).invoke({"command": str(cmd)}).content)
+
+        with TemporaryDirectory() as workdir:
+            tpl_path = f"{workdir}/template.xlsx"
+            out_path = f"{workdir}/result.xlsx"
+
+            self.minio_client.download_template(params["template_name"], tpl_path)
+            df = state["dataframe"][-1]
+            insert_df_to_excel(
+                df,
+                input_path=tpl_path,
+                output_path=out_path,
+                sheet_name=params.get("sheet_name"),
+                start_row=params["start_row"],
+                start_col=params["start_col"]
+            )
+            url = self.minio_client.upload_result(user_id="test", template_name=params["output_name"], local_path=out_path)
         print(url)
-        return {}
+
+        code_snippet = make_excel_code_snippet(
+            template_name=params['template_name'],
+            output_name=params['output_name'],
+            start_row=params['start_row'],
+            start_col=params['start_col'],
+            sheet_name=params.get('sheet_name'),
+            user_id="auto"
+        )
+
+        codes = state.get("python_codes_list", []) + [code_snippet]
+
+        # 가장 마지막 LLM 로그 항목 추출
+        llm_entry = self.logger.get_logs()[-1] if self.logger.get_logs() else None
+        # state 업데이트
+        new_logs = state.get("logs", []) + [llm_entry] if llm_entry else state.get("logs", [])
+
+        return {"download_url": url, "error_msg": None, "logs": new_logs, "python_code":code_snippet, "python_codes_list": codes}
 
     def build(self):
         graph_builder = StateGraph(AgentState)
@@ -231,6 +282,7 @@ class CodeGenerator:
             'retry':   self.retry,
             'error':   self.error_node,
             'execute': self.execute_code,
+            'excel_manipulate': self.excel_manipulate
         }
         # 노드로 등록
         for name, fn in handlers.items():
@@ -239,31 +291,42 @@ class CodeGenerator:
 
         graph_builder.add_edge(START, 'split')
         graph_builder.add_edge('split', 'next_unit')
-        # 남아 있는 cmds가 있으면 수행, 아니면 종료
+
+        # next_unit 단계: 완료 여부 및 타입(df/excel) 따라 분기
         graph_builder.add_conditional_edges(
-            "next_unit",
-            lambda s: "has"  if s.get("current_cmds") else "done",
-            {"has": "codegen", "done": END}
+            'next_unit',
+            lambda state: state['current_unit'].get('type'),
+            {
+                'done': END,
+                'df': 'codegen',
+                'excel': 'excel_manipulate'
+            }
         )
+
+        # DataFrame 코드 생성 → 실행 → 분기 처리
         graph_builder.add_edge('codegen', 'execute')
         graph_builder.add_conditional_edges(
-            "execute",
-            # error_msg가 없으면 success, 있으면 retry
-            lambda s: "success" if not s.get("error_msg") else "fail",
+            'execute',
+            # error_msg 유무 + retry_count 체크로 분기
+            lambda state: (
+                'success' if state['error_msg'] is None
+                else 'retry' if state['retry_count'] < 3
+                else 'error'
+            ),
             {
-                "success": 'next_unit',   # 에러 없으면 다음 커맨드 리스트로
-                "fail":   "retry"  # 에러 있으면 retry
+                'success': 'next_unit',
+                'retry':   'retry',
+                'error':   'error'
             }
         )
-        graph_builder.add_conditional_edges(
-            'retry',
-            # retry_count가 3이상이면 최종 실패
-            lambda s: "retry" if not s.get("error_msg") else "fail",
-            {
-                "retry": 'codegen',
-                "fail":   'error'  # 3번 이상 실패했으면 에러로 종료
-            }
-        )
+
+        # 재시도 로직: retry 횟수 증가 후 재코드 생성
+        graph_builder.add_edge('retry', 'codegen')
+
+        # excel_manipulate 처리 후 다음 명령으로 복귀
+        graph_builder.add_edge('excel_manipulate', 'next_unit')
+
+        # 오류 노드 → 종료
         graph_builder.add_edge('error', END)
 
         return graph_builder.compile()

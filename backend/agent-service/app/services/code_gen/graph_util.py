@@ -43,45 +43,56 @@ def make_code_template() -> ChatPromptTemplate:
     return prompt
 
 def make_classify_template() -> ChatPromptTemplate:
+    """
+    사용자 명령어 리스트를 분석하여,
+    1) 연속된 데이터프레임(df) 명령은 하나의 그룹으로 묶어 하나의 JSON 문자열로 'command'에 넣고, 'type'을 'df'로 지정합니다.
+    2) '템플릿'(또는 'template') 키워드가 포함된 명령은 'type'을 'excel'로 지정하고, 개별 문자열로 처리합니다.
+    출력은 JSON 객체 배열이며, 각 객체는 'command'(문자열)와 'type'('df' 또는 'excel') 필드를 가집니다.
+
+    예시 입력:
+      ["압력이 3이상인 것만 필터링 해주세요", "createdAt의 포맷을 YYYY-MM-DD로 바꿔주세요", "KPIreport 템플릿 불러오기"]
+    예시 출력:
+      [
+        {"command":"[\"압력이 3이상인 것만 필터링 해주세요\",\"createdAt의 포맷을 YYYY-MM-DD로 바꿔주세요\"]","type":"df"},
+        {"command":"KPIreport 템플릿 불러오기","type":"excel"}
+      ]
+    """
+    # 시스템 메시지: 분류 규칙 정의
     system = SystemMessagePromptTemplate.from_template(
-        "사용자가 입력한 커맨드 리스트를 다음 규칙에 따라 그룹화하세요:\n"
-        "1) 엑셀 파일 조작 명령(예: '템플릿 불러오기', '데이터 붙여넣기', '파일 저장' 등)은 반드시 개별 요소로 유지합니다.\n"
-        "2) 그 외의 단순 명령은 순서를 유지하며, **두 개 이상의 연속된** 단순 명령만 하나의 리스트로 묶습니다.\n"
-        "   - 단일 단순 명령은 리스트로 묶지 않고 문자열로 그대로 유지합니다.\n"
-        "3) 전체 명령의 순서는 원본 입력과 **완전히 일치**해야 합니다.\n"
-        "4) 출력은 순수 JSON array 형태로만 반환하세요."
+        "당신은 사용자 명령어를 'df'와 'excel'로 분류하는 전문가입니다. "
+        "연속된 df 명령은 그룹으로 묶고, 엑셀 파일을 직접 조작해야 하는 '템플릿'(또는 'template')이 포함된 명령은 'excel'로 분류하세요. "
+        "각 결과는 'command'(문자열)와 'type'('df' 또는 'excel')을 가진 JSON 객체 배열로 반환해야 합니다."
     )
 
-    # 예시 1: 두 개의 연속된 단순 명령이 있으므로 묶이고, 뒤의 엑셀 조작은 개별
+    # 예시 1: 두 개의 df 연속 → 그룹, excel 단일
     example_h1 = HumanMessagePromptTemplate.from_template(
-        '["압력이 3이상인 것만 필터링 해주세요", "createAt의 포맷을 YYYY-MM-DD로 바꿔주세요", '
-        '"KPIreport 템플릿을 불러와 2열에 데이터를 붙여넣어 주세요"]'
+        '["압력이 3이상인 것만 필터링 해주세요", "createdAt의 포맷을 YYYY-MM-DD로 바꿔주세요", "KPIreport 템플릿 불러오기"]'
     )
     example_a1 = AIMessagePromptTemplate.from_template(
-        '[["압력이 3이상인 것만 필터링 해주세요", "createAt의 포맷을 YYYY-MM-DD로 바꿔주세요"], '
-        '"KPIreport 템플릿을 불러와 2열에 데이터를 붙여넣어 주세요"]'
+        '[{{"command":"[\\"압력이 3이상인 것만 필터링 해주세요\\",\\"createdAt의 포맷을 YYYY-MM-DD로 바꿔주세요\\"]","type":"df"}},'
+        '{{"command":"KPIreport 템플릿 불러오기","type":"excel"}}]'
     )
 
-    # 예시 2: 단순 명령이 엑셀 조작 명령 사이에 분리되어 있으므로,
-    # 각 단일 명령은 그대로 문자열로 남고, 묶이지 않습니다.
+    # 예시 2: excel 먼저 → 두 개 df 그룹 → excel
     example_h2 = HumanMessagePromptTemplate.from_template(
-        '["열 이름 소문자로 변환", "sheet2 템플릿 열기", "그룹별 합계 계산"]'
+        '["Report_template 다운로드", "데이터 정렬", "값 범위 필터링", "결과 저장"]'
     )
     example_a2 = AIMessagePromptTemplate.from_template(
-        '["열 이름 소문자로 변환", "sheet2 템플릿 열기", "그룹별 합계 계산"]'
+        '[{{"command":"Report_template 다운로드","type":"excel"}},'
+        '{{"command":"[\\"데이터 정렬\\",\\"값 범위 필터링\\"]","type":"df"}},'
+        '{{"command":"결과 저장","type":"excel"}}]'
     )
 
-    user = HumanMessagePromptTemplate.from_template(
-        "사용자 입력: {cmd_list}"
-    )
+    # 사용자 입력 바인딩
+    user = HumanMessagePromptTemplate.from_template("{cmd_list}")
 
-    prompt = ChatPromptTemplate.from_messages([
+    # 프롬프트 순서 조합
+    return ChatPromptTemplate.from_messages([
         system,
         example_h1, example_a1,
         example_h2, example_a2,
-        user,
+        user
     ])
-    return prompt
 
 def make_excel_template() -> ChatPromptTemplate:
     """
@@ -203,6 +214,26 @@ def extract_error_info(exc: Exception, code_body: str, stage: str ) -> dict:
         }
     }
 
+def make_extract_excel_params_template() -> ChatPromptTemplate:
+    system = SystemMessagePromptTemplate.from_template(
+        "사용자 명령어에서 엑셀 템플릿 이름, 시트 이름(선택), 삽입 시작 위치, 결과 파일명을"
+        " JSON으로 추출해 주세요."
+    )
+    example_h = HumanMessagePromptTemplate.from_template(
+        "\"KPIreport 템플릿을 불러와서 3열 4행부터 데이터를 꽉 차게 삽입한 뒤 KPI_결과.xlsx로 저장해줘\""
+    )
+    example_a = AIMessagePromptTemplate.from_template(
+        "{{\n"
+        "  \"template_name\": \"KPIreport\",\n"
+        "  \"sheet_name\": null,\n"
+        "  \"start_row\": 4,\n"
+        "  \"start_col\": 3,\n"
+        "  \"output_name\": \"KPI_결과.xlsx\"\n"
+        "}}"
+    )
+    user = HumanMessagePromptTemplate.from_template("{command}")
+    return ChatPromptTemplate.from_messages([system, example_h, example_a, user])
+
 def insert_df_to_excel(df: pd.DataFrame,
                        input_path: str,
                        output_path: str = None,
@@ -224,6 +255,9 @@ def insert_df_to_excel(df: pd.DataFrame,
     wb = load_workbook(filename=input_path, keep_vba=False)
     ws = wb[sheet_name] if sheet_name else wb.active
 
+    # 병합 셀 범위 리스트
+    merged_ranges = list(ws.merged_cells.ranges)
+
     # 2) 헤더 삽입
     for j, col_name in enumerate(df.columns, start=start_col):
         ws.cell(row=start_row, column=j, value=col_name)
@@ -231,9 +265,51 @@ def insert_df_to_excel(df: pd.DataFrame,
     # 3) 데이터 삽입
     for i, row in enumerate(df.itertuples(index=False), start=start_row + 1):
         for j, value in enumerate(row, start=start_col):
-            ws.cell(row=i, column=j, value=value)
+            # 병합 셀 내 포함 여부 확인: numeric bounds 검사
+            target = None
+            for merged in merged_ranges:
+                if merged.min_row <= i <= merged.max_row and merged.min_col <= j <= merged.max_col:
+                    target = (merged.min_row, merged.min_col)
+                    break
+            if target:
+                ws.cell(row=target[0], column=target[1], value=value)
+            else:
+                ws.cell(row=i, column=j, value=value)
 
     # 4) 파일 저장
     save_path = output_path or input_path
     wb.save(save_path)
     print(f"Saved to: {save_path}")
+
+def make_excel_code_snippet(template_name: str,
+                             output_name: str,
+                             start_row: int,
+                             start_col: int,
+                             sheet_name: str = None,
+                             user_id: str = "test") -> str:
+    """
+    Excel 작업을 Airflow 등에서 재실행할 수 있도록 하는 Python 코드 스니펫을 생성합니다.
+    airflow와 연결 시, insert_df_to_excel과 MinioClient를 연결할 필요가 있습니다.(주입해도 되고)
+    """
+    sheet_repr = repr(sheet_name) if sheet_name is not None else 'None'
+    return f"""
+from tempfile import TemporaryDirectory
+import os, pandas as pd
+from app.services.code_gen.graph_util import insert_df_to_excel
+from app.utils.minio_client import MinioClient
+
+def df_manipulate(df):
+    minio = MinioClient()
+    with TemporaryDirectory() as workdir:
+        tpl = os.path.join(workdir, "{template_name}.xlsx")
+        out = os.path.join(workdir, "{output_name}")
+        # 다운로드
+        minio.download_template("{template_name}", tpl)
+        # 삽입
+        insert_df_to_excel(df, tpl, out,
+                        sheet_name={sheet_repr},
+                        start_row={start_row},
+                        start_col={start_col})
+        # 업로드
+        minio.upload_result("{user_id}", "{template_name}", out)
+"""
