@@ -10,19 +10,11 @@ const useInternalRouter = () => {
       goBack() {
         navigate(-1);
       },
-      push(path: RoutePath | To, data?: any) {
-        if (typeof path === 'object') {
-          navigate(path);
-        } else {
-          navigate(path, { state: data });
-        }
+      push(path: RoutePath | To) {
+        navigate(path);
       },
       replace(path: RoutePath | To) {
-        if (typeof path === 'object') {
-          navigate(path, { replace: true });
-        } else {
-          navigate(path, { replace: true });
-        }
+        navigate(path, { replace: true });
       },
     };
   }, [navigate]);
