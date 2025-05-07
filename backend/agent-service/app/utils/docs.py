@@ -102,7 +102,7 @@ class CodeGenDocs:
                 "4월 5일 이후의 데이터만 필터링 해주세요.",
                 "defect_rate가 1 이상인 데이터만 필터링 해주세요.",
                 "날짜의 포맷을 YYYY-MM-DD로 변경해주세요.",
-                "테스트 템플릿을 불러와 dataframe을 2열 5행에 붙여넣고 result로 저장해주세요"
+                "테스트 템플릿을 불러와 dataframe을 1열 5행에 붙여넣고 result로 저장해주세요"
             ],
             "url" : "http://k12s101.p.ssafy.io/api/storage/mes/factory-data/defects?factory_id=FCT001&start_date=2025-04-01&product_code=PROD001"
         }

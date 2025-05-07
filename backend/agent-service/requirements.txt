@@ -38,6 +38,7 @@ installer
 ipykernel
 ipython
 ipython_pygments_lexers
+itsdangerous
 jaraco.classes
 jedi
 jiter
