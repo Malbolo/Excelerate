@@ -85,7 +85,7 @@ const getSourceData = async (command: string) => {
 };
 
 export const useSaveJob = () => {
-  const { mutateAsync } = useMutation({
+  const { mutateAsync, isPending } = useMutation({
     mutationFn: (request: SaveJobRequest) => saveJob(request),
     onSuccess: () => {
       toast.success('Job saved successfully');
@@ -95,7 +95,7 @@ export const useSaveJob = () => {
     },
   });
 
-  return mutateAsync;
+  return { mutateAsync, isPending };
 };
 
 export const useSendCommandList = () => {

@@ -1,5 +1,8 @@
+import { useState } from 'react';
+
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
+import ClipLoader from 'react-spinners/ClipLoader';
 import { z } from 'zod';
 
 import { SaveJobRequest, useSaveJob } from '@/apis/job';
@@ -33,6 +36,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { JOB_TYPE } from '@/constant/job';
+import useInternalRouter from '@/hooks/useInternalRouter';
 import { useJobStore } from '@/store/useJobStore';
 import { TCommand } from '@/types/job';
 
@@ -70,8 +74,11 @@ const SaveJobDialog: React.FC<SaveJobDialogProps> = ({
   commandList,
   code,
 }) => {
+  const [open, setOpen] = useState(false);
   const { isEditMode, canSaveJob } = useJobStore();
-  const jobMutation = useSaveJob();
+  const { mutateAsync: jobMutation, isPending: isJobSaving } = useSaveJob();
+
+  const { push } = useInternalRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -84,26 +91,29 @@ const SaveJobDialog: React.FC<SaveJobDialogProps> = ({
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    // TODO: 이메일 전송
-    const { jobType, jobName, jobDescription } = values;
+    try {
+      const { jobType, jobName, jobDescription } = values;
+      const request: SaveJobRequest = {
+        type: jobType,
+        name: jobName,
+        description: jobDescription,
+        data_load_command: sourceDataCommand,
+        data_load_url: sourceData,
+        commands: commandList.map(command => command.title),
+        code,
+      };
 
-    const request: SaveJobRequest = {
-      type: jobType,
-      name: jobName,
-      description: jobDescription,
-      data_load_command: sourceDataCommand,
-      data_load_url: sourceData,
-      commands: commandList.map(command => command.title),
-      code,
-    };
-
-    const response = await jobMutation(request);
-
-    console.log(response); // 추후 제거
+      await jobMutation(request);
+      setOpen(false);
+      form.reset();
+      push('/job-management');
+    } catch (error) {
+      // 에러 처리
+    }
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger>
         <Button disabled={!canSaveJob || isEditMode}>Save Job</Button>
       </DialogTrigger>
@@ -206,8 +216,16 @@ const SaveJobDialog: React.FC<SaveJobDialogProps> = ({
                       Cancel
                     </Button>
                   </DialogClose>
-                  <Button type='submit' className='flex-1'>
-                    Save
+                  <Button
+                    type='submit'
+                    className='flex-1'
+                    disabled={isJobSaving}
+                  >
+                    {isJobSaving ? (
+                      <ClipLoader size={18} color='#000000' />
+                    ) : (
+                      'Save'
+                    )}
                   </Button>
                 </DialogFooter>
               </form>
