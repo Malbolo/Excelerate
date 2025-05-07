@@ -5,12 +5,16 @@ import { Node, RootNode } from '@/components/Graph/Node';
 import { TLog } from '@/types/agent';
 
 interface LLMGraphProps {
-  jobName: string;
   logs: TLog[];
-  onLogClick: (log: TLog) => void;
+  onLogClick?: (log: TLog) => void;
+  jobName?: string;
 }
 
-const LLMGraph: React.FC<LLMGraphProps> = ({ jobName, logs, onLogClick }) => {
+const LLMGraph: React.FC<LLMGraphProps> = ({
+  logs,
+  onLogClick,
+  jobName = '',
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const rootNodeRef = useRef<HTMLDivElement>(null);
 

@@ -1,7 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-import { TLog } from '@/types/agent';
 import { DataFrame } from '@/types/dataframe';
 
 import { api } from './core';
@@ -25,7 +24,8 @@ interface SendCommandListResponse {
   codes: string[];
   dataframe: DataFrame[];
   error_msg: string;
-  logs: TLog[];
+  download_token: string;
+  log_id: string;
 }
 
 interface GetSourceDataResponse {
@@ -85,7 +85,7 @@ const getSourceData = async (command: string) => {
 };
 
 export const useSaveJob = () => {
-  const { mutateAsync } = useMutation({
+  const { mutateAsync, isPending } = useMutation({
     mutationFn: (request: SaveJobRequest) => saveJob(request),
     onSuccess: () => {
       toast.success('Job saved successfully');
@@ -95,11 +95,11 @@ export const useSaveJob = () => {
     },
   });
 
-  return mutateAsync;
+  return { mutateAsync, isPending };
 };
 
 export const useSendCommandList = () => {
-  const { mutateAsync } = useMutation({
+  const { mutateAsync, isPending } = useMutation({
     mutationFn: ({
       command_list,
       url,
@@ -112,16 +112,16 @@ export const useSendCommandList = () => {
     },
   });
 
-  return mutateAsync;
+  return { mutateAsync, isPending };
 };
 
 export const useGetSourceData = () => {
-  const { mutateAsync } = useMutation({
+  const { mutateAsync, isPending } = useMutation({
     mutationFn: (command: string) => getSourceData(command),
     onError: (error: Error) => {
       toast.error(error.message);
     },
   });
 
-  return mutateAsync;
+  return { mutateAsync, isPending };
 };

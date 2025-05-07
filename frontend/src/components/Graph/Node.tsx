@@ -22,7 +22,7 @@ export const RootNode = forwardRef<HTMLDivElement, { jobName: string }>(
 
 interface NodeProps {
   log: TLog;
-  onLogClick: (log: TLog) => void;
+  onLogClick?: (log: TLog) => void;
 }
 
 export const Node: React.FC<NodeProps> = ({ log, onLogClick }) => {
@@ -57,7 +57,7 @@ export const Node: React.FC<NodeProps> = ({ log, onLogClick }) => {
           <div
             ref={rootNodeRef}
             className='z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-md bg-[#00A2FF]'
-            onClick={() => onLogClick(log)}
+            onClick={() => onLogClick?.(log)}
           >
             <Link color='white' className='h-4 w-4' />
           </div>

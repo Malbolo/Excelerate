@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 
 import { api } from '@/apis/core';
 import { TLog } from '@/types/agent';
@@ -49,7 +49,7 @@ export const useGetJobList = (request: GetJobListRequest) => {
 };
 
 export const useGetJobLogs = (job_id: string) => {
-  return useSuspenseQuery({
+  return useQuery({
     queryKey: ['jobLogs', job_id],
     queryFn: () => getJobLogs(job_id),
   });

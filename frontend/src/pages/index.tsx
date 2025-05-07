@@ -1,10 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { ColumnDef } from '@tanstack/react-table';
+import ClipLoader from 'react-spinners/ClipLoader';
 
 import { useGetSourceData, useSendCommandList } from '@/apis/job';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from '@/components/ui/resizable';
+import { Textarea } from '@/components/ui/textarea';
 import CommandList from '@/pages/main/components/CommandList';
 import MainSideBar from '@/pages/main/components/MainSideBar';
 import SaveJobDialog from '@/pages/main/components/SaveJobDialog';
@@ -18,19 +24,23 @@ import { createSortableColumns } from '@/utils/dataframe';
 const MainPage: React.FC = () => {
   const [sourceData, setSourceData] = useState<string>('');
   const [sourceDataCommand, setSourceDataCommand] = useState<string>('');
+  const [sourceDataUrl, setSourceDataUrl] = useState<string>('');
   const [commandList, setCommandList] = useState<TCommand[]>([]);
   const [command, setCommand] = useState<string>('');
 
   const [columns, setColumns] = useState<ColumnDef<DataFrameRow>[]>([]);
   const [data, setData] = useState<DataFrame | null>(null);
   const [code, setCode] = useState<string>('');
-  const [trace] = useState<string>('');
+  const [logId, setLogId] = useState<string>('');
+  const [downloadToken, setDownloadToken] = useState<string>('');
 
   const [step, setStep] = useState<'source' | 'command'>('source');
   const { isEditMode, setCanSaveJob } = useJobStore();
 
-  const commandMutation = useSendCommandList();
-  const sourceDataMutation = useGetSourceData();
+  const { mutateAsync: commandMutation, isPending: isCommandLoading } =
+    useSendCommandList();
+  const { mutateAsync: sourceDataMutation, isPending: isSourceDataLoading } =
+    useGetSourceData();
 
   const fetchSourceData = async () => {
     const response = await sourceDataMutation(command);
@@ -40,8 +50,9 @@ const MainPage: React.FC = () => {
       : [];
 
     setSourceDataCommand(command);
+    setSourceData(command);
     setData(response.dataframe);
-    setSourceData(response.url);
+    setSourceDataUrl(response.url);
     setColumns(columns);
   };
 
@@ -49,7 +60,7 @@ const MainPage: React.FC = () => {
     const commands = commandList.map(cmd => cmd.title);
     const response = await commandMutation({
       command_list: commands,
-      url: sourceData,
+      url: sourceDataUrl,
     });
 
     const columns: ColumnDef<DataFrameRow>[] = response.dataframe[0][0]
@@ -59,6 +70,8 @@ const MainPage: React.FC = () => {
     setData(response.dataframe[response.dataframe.length - 1]);
     setCode(response.codes[response.codes.length - 1]);
     setColumns(columns);
+    setDownloadToken(response.download_token);
+    setLogId(response.log_id);
   };
 
   const handleSubmitCommand = async () => {
@@ -70,9 +83,13 @@ const MainPage: React.FC = () => {
         setStep('command');
         break;
       case 'command':
+        const commands = command.split('\n\n');
         setCommandList(prev => [
           ...prev,
-          { title: command, status: 'pending' },
+          ...commands.map(command => ({
+            title: command,
+            status: 'pending' as const,
+          })),
         ]);
         break;
     }
@@ -81,89 +98,127 @@ const MainPage: React.FC = () => {
   };
 
   const handleRun = async () => {
-    const updateCommandStatus = (
-      index: number,
-      status: 'processing' | 'success',
-    ) => {
+    try {
+      await handleSendCommandList();
+
       setCommandList(prevCommands =>
-        prevCommands.map((command, idx) =>
-          idx === index ? { ...command, status } : command,
-        ),
+        prevCommands.map(command => ({
+          ...command,
+          status: 'success' as const,
+        })),
       );
-    };
 
-    /**
-     * 추후 소켓 통신 시 제거 예정
-     */
-    for (let i = 0; i < commandList.length; i++) {
-      updateCommandStatus(i, 'processing');
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      updateCommandStatus(i, 'success');
+      setCanSaveJob(true);
+    } catch (error) {
+      setCommandList(prevCommands =>
+        prevCommands.map(command => ({ ...command, status: 'fail' as const })),
+      );
     }
-
-    handleSendCommandList();
-    // TODO: 모든 command가 성공 시 저장 가능 상태로 변경
-    setCanSaveJob(true);
   };
+
+  useEffect(() => {
+    return () => {
+      setCanSaveJob(false);
+    };
+  }, [setCanSaveJob]);
 
   return (
     <div className='relative mx-auto flex h-full w-full overflow-hidden'>
-      <div className='mx-auto flex w-full max-w-[800px] flex-1 flex-col justify-between gap-4 p-8'>
-        <div className='flex flex-col gap-4'>
-          <div className='flex gap-4'>
-            <TemplateList />
-            <SourceData sourceData={sourceData} />
-          </div>
-
-          <section className='flex flex-col gap-2'>
-            <div className='flex items-center justify-between gap-2'>
-              <p className='text-lg font-bold'>Command List</p>
-              <div className='flex gap-2'>
-                <Button
-                  variant={
-                    commandList.length !== 0 && !isEditMode
-                      ? 'default'
-                      : 'disabled'
-                  }
-                  onClick={handleRun}
-                >
-                  Run
-                </Button>
-                <SaveJobDialog
-                  sourceData={sourceData}
-                  sourceDataCommand={sourceDataCommand}
-                  commandList={commandList}
-                  code={code}
-                />
+      <ResizablePanelGroup direction='horizontal'>
+        <ResizablePanel>
+          <div className='mx-auto flex h-full w-full max-w-[800px] flex-1 flex-col justify-between gap-4 p-8'>
+            <div className='flex flex-col gap-4'>
+              <div className='flex gap-4'>
+                <TemplateList />
+                <SourceData sourceData={sourceData} />
               </div>
+
+              <section className='flex flex-col gap-2'>
+                <div className='flex items-center justify-between gap-2'>
+                  <p className='text-lg font-bold'>Command List</p>
+                  <div className='flex gap-2'>
+                    <Button
+                      disabled={
+                        commandList.length === 0 ||
+                        isEditMode ||
+                        isCommandLoading
+                      }
+                      onClick={handleRun}
+                    >
+                      {isCommandLoading ? (
+                        <ClipLoader size={18} color='#000000' />
+                      ) : (
+                        'Run'
+                      )}
+                    </Button>
+                    <SaveJobDialog
+                      sourceData={sourceData}
+                      sourceDataCommand={sourceDataCommand}
+                      commandList={commandList}
+                      code={code}
+                    />
+                  </div>
+                </div>
+
+                <CommandList
+                  commandList={commandList}
+                  setCommandList={setCommandList}
+                />
+              </section>
             </div>
 
-            <CommandList
-              commandList={commandList}
-              setCommandList={setCommandList}
-            />
-          </section>
-        </div>
+            <div className='flex gap-2'>
+              <div className='relative flex-1'>
+                <Textarea
+                  value={command}
+                  onChange={e => setCommand(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && !isSourceDataLoading) {
+                      if (e.shiftKey) {
+                        return;
+                      }
+                      e.preventDefault();
+                      handleSubmitCommand();
+                    }
+                  }}
+                  placeholder={
+                    step === 'source'
+                      ? 'Load the source data.'
+                      : 'Please enter a command.'
+                  }
+                  disabled={isSourceDataLoading}
+                  className='min-h-[38px] resize-none'
+                />
+                {isSourceDataLoading && (
+                  <div className='absolute top-1/2 right-2 -translate-y-2/5'>
+                    <ClipLoader size={18} color='#000000' />
+                  </div>
+                )}
+              </div>
 
-        <div className='flex gap-2'>
-          <Input
-            value={command}
-            onChange={e => setCommand(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleSubmitCommand()}
-            placeholder={
-              step === 'source'
-                ? 'Load the source data.'
-                : 'Please enter a command.'
-            }
+              <Button
+                onClick={handleSubmitCommand}
+                className='h-[38px] cursor-pointer self-end'
+                disabled={isSourceDataLoading}
+              >
+                Enter
+              </Button>
+            </div>
+          </div>
+        </ResizablePanel>
+
+        <ResizableHandle withHandle />
+
+        <ResizablePanel minSize={30} maxSize={60} defaultSize={30}>
+          <MainSideBar
+            data={data}
+            columns={columns}
+            code={code}
+            logId={logId}
+            downloadToken={downloadToken}
           />
-
-          <Button onClick={handleSubmitCommand} className='cursor-pointer'>
-            Enter
-          </Button>
-        </div>
-      </div>
-
-      <MainSideBar data={data} columns={columns} code={code} trace={trace} />
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </div>
   );
 };

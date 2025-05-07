@@ -1,5 +1,8 @@
+import { useState } from 'react';
+
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
+import ClipLoader from 'react-spinners/ClipLoader';
 import { z } from 'zod';
 
 import { SaveJobRequest, useSaveJob } from '@/apis/job';
@@ -15,7 +18,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -27,6 +36,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { JOB_TYPE } from '@/constant/job';
+import useInternalRouter from '@/hooks/useInternalRouter';
 import { useJobStore } from '@/store/useJobStore';
 import { TCommand } from '@/types/job';
 
@@ -35,18 +45,18 @@ const formSchema = z.object({
   jobName: z
     .string()
     .min(2, {
-      message: 'JobName must be at least 2 characters.',
+      message: 'Job name must be at least 2 characters.',
     })
     .max(20, {
-      message: 'JobName must be at most 20 characters.',
+      message: 'Job name must be at most 20 characters.',
     }),
   jobDescription: z
     .string()
     .min(2, {
-      message: 'JobDescription must be at least 2 characters.',
+      message: 'Job description must be at least 2 characters.',
     })
     .max(100, {
-      message: 'JobDescription must be at most 100 characters.',
+      message: 'Job description must be at most 100 characters.',
     }),
   sendEmail: z.boolean().default(false).optional(),
 });
@@ -64,8 +74,11 @@ const SaveJobDialog: React.FC<SaveJobDialogProps> = ({
   commandList,
   code,
 }) => {
+  const [open, setOpen] = useState(false);
   const { isEditMode, canSaveJob } = useJobStore();
-  const jobMutation = useSaveJob();
+  const { mutateAsync: jobMutation, isPending: isJobSaving } = useSaveJob();
+
+  const { push } = useInternalRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -78,30 +91,31 @@ const SaveJobDialog: React.FC<SaveJobDialogProps> = ({
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    // TODO: 이메일 전송
-    const { jobType, jobName, jobDescription } = values;
+    try {
+      const { jobType, jobName, jobDescription } = values;
+      const request: SaveJobRequest = {
+        type: jobType,
+        name: jobName,
+        description: jobDescription,
+        data_load_command: sourceDataCommand,
+        data_load_url: sourceData,
+        commands: commandList.map(command => command.title),
+        code,
+      };
 
-    const request: SaveJobRequest = {
-      type: jobType,
-      name: jobName,
-      description: jobDescription,
-      data_load_command: sourceDataCommand,
-      data_load_url: sourceData,
-      commands: commandList.map(command => command.title),
-      code,
-    };
-
-    const response = await jobMutation(request);
-
-    console.log(response); // 추후 제거
+      await jobMutation(request);
+      setOpen(false);
+      form.reset();
+      push('/job-management');
+    } catch (error) {
+      // 에러 처리
+    }
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger>
-        <Button variant={canSaveJob && !isEditMode ? 'default' : 'disabled'}>
-          Save Job
-        </Button>
+        <Button disabled={!canSaveJob || isEditMode}>Save Job</Button>
       </DialogTrigger>
 
       <DialogContent>
@@ -134,6 +148,7 @@ const SaveJobDialog: React.FC<SaveJobDialogProps> = ({
                           </SelectContent>
                         </Select>
                       </FormControl>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -150,6 +165,7 @@ const SaveJobDialog: React.FC<SaveJobDialogProps> = ({
                           onChange={field.onChange}
                         />
                       </FormControl>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -164,9 +180,10 @@ const SaveJobDialog: React.FC<SaveJobDialogProps> = ({
                           placeholder='Job Description'
                           value={field.value}
                           onChange={field.onChange}
-                          className='h-24'
+                          className='h-24 resize-none'
                         />
                       </FormControl>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -199,8 +216,16 @@ const SaveJobDialog: React.FC<SaveJobDialogProps> = ({
                       Cancel
                     </Button>
                   </DialogClose>
-                  <Button type='submit' className='flex-1'>
-                    Save
+                  <Button
+                    type='submit'
+                    className='flex-1'
+                    disabled={isJobSaving}
+                  >
+                    {isJobSaving ? (
+                      <ClipLoader size={18} color='#000000' />
+                    ) : (
+                      'Save'
+                    )}
                   </Button>
                 </DialogFooter>
               </form>
