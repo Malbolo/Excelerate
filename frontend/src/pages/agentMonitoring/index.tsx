@@ -1,13 +1,6 @@
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -21,8 +14,8 @@ import { JOB_TYPE } from '@/constant/job';
 import { DEPARTMENT } from '@/constant/user';
 import useClickOutsideRef from '@/hooks/useClickOutsideRef';
 import useInternalRouter from '@/hooks/useInternalRouter';
-import { MJobTable } from '@/mocks/datas/dataframe';
 import { MUserNameList } from '@/mocks/datas/user';
+import JobPagination from '@/pages/agentMonitoring/components/JobPagination';
 import { TDepartment, TJobType } from '@/types/agent';
 
 const AgentMonitoringPage: React.FC = () => {
@@ -39,16 +32,19 @@ const AgentMonitoringPage: React.FC = () => {
     setIsOpenScrollArea(false),
   );
 
-  const handleSearchName = () => {
-    if (name.trim() === '') return;
+  // TODO: 이름 검색 기능 추가 시 사용
+  // const handleSearchName = () => {
+  //   if (name.trim() === '') return;
 
-    setIsOpenScrollArea(true);
+  //   setIsOpenScrollArea(true);
+  // };
+
+  const handleSearchJobList = () => {
+    push(`/agent-monitoring?uid=${name}&page=1`);
   };
 
-  const handleSearchJobList = () => {};
-
   return (
-    <div className='flex w-full flex-col gap-4 p-8'>
+    <div className='flex h-screen w-full flex-col justify-between gap-5 p-8'>
       <div className='flex items-center gap-4'>
         <div className='flex-1'>
           <Select
@@ -87,7 +83,7 @@ const AgentMonitoringPage: React.FC = () => {
           <Input
             value={name}
             onChange={e => setName(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleSearchName()}
+            onKeyDown={e => e.key === 'Enter' && handleSearchJobList()}
             placeholder='Search employee name'
           />
 
@@ -99,7 +95,6 @@ const AgentMonitoringPage: React.FC = () => {
                     <li
                       key={`${name}-${index}`}
                       className='cursor-pointer px-2 py-1 hover:bg-black/2'
-                      onClick={handleSearchJobList}
                     >
                       {name}
                     </li>
@@ -109,29 +104,12 @@ const AgentMonitoringPage: React.FC = () => {
             </div>
           )}
         </div>
-        <Button onClick={handleSearchName} className='cursor-pointer'>
+        <Button onClick={handleSearchJobList} className='cursor-pointer'>
           Search
         </Button>
       </div>
 
-      <div className='flex flex-1 flex-col gap-4'>
-        {MJobTable.map(job => (
-          <Card
-            key={job.jobId}
-            onClick={() => push(`/agent-monitoring/job/${job.jobId}`)}
-            className='cursor-pointer'
-          >
-            <CardHeader>
-              <CardTitle>{job.title}</CardTitle>
-              <CardDescription>{job.description}</CardDescription>
-            </CardHeader>
-            <CardContent className='flex w-full justify-between'>
-              <p>{job.userName}</p>
-              <p>{job.createdAt}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <JobPagination />
     </div>
   );
 };

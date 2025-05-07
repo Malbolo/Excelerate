@@ -7,9 +7,10 @@ import { TLog } from '@/types/agent';
 interface LLMGraphProps {
   jobName: string;
   logs: TLog[];
+  onLogClick: (log: TLog) => void;
 }
 
-const LLMGraph: React.FC<LLMGraphProps> = ({ jobName, logs }) => {
+const LLMGraph: React.FC<LLMGraphProps> = ({ jobName, logs, onLogClick }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const rootNodeRef = useRef<HTMLDivElement>(null);
 
@@ -51,7 +52,11 @@ const LLMGraph: React.FC<LLMGraphProps> = ({ jobName, logs }) => {
 
       <div className='flex flex-col gap-4'>
         {logs.map(log => (
-          <Node key={`${log.name}-${log.timestamp}`} log={log} />
+          <Node
+            key={`${log.name}-${log.timestamp}`}
+            log={log}
+            onLogClick={onLogClick}
+          />
         ))}
       </div>
     </section>

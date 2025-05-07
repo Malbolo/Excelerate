@@ -1,5 +1,8 @@
 import { useState } from 'react';
 
+import { useParams } from 'react-router-dom';
+
+import { useGetJobLogs } from '@/apis/agentMonitoring';
 import LLMGraph from '@/components/Graph/LLMGraph';
 import Tabs from '@/components/Tabs';
 import {
@@ -9,24 +12,30 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
-import { MGraphWithSubEvents } from '@/mocks/datas/graph';
 import { TLog } from '@/types/agent';
 
 const JobAgentMonitoringPage: React.FC = () => {
-  const [logs] = useState<TLog[]>(MGraphWithSubEvents);
+  const { jobId } = useParams() as { jobId: string };
+
+  const { data: logs } = useGetJobLogs(jobId);
+
+  const [selectedLog, setSelectedLog] = useState<TLog>(logs[0]);
+
+  const handleClickLog = (log: TLog) => {
+    setSelectedLog(log);
+  };
 
   return (
     <div className='flex h-screen w-full'>
       <section className='h-full w-[400px] overflow-y-auto bg-[#F0F0F0] p-6'>
-        <LLMGraph jobName='job name' logs={logs} />
+        <LLMGraph jobName='job name' logs={logs} onLogClick={handleClickLog} />
       </section>
       <section className='h-full flex-1 p-4'>
         <Tabs
           tabList={['Run', 'Metadata']}
-          // TODO: 추후 특정 Chain 클릭 시 해당 데이터만 보여줄 수 있도록 수정 (현재는 index=0으로 고정)
           tabPanels={[
-            <RunPanel input={logs[0].input} output={logs[0].output} />,
-            <MetadataPanel metadata={logs[0].metadata} />,
+            <RunPanel input={selectedLog.input} output={selectedLog.output} />,
+            <MetadataPanel metadata={selectedLog.metadata} />,
           ]}
         />
       </section>

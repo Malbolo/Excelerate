@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import { useNavigate } from 'react-router-dom';
+import { To, useNavigate } from 'react-router-dom';
 
 const useInternalRouter = () => {
   const navigate = useNavigate();
@@ -10,10 +10,10 @@ const useInternalRouter = () => {
       goBack() {
         navigate(-1);
       },
-      push(path: RoutePath, data?: any) {
-        navigate(path, { state: data });
+      push(path: RoutePath | To) {
+        navigate(path);
       },
-      replace(path: RoutePath) {
+      replace(path: RoutePath | To) {
         navigate(path, { replace: true });
       },
     };
