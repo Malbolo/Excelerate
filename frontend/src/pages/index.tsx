@@ -4,12 +4,12 @@ import { ColumnDef } from '@tanstack/react-table';
 
 import { useGetSourceData, useSendCommandList } from '@/apis/job';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from '@/components/ui/resizable';
+import { Textarea } from '@/components/ui/textarea';
 import CommandList from '@/pages/main/components/CommandList';
 import MainSideBar from '@/pages/main/components/MainSideBar';
 import SaveJobDialog from '@/pages/main/components/SaveJobDialog';
@@ -75,9 +75,13 @@ const MainPage: React.FC = () => {
         setStep('command');
         break;
       case 'command':
+        const commands = command.split('\n\n');
         setCommandList(prev => [
           ...prev,
-          { title: command, status: 'pending' },
+          ...commands.map(command => ({
+            title: command,
+            status: 'pending' as const,
+          })),
         ]);
         break;
     }
@@ -148,18 +152,30 @@ const MainPage: React.FC = () => {
             </div>
 
             <div className='flex gap-2'>
-              <Input
+              <Textarea
                 value={command}
                 onChange={e => setCommand(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSubmitCommand()}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    if (e.shiftKey) {
+                      return;
+                    }
+                    e.preventDefault();
+                    handleSubmitCommand();
+                  }
+                }}
                 placeholder={
                   step === 'source'
                     ? 'Load the source data.'
                     : 'Please enter a command.'
                 }
+                className='min-h-[38px] resize-none'
               />
 
-              <Button onClick={handleSubmitCommand} className='cursor-pointer'>
+              <Button
+                onClick={handleSubmitCommand}
+                className='h-[38px] cursor-pointer self-end'
+              >
                 Enter
               </Button>
             </div>
