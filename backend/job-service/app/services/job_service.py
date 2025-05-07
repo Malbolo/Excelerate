@@ -12,7 +12,7 @@ from app.schemas.job_create_schema import JobCreateRequest
 from app.schemas.job_detail_schema import JobDetailResponse
 from app.schemas.job_update_schema import JobUpdateRequest
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def get_user_info(user_id: int):
