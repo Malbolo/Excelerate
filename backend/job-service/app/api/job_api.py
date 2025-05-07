@@ -24,15 +24,17 @@ def get_jobs(
         mine: bool = Query(...),
         name: Optional[str] = Query(None),
         dep: Optional[str] = Query(None),
+        type: Optional[str] = Query(None),
         page: Optional[int] = Query(None, ge=1),
         size: Optional[int] = Query(None, ge=1),
         title: Optional[str] = Query(None)
 ) -> JSONResponse:
     user_id = auth.get_user_id_from_header(request)
-    return job_service.get_jobs(db, mine, name, dep, page, size, title, user_id)
+    return job_service.get_jobs(db, mine, name, dep, type, page, size, title, user_id)
 
 @router.get("/{job_id}")
-async def get_job_detail(job_id: int, db: Session = Depends(get_db)) -> JSONResponse:
+async def get_job_detail(request: Request, job_id: int, db: Session = Depends(get_db)) -> JSONResponse:
+    user_id = auth.get_user_id_from_header(request)
     return await job_service.get_job_detail(job_id, db)
 
 @router.put("/{job_id}")
