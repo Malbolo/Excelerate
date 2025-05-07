@@ -105,9 +105,7 @@ const SaveJobDialog: React.FC<SaveJobDialogProps> = ({
   return (
     <Dialog>
       <DialogTrigger>
-        <Button variant={canSaveJob && !isEditMode ? 'default' : 'disabled'}>
-          Save Job
-        </Button>
+        <Button disabled={!canSaveJob || isEditMode}>Save Job</Button>
       </DialogTrigger>
 
       <DialogContent>

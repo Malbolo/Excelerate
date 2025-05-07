@@ -116,12 +116,12 @@ export const useSendCommandList = () => {
 };
 
 export const useGetSourceData = () => {
-  const { mutateAsync } = useMutation({
+  const { mutateAsync, isPending } = useMutation({
     mutationFn: (command: string) => getSourceData(command),
     onError: (error: Error) => {
       toast.error(error.message);
     },
   });
 
-  return mutateAsync;
+  return { mutateAsync, isPending };
 };

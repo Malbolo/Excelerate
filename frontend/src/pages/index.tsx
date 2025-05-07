@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { ColumnDef } from '@tanstack/react-table';
+import ClipLoader from 'react-spinners/ClipLoader';
 
 import { useGetSourceData, useSendCommandList } from '@/apis/job';
 import { Button } from '@/components/ui/button';
@@ -35,7 +36,8 @@ const MainPage: React.FC = () => {
   const { isEditMode, setCanSaveJob } = useJobStore();
 
   const commandMutation = useSendCommandList();
-  const sourceDataMutation = useGetSourceData();
+  const { mutateAsync: sourceDataMutation, isPending: isSourceDataLoading } =
+    useGetSourceData();
 
   const fetchSourceData = async () => {
     const response = await sourceDataMutation(command);
@@ -101,10 +103,6 @@ const MainPage: React.FC = () => {
       );
     };
 
-    /**
-     * 추후 소켓 통신 시 제거 예정
-     */
-
     try {
       await handleSendCommandList();
 
@@ -142,11 +140,7 @@ const MainPage: React.FC = () => {
                   <p className='text-lg font-bold'>Command List</p>
                   <div className='flex gap-2'>
                     <Button
-                      variant={
-                        commandList.length !== 0 && !isEditMode
-                          ? 'default'
-                          : 'disabled'
-                      }
+                      disabled={commandList.length === 0 || isEditMode}
                       onClick={handleRun}
                     >
                       Run
@@ -168,29 +162,38 @@ const MainPage: React.FC = () => {
             </div>
 
             <div className='flex gap-2'>
-              <Textarea
-                value={command}
-                onChange={e => setCommand(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') {
-                    if (e.shiftKey) {
-                      return;
+              <div className='relative flex-1'>
+                <Textarea
+                  value={command}
+                  onChange={e => setCommand(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && !isSourceDataLoading) {
+                      if (e.shiftKey) {
+                        return;
+                      }
+                      e.preventDefault();
+                      handleSubmitCommand();
                     }
-                    e.preventDefault();
-                    handleSubmitCommand();
+                  }}
+                  placeholder={
+                    step === 'source'
+                      ? 'Load the source data.'
+                      : 'Please enter a command.'
                   }
-                }}
-                placeholder={
-                  step === 'source'
-                    ? 'Load the source data.'
-                    : 'Please enter a command.'
-                }
-                className='min-h-[38px] resize-none'
-              />
+                  disabled={isSourceDataLoading}
+                  className='min-h-[38px] resize-none'
+                />
+                {isSourceDataLoading && (
+                  <div className='absolute top-1/2 right-2 -translate-y-2/5'>
+                    <ClipLoader size={18} color='#000000' />
+                  </div>
+                )}
+              </div>
 
               <Button
                 onClick={handleSubmitCommand}
                 className='h-[38px] cursor-pointer self-end'
+                disabled={isSourceDataLoading}
               >
                 Enter
               </Button>
