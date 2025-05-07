@@ -9,6 +9,7 @@ from langchain_milvus import Milvus
 from langchain.chains.retrieval import create_retrieval_chain
 from langchain.chains.transform import TransformChain
 from pymilvus import connections, utility
+from fastapi import HTTPException
 
 from app.models.structure import FileAPIDetail
 
@@ -141,6 +142,7 @@ class FileAPIClient:
                 raise ValueError(f"{q.factory_name}에는 product_code '{q.product_code}'가 없습니다.")
         except Exception as e:
             logger.error(f"검증 중 오류 발생: {e}")
+            raise HTTPException(status_code=400, detail=f"Data fetch failed: {e}")
 
     def _assemble_url(self, q: FileAPIDetail) -> str:
         # 예시 URL: /{system_name}/factory-data/{metric}?product_code=...&start_date=...
@@ -179,7 +181,7 @@ class FileAPIClient:
             raw = self.fetch_data(url)
         except Exception as e:
             logger.warning(f"API 호출 실패: {e}")
-            raise
+            raise HTTPException(status_code=404, detail=f"Data fetch failed: {e}")
 
         # 4) DataFrame 반환
         return url, pd.DataFrame(raw["data"])

@@ -17,7 +17,10 @@ async def command_code(
 ):
     try:
         url, result = data_loader.run(request.command)
-    
+
+    except HTTPException:
+        # service에서 던진 HTTPException(400, 502 등)은 그대로 propagate
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     return JSONResponse(status_code=200, content={"result" : "success", "data" : {"url": url, "dataframe" : result.to_dict(orient="records")}})
@@ -39,6 +42,8 @@ async def make_rag(
         
         print("Vector DB 구성 완료")
     
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     return JSONResponse(status_code=200, content={"result" : "success", "data" : "vector DB 구성됨"})
