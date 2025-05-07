@@ -850,6 +850,7 @@ def get_dag_runs_by_date(dags: List[Dict[str, Any]], target_date: str) -> Dict[s
         dag_id = dag.get("dag_id")
         owner = dag.get("owners", ["unknown"])[0]
         title = dag.get("name", dag_id)
+        description = dag.get("description", "")
         is_paused = dag.get("is_paused", False)
 
         # 비활성 DAG는 건너뛰기
@@ -871,6 +872,7 @@ def get_dag_runs_by_date(dags: List[Dict[str, Any]], target_date: str) -> Dict[s
                     "schedule_id": dag_id,
                     "run_id": run.get("dag_run_id"),
                     "title": title,
+                    "description": description,
                     "owner": owner,
                     "status": state,
                     "start_time": run.get("start_date"),
@@ -930,6 +932,7 @@ def get_dag_runs_by_date(dags: List[Dict[str, Any]], target_date: str) -> Dict[s
                 result["pending"].append({
                     "schedule_id": dag_id,
                     "title": title,
+                    "description": description,
                     "owner": owner,
                     "status": "pending",
                     "next_run_time": next_run_time
