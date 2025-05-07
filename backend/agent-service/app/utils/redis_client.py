@@ -5,12 +5,9 @@ from datetime import timedelta
 from app.models.log import LogDetail
 from uuid import uuid4
 import pandas as pd
+from app.core.config import settings
 
-REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
-REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
-REDIS_DB   = int(os.getenv("REDIS_DB", 0))
-
-redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, decode_responses=True)
+redis_client = redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB, decode_responses=True)
 
 def generate_log_id(user_id: str) -> str:
     # timestamp = datetime.now(ZoneInfo("Asia/Seoul")).isoformat(timespec="seconds")
