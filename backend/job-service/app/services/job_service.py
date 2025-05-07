@@ -3,7 +3,7 @@ import math
 import requests
 from typing import Optional
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from starlette.responses import JSONResponse
 from app.crud import crud
 from app.models import models
@@ -64,7 +64,7 @@ def delete_job(db: Session, job_id: int, user_id: int):
     return crud.delete_job(db, job_id, user_id)
 
 def get_filtered_query(db: Session, mine: bool, name: Optional[str], dep: Optional[str], type: Optional[str], title: Optional[str], user_id: int):
-    query = db.query(models.Job)
+    query = db.query(models.Job).options(joinedload(models.Job.commands))
     if mine:
         query = query.filter(models.Job.user_id == user_id)
     else:
