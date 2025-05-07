@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 def get_user_info(user_id: int):
-    url = "http://user-service:8080/api/users/me/profile"
+    url = "http://user-service.user-service.svc.cluster.local:8080/api/users/me/profile"
     headers = {
         "x-user-id": str(user_id)
     }
