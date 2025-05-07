@@ -10,26 +10,36 @@ import { DataFrame, DataFrameRow } from '@/types/dataframe';
 
 import DataFrameModal from './DataFrameModal';
 
+const BASE_URL = import.meta.env.VITE_BASE_URL;
+
 interface MainSideBarProps {
   data: DataFrame | null;
   columns: ColumnDef<DataFrameRow>[];
   code: string;
   trace: string;
+  downloadToken: string;
 }
 
-const MainSideBar = memo<MainSideBarProps>(({ data, columns, code, trace }) => {
-  const tabPanels = [
-    <DataPanel key='data' data={data} columns={columns} />,
-    <CodePanel key='code' code={code} />,
-    <TracePanel key='trace' trace={trace} />,
-  ];
+const MainSideBar = memo<MainSideBarProps>(
+  ({ data, columns, code, trace, downloadToken }) => {
+    const tabPanels = [
+      <DataPanel
+        key='data'
+        data={data}
+        columns={columns}
+        downloadToken={downloadToken}
+      />,
+      <CodePanel key='code' code={code} />,
+      <TracePanel key='trace' trace={trace} />,
+    ];
 
-  return (
-    <div className='relative flex h-full w-full bg-[#F0F0F0] px-2 py-6'>
-      <Tabs tabList={['Data', 'Code', 'Trace']} tabPanels={tabPanels} />
-    </div>
-  );
-});
+    return (
+      <div className='relative flex h-full w-full bg-[#F0F0F0] px-2 py-6'>
+        <Tabs tabList={['Data', 'Code', 'Trace']} tabPanels={tabPanels} />
+      </div>
+    );
+  },
+);
 
 MainSideBar.displayName = 'MainSideBar';
 
@@ -38,7 +48,8 @@ export default MainSideBar;
 const DataPanel = memo<{
   data: DataFrame | null;
   columns: ColumnDef<DataFrameRow>[];
-}>(({ data, columns }) => {
+  downloadToken: string;
+}>(({ data, columns, downloadToken }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   if (!data)
@@ -51,9 +62,14 @@ const DataPanel = memo<{
   return (
     <div className='flex h-[90vh] flex-col'>
       <DataTable columns={columns} data={data} />
-      <div className='absolute right-1 bottom-2 z-10 cursor-pointer rounded-full bg-black p-3'>
-        <DownloadIcon color='white' size={18} />
-      </div>
+      {downloadToken && (
+        <a
+          href={`${BASE_URL}/api/agent/download?token=${downloadToken}`}
+          className='absolute right-1 bottom-2 z-10 cursor-pointer rounded-full bg-black p-3'
+        >
+          <DownloadIcon color='white' size={18} />
+        </a>
+      )}
       <div className='absolute bottom-2 left-1 z-10 cursor-pointer rounded-full border bg-white p-3'>
         <Expand
           color='black'

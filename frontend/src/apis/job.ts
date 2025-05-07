@@ -1,7 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-import { TLog } from '@/types/agent';
 import { DataFrame } from '@/types/dataframe';
 
 import { api } from './core';
@@ -25,7 +24,8 @@ interface SendCommandListResponse {
   codes: string[];
   dataframe: DataFrame[];
   error_msg: string;
-  logs: TLog[];
+  download_token: string;
+  log_id: string;
 }
 
 interface GetSourceDataResponse {

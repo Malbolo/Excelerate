@@ -24,6 +24,7 @@ import { createSortableColumns } from '@/utils/dataframe';
 const MainPage: React.FC = () => {
   const [sourceData, setSourceData] = useState<string>('');
   const [sourceDataCommand, setSourceDataCommand] = useState<string>('');
+  const [sourceDataUrl, setSourceDataUrl] = useState<string>('');
   const [commandList, setCommandList] = useState<TCommand[]>([]);
   const [command, setCommand] = useState<string>('');
 
@@ -31,6 +32,7 @@ const MainPage: React.FC = () => {
   const [data, setData] = useState<DataFrame | null>(null);
   const [code, setCode] = useState<string>('');
   const [trace] = useState<string>('');
+  const [downloadToken, setDownloadToken] = useState<string>('');
 
   const [step, setStep] = useState<'source' | 'command'>('source');
   const { isEditMode, setCanSaveJob } = useJobStore();
@@ -48,8 +50,9 @@ const MainPage: React.FC = () => {
       : [];
 
     setSourceDataCommand(command);
-    setData(response.dataframe);
     setSourceData(command);
+    setData(response.dataframe);
+    setSourceDataUrl(response.url);
     setColumns(columns);
   };
 
@@ -57,7 +60,7 @@ const MainPage: React.FC = () => {
     const commands = commandList.map(cmd => cmd.title);
     const response = await commandMutation({
       command_list: commands,
-      url: sourceData,
+      url: sourceDataUrl,
     });
 
     const columns: ColumnDef<DataFrameRow>[] = response.dataframe[0][0]
@@ -67,6 +70,7 @@ const MainPage: React.FC = () => {
     setData(response.dataframe[response.dataframe.length - 1]);
     setCode(response.codes[response.codes.length - 1]);
     setColumns(columns);
+    setDownloadToken(response.download_token);
   };
 
   const handleSubmitCommand = async () => {
@@ -210,6 +214,7 @@ const MainPage: React.FC = () => {
             columns={columns}
             code={code}
             trace={trace}
+            downloadToken={downloadToken}
           />
         </ResizablePanel>
       </ResizablePanelGroup>
