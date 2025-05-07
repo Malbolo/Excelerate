@@ -40,7 +40,7 @@ async def command_code(
                 'retry_count': 0,
                 'error_msg': None,
                 'logs': [],
-                'download_key': ''
+                'download_token': ''
             }
 
         answer = graph.invoke(query)
@@ -60,7 +60,7 @@ async def command_code(
             "dataframe": serialized,      # 여전히 to_dict 직후의 리스트
             "error_msg": answer["error_msg"],
             "logs":      answer["logs"],
-            "download_key":answer["download_key"],
+            "download_token":answer["download_token"],
         }
         # logs는 redis에 따로 저장하는 것을 고려
 

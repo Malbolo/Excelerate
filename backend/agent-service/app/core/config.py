@@ -44,6 +44,8 @@ class Settings(BaseSettings):
     # Filesystem URL 설정
     FILESYSTEM_URL: str
 
+    TOKEN_SECRET_KEY: str = "PRODENVINJECTION"
+
     # .env 파일을 읽어들여 주입. 배포 시 Jenkins Credential을 활용해 .env를 생성해 주입할 것
     class Config:
         env_file = ".env"
