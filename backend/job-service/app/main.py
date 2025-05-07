@@ -7,7 +7,7 @@ from app.api.schedule_api import router as schedule_router
 # app = FastAPI()
 app = FastAPI(docs_url="/api/jobs/docs", redoc_url=None, openapi_url="/api/jobs/openapi.json")
 
-# Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(bind=engine)
 
 app.add_middleware(
     CORSMiddleware,
