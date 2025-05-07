@@ -15,6 +15,7 @@ services:
       - AIRFLOW__API__AUTH_BACKENDS=airflow.api.auth.backend.basic_auth
       - AIRFLOW_WWW_USER_USERNAME=airflow
       - AIRFLOW_WWW_USER_PASSWORD=airflow
+      - AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL= 10
     command: version
     entrypoint: >
       bash -c "
@@ -60,6 +61,7 @@ services:
       - AIRFLOW__WEBSERVER__EXPOSE_CONFIG=true
       - AIRFLOW_WWW_USER_USERNAME=airflow
       - AIRFLOW_WWW_USER_PASSWORD=airflow
+      - AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL= 10
     volumes:
       - ./dags:/opt/airflow/dags
       - ./scripts:/app
@@ -85,6 +87,7 @@ services:
       - AIRFLOW__CORE__FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
       - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=true
       - AIRFLOW__API__AUTH_BACKENDS=airflow.api.auth.backend.basic_auth
+      - AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL= 10
     volumes:
       - ./dags:/opt/airflow/dags
       - ./scripts:/app
@@ -102,6 +105,7 @@ services:
       - AIRFLOW__CELERY__BROKER_URL=redis://redis:6379/0
       - AIRFLOW__CORE__FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
       - AIRFLOW__API__AUTH_BACKENDS=airflow.api.auth.backend.basic_auth
+      - AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL= 10
     volumes:
       - ./dags:/opt/airflow/dags
       - ./scripts:/app
