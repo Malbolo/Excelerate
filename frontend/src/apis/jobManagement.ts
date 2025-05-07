@@ -58,7 +58,7 @@ const deleteJob = async ({ id, page, keyword }: DeleteJobRequestParams) => {
     throw new Error(error);
   }
 
-  return { page: Number(page), keyword };
+  return { page: Number(page), keyword, mine: true };
 };
 
 export const useDeleteJob = () => {
@@ -69,8 +69,8 @@ export const useDeleteJob = () => {
     onError: error => {
       toast.error(error.message);
     },
-    onSuccess: ({ page, keyword }) => {
-      console.log('onSuccess', { page, keyword });
+    onSuccess: ({ page, keyword, mine }) => {
+      console.log('onSuccess', { page, keyword, mine });
       toast.success('작업이 삭제되었습니다.');
       queryClient.invalidateQueries({
         queryKey: ['jobList', page, keyword],
@@ -104,7 +104,7 @@ const getJobList = async (
 
 export const useGetJobList = (page = 1, keyword = '', mine = false) => {
   return useSuspenseQuery({
-    queryKey: ['jobList', page, keyword],
+    queryKey: ['jobList', page, keyword, mine],
     queryFn: () => getJobList(page, keyword, mine),
   });
 };
