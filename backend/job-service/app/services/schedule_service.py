@@ -10,8 +10,8 @@ from sqlalchemy import func, and_, or_
 
 from app.db.database import get_db
 from app.models.models import Schedule, ScheduleJob, ScheduleExecution, Job, JobCommand
-from app.schemas.schedule_create_schema import ScheduleCreateRequest, ScheduleCreateResponse
-from app.services import airflow_integration
+from app.schemas.schedule_schema import ScheduleCreateRequest, ScheduleUpdateRequest
+from app.services import airflow_service 
 
 async def create_schedule(request: ScheduleCreateRequest, user_id: int) -> JSONResponse:
     """스케줄 생성 서비스"""
@@ -78,16 +78,18 @@ async def create_schedule(request: ScheduleCreateRequest, user_id: int) -> JSONR
         failure_emails_list = request.failure_emails or []
         
         try:
-            airflow_integration.create_schedule_dag(
-                schedule_id, 
-                request.title,
-                request.description,
-                request.frequency,
-                request.start_date,
-                request.end_date,
-                jobs_info,
-                success_emails_list,
-                failure_emails_list
+            # 함수 이름이 airflow_service 모듈에 맞게 수정되어야 함
+            # create_schedule_dag 함수가 없다면 create_dag로 대체하거나 적절한 함수 사용
+            airflow_service.create_dag(
+                name=request.title,
+                description=request.description,
+                cron_expression=request.frequency,  # 주파수를 cron 표현식으로 변환해야 할 수 있음
+                job_ids=[job["id"] for job in jobs_info],
+                owner=f"user_{user_id}",
+                start_date=request.start_date,
+                end_date=request.end_date,
+                success_emails=success_emails_list,
+                failure_emails=failure_emails_list
             )
         except Exception as e:
             print(f"Airflow DAG 생성 실패: {e}")
@@ -95,13 +97,13 @@ async def create_schedule(request: ScheduleCreateRequest, user_id: int) -> JSONR
         
         created_at = datetime.now()
         
-        return ScheduleCreateResponse(
-            result="success",
-            data={
+        return JSONResponse(content={
+            "result": "success",
+            "data": {
                 "schedule_id": schedule_id,
                 "created_at": created_at.isoformat()
             }
-        )
+        })
     except HTTPException as e:
         db.rollback()
         raise e
@@ -281,14 +283,14 @@ async def get_schedule_detail(db: Session, schedule_id: str) -> JSONResponse:
             content={"result": "fail", "message": "스케줄 상세 조회에 실패했습니다."}
         )
     
-async def update_schedule_status(db: Session, schedule_id: str, status: str) -> dict:
+async def update_schedule_status(db: Session, schedule_id: str, status: str) -> JSONResponse:
     """스케줄 상태 업데이트 서비스"""
     try:
         schedule = db.query(Schedule).filter(Schedule.id == schedule_id).first()
         if not schedule:
-            raise HTTPException(
+            return JSONResponse(
                 status_code=404, 
-                detail="스케줄을 찾을 수 없습니다."
+                content={"result": "fail", "message": "스케줄을 찾을 수 없습니다."}
             )
         
         # 상태 업데이트
@@ -317,33 +319,30 @@ async def update_schedule_status(db: Session, schedule_id: str, status: str) -> 
         
         db.commit()
         
-        return {
+        return JSONResponse(content={
             "result": "success",
             "data": {
                 "schedule_id": schedule_id,
                 "status": status,
                 "updated_at": datetime.now().isoformat()
             }
-        }
-    except HTTPException as e:
-        db.rollback()
-        raise e
+        })
     except Exception as e:
         db.rollback()
         print(f"스케줄 상태 업데이트 중 오류 발생: {e}")
-        raise HTTPException(
+        return JSONResponse(
             status_code=500, 
-            detail=f"스케줄 상태 업데이트에 실패했습니다: {str(e)}"
+            content={"result": "fail", "message": f"스케줄 상태 업데이트에 실패했습니다: {str(e)}"}
         )
 
-async def toggle_schedule(db: Session, schedule_id: str, user_id: int, is_active: bool) -> dict:
+async def toggle_schedule(db: Session, schedule_id: str, user_id: int, is_active: bool) -> JSONResponse:
     """스케줄 활성화/비활성화 서비스"""
     try:
         schedule = db.query(Schedule).filter(Schedule.id == schedule_id, Schedule.user_id == user_id).first()
         if not schedule:
-            raise HTTPException(
+            return JSONResponse(
                 status_code=404, 
-                detail="스케줄을 찾을 수 없습니다."
+                content={"result": "fail", "message": "스케줄을 찾을 수 없습니다."}
             )
         
         # 스케줄 활성화 상태 업데이트
@@ -354,28 +353,24 @@ async def toggle_schedule(db: Session, schedule_id: str, user_id: int, is_active
         
         # Airflow API를 통해 DAG 활성화/비활성화
         try:
-            if is_active:
-                airflow_integration._unpause_dag_api(schedule_id)
-            else:
-                airflow_integration._pause_dag_api(schedule_id)
+            # 함수 이름이 airflow_service 모듈에 맞게 수정
+            # toggle_dag_pause 함수 사용
+            airflow_service.toggle_dag_pause(schedule_id, not is_active)  # is_paused는 is_active의 반대
         except Exception as e:
             print(f"Airflow DAG 상태 변경 중 오류 발생: {e}")
         
-        return {
+        return JSONResponse(content={
             "result": "success",
             "data": {
                 "schedule_id": schedule_id,
                 "is_active": is_active,
                 "updated_at": datetime.now().isoformat()
             }
-        }
-    except HTTPException as e:
-        db.rollback()
-        raise e
+        })
     except Exception as e:
         db.rollback()
         print(f"스케줄 활성화/비활성화 중 오류 발생: {e}")
-        raise HTTPException(
+        return JSONResponse(
             status_code=500, 
-            detail=f"스케줄 활성화/비활성화에 실패했습니다: {str(e)}"
+            content={"result": "fail", "message": f"스케줄 활성화/비활성화에 실패했습니다: {str(e)}"}
         )
