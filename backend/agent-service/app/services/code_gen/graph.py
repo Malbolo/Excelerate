@@ -58,7 +58,32 @@ class CodeGenerator:
         self.logger.set_name("LLM Call: Split Command List")
         self.logger.reset()
 
-        cmds = state['command_list']
+        prev_cls = state.get("classified_cmds", [])
+        all_cmds = state["command_list"]
+
+        # 1) prev_cls가 문자열(cmd:str)일 땐 1, 리스트(cmd:list)일 땐 len(cmd)로 합산
+        processed_count = 0
+        for entry in prev_cls:
+            cmd_val = entry.get("cmd")
+            if isinstance(cmd_val, list):
+                processed_count += len(cmd_val)
+            else:
+                processed_count += 1
+
+        if processed_count != 0:
+            processed_count += 1 # 스킵할 경우 n 이상이 되므로 스킵이 제대로 안되는 문제 처리
+        # 2) 건너뛸 커맨드 수만큼 앞부분 스킵 → 신규 명령어 목록
+        new_cmds = all_cmds[processed_count:]
+
+        # 3) 신규가 없으면 건너뛰기
+        if not new_cmds:
+            return {
+                "classified_cmds": prev_cls,
+                "queue_idx":       state["queue_idx"],
+                "logs":            state.get("logs", [])
+            }
+
+        cmds = new_cmds
         prompt = make_classify_template()
         # invoke
         cng_chain = prompt | self.sllm

@@ -43,7 +43,6 @@ def serialize_state(state: dict) -> dict:
         serialized_frames.append(df_copy.to_dict(orient="records"))
 
     return {
-        "command_list":       state["command_list"],
         "queue_idx":          state["queue_idx"],
         "classified_cmds":    state["classified_cmds"],
         "python_codes_list":  state["python_codes_list"],
@@ -84,7 +83,6 @@ def get_states_from_redis(session_id: str) -> dict | None:
 
     # 최소 상태만 재구성
     state = {
-        "command_list":       raw.get("command_list", []),
         "queue_idx":          raw.get("queue_idx", 0),
         "classified_cmds":    raw.get("classified_cmds", []),
         "python_codes_list":  raw.get("python_codes_list", []),

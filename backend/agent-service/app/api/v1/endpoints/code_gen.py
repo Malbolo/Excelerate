@@ -33,11 +33,7 @@ async def command_code(
             uid = request.uid
             session_id = f"sessions:{user_id}:{uid}"
             old_state = get_states_from_redis(session_id)
-            print(old_state.keys())
-            q_check = query
-            q_check.update(old_state)
-            print(q_check)
-            raise
+            query.update(old_state)
         else:
             uid = uuid4().hex
 
