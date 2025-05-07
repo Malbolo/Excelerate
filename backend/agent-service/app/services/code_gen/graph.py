@@ -19,6 +19,7 @@ from app.services.code_gen.graph_util import (
 )
 from app.utils.minio_client import MinioClient
 from tempfile import TemporaryDirectory
+from uuid import uuid4
 
 from app.models.log import LogDetail
 
@@ -35,7 +36,7 @@ class AgentState(MessagesState):
     retry_count: int
     error_msg: dict | None
     logs: List[LogDetail]
-    download_url: str
+    download_key: str
 
 class CodeGenerator:
     def __init__(self):
@@ -252,8 +253,11 @@ class CodeGenerator:
                 start_row=params["start_row"],
                 start_col=params["start_col"]
             )
-            url = self.minio_client.upload_result(user_id="test", template_name=params["output_name"], local_path=out_path)
-        print(url)
+            # url = self.minio_client.upload_result(user_id="test", template_name=params["output_name"], local_path=out_path)
+            uid        = uuid4().hex
+            file_name  = f"{params['template_name']}_{uid}.xlsx"
+            object_key = f"outputs/{file_name}"
+            self.minio_client.upload_excel(object_key, out_path)
 
         code_snippet = make_excel_code_snippet(
             template_name=params['template_name'],
@@ -271,7 +275,7 @@ class CodeGenerator:
         # state 업데이트
         new_logs = state.get("logs", []) + [llm_entry] if llm_entry else state.get("logs", [])
 
-        return {"download_url": url, "error_msg": None, "logs": new_logs, "python_code":code_snippet, "python_codes_list": codes}
+        return {"download_key": file_name, "error_msg": None, "logs": new_logs, "python_code":code_snippet, "python_codes_list": codes}
 
     def build(self):
         graph_builder = StateGraph(AgentState)
