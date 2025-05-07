@@ -10,9 +10,9 @@ from app.db.database import get_db
 from app.models.models import Job, JobCommand
 
 class Settings:
-    AIRFLOW_API_BASE_URL: str = os.getenv("AIRFLOW_API_BASE_URL", "http://job-service-airflow-webserver-1:8080/api/v1")
-    AIRFLOW_USERNAME: str = os.getenv("AIRFLOW_USERNAME", "airflow")
-    AIRFLOW_PASSWORD: str = os.getenv("AIRFLOW_PASSWORD", "airflow")
+    AIRFLOW_API_BASE_URL: str = os.getenv("AIRFLOW_API_BASE_URL")
+    AIRFLOW_USERNAME: str = os.getenv("AIRFLOW_USERNAME")
+    AIRFLOW_PASSWORD: str = os.getenv("AIRFLOW_PASSWORD")
 
 settings = Settings()
 
