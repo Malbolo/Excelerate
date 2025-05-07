@@ -12,7 +12,6 @@ from pymilvus import connections, utility
 
 from app.models.structure import FileAPIDetail
 
-from app.services.code_gen.sample import sample_data
 from app.core.config import settings
 
 # 로깅 설정
@@ -180,8 +179,7 @@ class FileAPIClient:
             raw = self.fetch_data(url)
         except Exception as e:
             logger.warning(f"API 호출 실패: {e}")
-            logger.info("샘플 데이터를 사용합니다.")
-            raw = sample_data
+            raise
 
         # 4) DataFrame 반환
         return url, pd.DataFrame(raw["data"])
