@@ -14,8 +14,11 @@ envFromSecret: job-service-secret
 ingress:
   enabled: true
   host: k12s101.p.ssafy.io
-  path: /api/jobs
-  pathType: Prefix
+  paths:
+    - path: /api/jobs
+      pathType: Prefix
+    - path: /api/schedules
+      pathType: Prefix
   annotations:
     kubernetes.io/ingress.class: traefik
     traefik.ingress.kubernetes.io/router.middlewares: auth-service-forward-auth@kubernetescrd
