@@ -8,7 +8,7 @@ from app.schemas.job_create_schema import JobCreateRequest
 from app.schemas.job_update_schema import JobUpdateRequest
 
 
-def create_job(db: Session, job: JobCreateRequest, user_id: int):
+async def create_job(db: Session, job: JobCreateRequest, user_id: int):
     db_job = models.Job(
         user_id=user_id,
         type=job.type,
