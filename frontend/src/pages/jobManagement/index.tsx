@@ -34,6 +34,7 @@ const JobManagementPage = () => {
           <AvailableJobList
             onJobSelect={handleJobSelect}
             selectedJob={selectedJob}
+            isMine={true}
           />
           <JobPagination />
         </div>

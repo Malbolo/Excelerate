@@ -83,9 +83,16 @@ export const useDeleteJob = () => {
 
 // 기본적으로 모두 6개씩 조회할 예정이고
 // 페이지네이션에서 데이터가 없는경우 1페이지 빈문자열로 조회하는게 좋아서 기본값을 1, 6, '' 로 설정
-const getJobList = async (page = 1, title = '') => {
+const getJobList = async (
+  page = 1,
+  title = '',
+  mine = false,
+  type = '',
+  dep = '',
+) => {
+  const isMine = mine ? 'True' : 'False';
   const { data, error, success } = await api<JobListResponse>(
-    `/api/jobs/mine?page=${page}&size=6&title=${title}`,
+    `/api/jobs?mine=${isMine}&page=${page}&size=6&title=${title}&type=${type}&dep=${dep}`,
   );
 
   if (!success) {
@@ -95,10 +102,10 @@ const getJobList = async (page = 1, title = '') => {
   return data;
 };
 
-export const useGetJobList = (page = 1, keyword = '') => {
+export const useGetJobList = (page = 1, keyword = '', mine = false) => {
   return useSuspenseQuery({
     queryKey: ['jobList', page, keyword],
-    queryFn: () => getJobList(page, keyword),
+    queryFn: () => getJobList(page, keyword, mine),
   });
 };
 
