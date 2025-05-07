@@ -10,12 +10,11 @@ from app.db.database import get_db
 from app.models.models import Job, JobCommand
 
 class Settings:
-    AIRFLOW_API_BASE_URL: str = os.getenv("AIRFLOW_API_BASE_URL")
+    AIRFLOW_API_URL: str = os.getenv("AIRFLOW_API_URL")
     AIRFLOW_USERNAME: str = os.getenv("AIRFLOW_USERNAME")
     AIRFLOW_PASSWORD: str = os.getenv("AIRFLOW_PASSWORD")
 
 settings = Settings()
-
 
 def create_dag(
         name: str,
@@ -145,7 +144,7 @@ task_{idx} = PythonOperator(
 
 def get_dags_by_owner(owner: str) -> List[Dict[str, Any]]:
     """특정 소유자(owner)의 DAG 목록 조회"""
-    endpoint = f"{settings.AIRFLOW_API_BASE_URL}/dags"
+    endpoint = f"{settings.AIRFLOW_API_URL}/dags"
     params = {
         "tags": owner,
         "limit": 100  # 필요에 따라 조정
@@ -164,7 +163,7 @@ def get_dags_by_owner(owner: str) -> List[Dict[str, Any]]:
 
 def get_all_dags(limit: int = 200) -> List[Dict[str, Any]]:
     """모든 DAG 목록 조회 (소유자 필터 없이)"""
-    endpoint = f"{settings.AIRFLOW_API_BASE_URL}/dags"
+    endpoint = f"{settings.AIRFLOW_API_URL}/dags"
     params = {
         "limit": limit
     }
@@ -398,7 +397,7 @@ def generate_expected_run_dates(cron_expr: str, start_date: datetime, end_date: 
 
 def get_dag_detail(dag_id: str) -> Dict[str, Any]:
     """특정 DAG의 상세 정보 조회"""
-    endpoint = f"{settings.AIRFLOW_API_BASE_URL}/dags/{dag_id}"
+    endpoint = f"{settings.AIRFLOW_API_URL}/dags/{dag_id}"
     
     response = requests.get(
         endpoint,
@@ -468,7 +467,7 @@ def get_dag_executions_with_detail(dags: List[Dict[str, Any]], date: str) -> Dic
 
 def delete_dag(dag_id: str) -> bool:
     """DAG 삭제"""
-    endpoint = f"{settings.AIRFLOW_API_BASE_URL}/dags/{dag_id}"
+    endpoint = f"{settings.AIRFLOW_API_URL}/dags/{dag_id}"
     
     response = requests.delete(
         endpoint,
@@ -736,7 +735,7 @@ def get_dag_runs(
     end_date: Optional[str] = None
 ) -> List[Dict[str, Any]]:
     """특정 DAG의 실행 이력 조회"""
-    endpoint = f"{settings.AIRFLOW_API_BASE_URL}/dags/{dag_id}/dagRuns"
+    endpoint = f"{settings.AIRFLOW_API_URL}/dags/{dag_id}/dagRuns"
 
     params = {"limit": limit}
     if start_date:
@@ -757,7 +756,7 @@ def get_dag_runs(
 
 def get_dag_run_detail(dag_id: str, run_id: str) -> Dict[str, Any]:
     """특정 DAG 실행의 상세 정보 조회"""
-    endpoint = f"{settings.AIRFLOW_API_BASE_URL}/dags/{dag_id}/dagRuns/{run_id}"
+    endpoint = f"{settings.AIRFLOW_API_URL}/dags/{dag_id}/dagRuns/{run_id}"
     
     response = requests.get(
         endpoint,
@@ -771,7 +770,7 @@ def get_dag_run_detail(dag_id: str, run_id: str) -> Dict[str, Any]:
 
 def get_task_instances(dag_id: str, run_id: str) -> List[Dict[str, Any]]:
     """특정 DAG 실행의 태스크 인스턴스 목록 조회"""
-    endpoint = f"{settings.AIRFLOW_API_BASE_URL}/dags/{dag_id}/dagRuns/{run_id}/taskInstances"
+    endpoint = f"{settings.AIRFLOW_API_URL}/dags/{dag_id}/dagRuns/{run_id}/taskInstances"
     
     response = requests.get(
         endpoint,
@@ -785,7 +784,7 @@ def get_task_instances(dag_id: str, run_id: str) -> List[Dict[str, Any]]:
 
 def trigger_dag(dag_id: str) -> Dict[str, Any]:
     """특정 DAG 즉시 실행"""
-    endpoint = f"{settings.AIRFLOW_API_BASE_URL}/dags/{dag_id}/dagRuns"
+    endpoint = f"{settings.AIRFLOW_API_URL}/dags/{dag_id}/dagRuns"
     
     request_data = {
         "conf": {}  # 필요시 설정 추가
@@ -804,7 +803,7 @@ def trigger_dag(dag_id: str) -> Dict[str, Any]:
 
 def toggle_dag_pause(dag_id: str, is_paused: bool) -> bool:
     """DAG 활성화/비활성화 토글"""
-    endpoint = f"{settings.AIRFLOW_API_BASE_URL}/dags/{dag_id}"
+    endpoint = f"{settings.AIRFLOW_API_URL}/dags/{dag_id}"
     
     request_data = {
         "is_paused": is_paused
