@@ -6,20 +6,20 @@ import { useGetJobList } from '@/apis/jobManagement';
 import {
   Pagination,
   PaginationContent,
+  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
-import { ITEMS_PER_PAGE } from '@/pages/jobManagement';
 
 const JobPagination = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const keyword = searchParams.get('keyword') || '';
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
 
-  const { data: jobList } = useGetJobList(currentPage, ITEMS_PER_PAGE, keyword);
-  const { total } = jobList;
+  const { data: jobList } = useGetJobList(currentPage, keyword);
+  const total = jobList?.total ?? 1;
 
   const handlePageChange = useCallback(
     (page: number) => {
@@ -36,11 +36,57 @@ const JobPagination = () => {
     [total, setSearchParams],
   );
 
-  // Delete : 더미데이터를 위해 사용, 추후에는 실제 페이지 번호 사용 필요
-  // Info : Response로 Spring의 Pageable 타입을 사용하여 페이지 번호를 받아오므로, 페이지 번호를 변경할 때 주의 필요
   const renderPageNumbers = () => {
     const pages = [];
-    for (let i = 1; i <= total; i++) {
+    const maxPagesToShow = 10;
+    const pageNumbersToShow = Math.min(total, maxPagesToShow);
+
+    let startPage: number;
+    let endPage: number;
+
+    if (total <= maxPagesToShow) {
+      startPage = 1;
+      endPage = total;
+    } else {
+      const maxPagesBeforeCurrentPage = Math.floor((pageNumbersToShow - 1) / 2);
+      const maxPagesAfterCurrentPage = Math.ceil((pageNumbersToShow - 1) / 2);
+
+      if (currentPage <= maxPagesBeforeCurrentPage) {
+        startPage = 1;
+        endPage = pageNumbersToShow;
+      } else if (currentPage + maxPagesAfterCurrentPage >= total) {
+        startPage = total - pageNumbersToShow + 1;
+        endPage = total;
+      } else {
+        startPage = currentPage - maxPagesBeforeCurrentPage;
+        endPage = currentPage + maxPagesAfterCurrentPage;
+      }
+    }
+
+    if (startPage > 1) {
+      pages.push(
+        <PaginationItem key={1}>
+          <PaginationLink
+            href='#'
+            onClick={e => {
+              e.preventDefault();
+              handlePageChange(1);
+            }}
+          >
+            1
+          </PaginationLink>
+        </PaginationItem>,
+      );
+      if (startPage > 2) {
+        pages.push(
+          <PaginationItem key='start-ellipsis'>
+            <PaginationEllipsis />
+          </PaginationItem>,
+        );
+      }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
       pages.push(
         <PaginationItem key={i}>
           <PaginationLink
@@ -56,8 +102,36 @@ const JobPagination = () => {
         </PaginationItem>,
       );
     }
+
+    if (endPage < total) {
+      if (endPage < total - 1) {
+        pages.push(
+          <PaginationItem key='end-ellipsis'>
+            <PaginationEllipsis />
+          </PaginationItem>,
+        );
+      }
+      pages.push(
+        <PaginationItem key={total}>
+          <PaginationLink
+            href='#'
+            onClick={e => {
+              e.preventDefault();
+              handlePageChange(total);
+            }}
+          >
+            {total}
+          </PaginationLink>
+        </PaginationItem>,
+      );
+    }
+
     return pages;
   };
+
+  if (total <= 1) {
+    return null;
+  }
 
   return (
     <div className='mt-4 flex justify-center'>

@@ -4,24 +4,25 @@ import { useSearchParams } from 'react-router-dom';
 import { JobResponse, useGetJobList } from '@/apis/jobManagement';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { ITEMS_PER_PAGE } from '@/pages/jobManagement';
 
 interface AvailableJobListProps {
   selectedJobIds?: Set<string>;
   selectedJob?: JobResponse | null;
   onJobSelect?: (job: JobResponse, checked: boolean) => void;
+  isMine?: boolean;
 }
 
 const AvailableJobList = ({
   selectedJobIds,
   onJobSelect,
   selectedJob,
+  isMine = false,
 }: AvailableJobListProps) => {
   const [searchParams] = useSearchParams();
   const keyword = searchParams.get('keyword') || '';
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
 
-  const { data: jobList } = useGetJobList(currentPage, ITEMS_PER_PAGE, keyword);
+  const { data: jobList } = useGetJobList(currentPage, keyword, isMine);
 
   const { jobs } = jobList;
 
