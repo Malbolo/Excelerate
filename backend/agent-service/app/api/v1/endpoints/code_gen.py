@@ -4,6 +4,7 @@ from app.utils.docs import CodeGenDocs
 from app.models.query import CommandRequest
 from app.services.code_gen.graph import CodeGenerator
 from app.utils.depend import get_code_gen
+from app.utils.api_utils import make_initial_query
 from langchain_core.messages import HumanMessage
 from fastapi.encoders import jsonable_encoder
 
@@ -25,25 +26,7 @@ async def command_code(
     try:
         graph = code_gen.build()
 
-        checkdata = requests.get(request.url).json()
-        checkdata = checkdata["data"]
-        # 이후 동일 url로 온 적이 있는 요청은 캐시해서 들고 있을 것. 아니면 dataload 요청 시 저장된 값을 활용하도록 할 것
-        # 또는 url 필드에 파일 시스템 파일 경로를 받아 조작하도록 할 것. 그럼 필드는 유지될 것으로 보임
-
-        query = {
-                'messages': [HumanMessage(request.command_list)],
-                'python_code': '',
-                'python_codes_list': [],
-                'command_list': request.command_list,
-                'classified_cmds': [],
-                'current_unit': {},
-                'queue_idx': 0,
-                'dataframe': [pd.DataFrame(checkdata)],
-                'retry_count': 0,
-                'error_msg': None,
-                'logs': [],
-                'download_token': ''
-            } # initial state 생성기 분리
+        query = make_initial_query(request.url, request.command_list)
 
         user_id = request.user_id or "guest" # user_id는 추후 jwt등으로 체크
         if request.uid:
@@ -51,9 +34,9 @@ async def command_code(
             session_id = f"sessions:{user_id}:{uid}"
             old_state = get_states_from_redis(session_id)
             print(old_state.keys())
-            # q_check = query
-            # q_check.update(old_state)
-            # print(q_check)
+            q_check = query
+            q_check.update(old_state)
+            print(q_check)
             raise
         else:
             uid = uuid4().hex
