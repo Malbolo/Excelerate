@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import useInternalRouter from '@/hooks/useInternalRouter';
 import { cn } from '@/lib/utils';
 
-const navItems = [
+const ADMIN_NAV_ITEMS = [
   { label: 'Main', to: '/' },
   { label: 'Job Management', to: '/job-management' },
   {
@@ -20,20 +20,30 @@ const navItems = [
   { label: 'Play Ground', to: '/playground' },
 ];
 
+const USER_NAV_ITEMS = [
+  { label: 'Main', to: '/' },
+  {
+    label: 'Job Management',
+    to: '/job-management',
+    basePath: '/job-management',
+  },
+  { label: 'Play Ground', to: '/playground' },
+];
+
 const NavigationBar = () => {
-  // 닉네임은 추후에 실제 데이터를 사용할 예정
   const { data: userInfo } = useGetUserInfoAPI();
   const queryClient = useQueryClient();
   const { replace } = useInternalRouter();
 
-  const { name } = userInfo || {};
+  const { name, role } = userInfo || {};
+  const navMenu = role === 'ADMIN' ? ADMIN_NAV_ITEMS : USER_NAV_ITEMS;
 
   const location = useLocation();
 
   const handleLogoutClick = () => {
     localStorage.removeItem('token');
     toast.success('로그아웃이 완료되었습니다.');
-    queryClient.invalidateQueries({ queryKey: ['userInfo'] });
+    queryClient.resetQueries();
     replace('/');
   };
 
@@ -41,9 +51,8 @@ const NavigationBar = () => {
     <nav className='flex h-full w-60 flex-col bg-[#F5F5F5] py-6'>
       <div className='mt-9 mb-15 text-center text-2xl'>Samsung</div>
 
-      {/* 네비게이션 링크 (기존과 동일) */}
       <ul className='flex grow flex-col'>
-        {navItems.map(({ label, to, basePath }) => {
+        {navMenu.map(({ label, to, basePath }) => {
           let isActive;
           if (label === 'Scheduler Monitoring') {
             isActive = location.pathname.startsWith(

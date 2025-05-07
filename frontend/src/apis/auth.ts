@@ -18,6 +18,7 @@ interface UserInfoResponse {
   email: string;
   name: string;
   department: string;
+  role: string;
 }
 
 const getUserInfo = async () => {
