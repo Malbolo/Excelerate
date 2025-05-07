@@ -26,12 +26,12 @@ def get_user_info(user_id: int):
 
     if response.status_code == 200:
         user_data = response.json()
-        name = user_data.get("name")
-        department = user_data.get("department")
-        role = user_data.get("role")
-        logger.info("name : ", name)
-        logger.info("department : ", department)
-        logger.info("role : ", role)
+        name = user_data.get("data").get("name")
+        department = user_data.get("data").get("department")
+        role = user_data.get("data").get("role")
+        logger.info("name : %s", name)
+        logger.info("department : %s", department)
+        logger.info("role : %s", role)
 
         return {
             "name": name,
@@ -39,7 +39,6 @@ def get_user_info(user_id: int):
             "role": role
         }
     else:
-        # 실패한 경우 None 반환 또는 예외 처리
         return None
 
 async def create_job(request: JobCreateRequest, user_id: int, db: Session) -> JSONResponse:
