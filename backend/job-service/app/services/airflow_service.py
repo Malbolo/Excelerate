@@ -86,6 +86,7 @@ dag = DAG(
     schedule_interval='{cron_expression}',
     tags={tags_str},
     catchup=False,
+    is_paused_upon_creation=False
 )
 """
 
