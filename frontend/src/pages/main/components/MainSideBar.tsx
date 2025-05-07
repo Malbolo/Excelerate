@@ -20,7 +20,7 @@ const MainSideBar: React.FC<MainSideBarProps> = ({
   trace,
 }) => {
   return (
-    <div className='border-border relative flex h-full w-[400px] border-l bg-[#F0F0F0] px-2 py-6'>
+    <div className='relative flex h-full w-full bg-[#F0F0F0] px-2 py-6'>
       <Tabs
         tabList={['Data', 'Code', 'Trace']}
         tabPanels={[

@@ -5,6 +5,11 @@ import { ColumnDef } from '@tanstack/react-table';
 import { useGetSourceData, useSendCommandList } from '@/apis/job';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from '@/components/ui/resizable';
 import CommandList from '@/pages/main/components/CommandList';
 import MainSideBar from '@/pages/main/components/MainSideBar';
 import SaveJobDialog from '@/pages/main/components/SaveJobDialog';
@@ -95,11 +100,6 @@ const MainPage: React.FC = () => {
     /**
      * 추후 소켓 통신 시 제거 예정
      */
-    for (let i = 0; i < commandList.length; i++) {
-      updateCommandStatus(i, 'processing');
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      updateCommandStatus(i, 'success');
-    }
 
     handleSendCommandList();
     // TODO: 모든 command가 성공 시 저장 가능 상태로 변경
@@ -108,62 +108,75 @@ const MainPage: React.FC = () => {
 
   return (
     <div className='relative mx-auto flex h-full w-full overflow-hidden'>
-      <div className='mx-auto flex w-full max-w-[800px] flex-1 flex-col justify-between gap-4 p-8'>
-        <div className='flex flex-col gap-4'>
-          <div className='flex gap-4'>
-            <TemplateList />
-            <SourceData sourceData={sourceData} />
-          </div>
-
-          <section className='flex flex-col gap-2'>
-            <div className='flex items-center justify-between gap-2'>
-              <p className='text-lg font-bold'>Command List</p>
-              <div className='flex gap-2'>
-                <Button
-                  variant={
-                    commandList.length !== 0 && !isEditMode
-                      ? 'default'
-                      : 'disabled'
-                  }
-                  onClick={handleRun}
-                >
-                  Run
-                </Button>
-                <SaveJobDialog
-                  sourceData={sourceData}
-                  sourceDataCommand={sourceDataCommand}
-                  commandList={commandList}
-                  code={code}
-                />
+      <ResizablePanelGroup direction='horizontal'>
+        <ResizablePanel>
+          <div className='mx-auto flex h-full w-full max-w-[800px] flex-1 flex-col justify-between gap-4 p-8'>
+            <div className='flex flex-col gap-4'>
+              <div className='flex gap-4'>
+                <TemplateList />
+                <SourceData sourceData={sourceData} />
               </div>
+
+              <section className='flex flex-col gap-2'>
+                <div className='flex items-center justify-between gap-2'>
+                  <p className='text-lg font-bold'>Command List</p>
+                  <div className='flex gap-2'>
+                    <Button
+                      variant={
+                        commandList.length !== 0 && !isEditMode
+                          ? 'default'
+                          : 'disabled'
+                      }
+                      onClick={handleRun}
+                    >
+                      Run
+                    </Button>
+                    <SaveJobDialog
+                      sourceData={sourceData}
+                      sourceDataCommand={sourceDataCommand}
+                      commandList={commandList}
+                      code={code}
+                    />
+                  </div>
+                </div>
+
+                <CommandList
+                  commandList={commandList}
+                  setCommandList={setCommandList}
+                />
+              </section>
             </div>
 
-            <CommandList
-              commandList={commandList}
-              setCommandList={setCommandList}
-            />
-          </section>
-        </div>
+            <div className='flex gap-2'>
+              <Input
+                value={command}
+                onChange={e => setCommand(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSubmitCommand()}
+                placeholder={
+                  step === 'source'
+                    ? 'Load the source data.'
+                    : 'Please enter a command.'
+                }
+              />
 
-        <div className='flex gap-2'>
-          <Input
-            value={command}
-            onChange={e => setCommand(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleSubmitCommand()}
-            placeholder={
-              step === 'source'
-                ? 'Load the source data.'
-                : 'Please enter a command.'
-            }
+              <Button onClick={handleSubmitCommand} className='cursor-pointer'>
+                Enter
+              </Button>
+            </div>
+          </div>
+        </ResizablePanel>
+
+        <ResizableHandle withHandle />
+
+        <ResizablePanel minSize={30} maxSize={60} defaultSize={30}>
+          <MainSideBar
+            data={data}
+            columns={columns}
+            code={code}
+            trace={trace}
           />
-
-          <Button onClick={handleSubmitCommand} className='cursor-pointer'>
-            Enter
-          </Button>
-        </div>
-      </div>
-
-      <MainSideBar data={data} columns={columns} code={code} trace={trace} />
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </div>
   );
 };
