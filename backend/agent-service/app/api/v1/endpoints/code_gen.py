@@ -1,18 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from app.utils.docs import CodeGenDocs
 from app.models.query import CommandRequest
 from app.services.code_gen.graph import CodeGenerator
 from app.utils.depend import get_code_gen
 from app.utils.api_utils import make_initial_query
-from langchain_core.messages import HumanMessage
 from fastapi.encoders import jsonable_encoder
 
 from app.utils.redis_client import generate_log_id, save_logs_to_redis, save_states_to_redis, get_states_from_redis
 from uuid import uuid4
-
-import pandas as pd
-import requests
 
 router = APIRouter()
 docs = CodeGenDocs()
