@@ -8,11 +8,13 @@ from app.schemas.job_create_schema import JobCreateRequest
 from app.schemas.job_update_schema import JobUpdateRequest
 
 
-def create_job(db: Session, job: JobCreateRequest, user_id: int):
+async def create_job(db: Session, job: JobCreateRequest, user_id: int, user_name: str, department: str):
     db_job = models.Job(
         user_id=user_id,
+        user_name=user_name,
+        user_department=department,
         type=job.type,
-        name=job.name,
+        title=job.title,
         description=job.description,
         data_load_command=job.data_load_command,
         data_load_url=job.data_load_url,
@@ -71,15 +73,3 @@ def delete_job(db: Session, job_id: int, user_id: int):
     db.commit()
 
     return {"result": "success", "data": None}
-
-def get_jobs_by_user(db: Session, user_id: int, page: int, size: int):
-    total_jobs = db.query(func.count(Job.id)).filter(Job.user_id == user_id).scalar()
-
-    offset = (page - 1) * size
-    jobs = db.query(Job.id, Job.name, Job.description) \
-             .filter(Job.user_id == user_id) \
-             .offset(offset) \
-             .limit(size) \
-             .all()
-
-    return jobs, total_jobs

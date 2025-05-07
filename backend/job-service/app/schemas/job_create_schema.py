@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 class JobCreateRequest(BaseModel):
     type: str
-    name: str
+    title: str
     description: str
     data_load_command: str
     data_load_url: str

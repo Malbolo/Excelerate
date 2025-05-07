@@ -1,7 +1,5 @@
 from pydantic import BaseModel
 
-
-class OwnJobListResponse(BaseModel):
+class JobListResponse(BaseModel):
     result: str
     data: dict
-
