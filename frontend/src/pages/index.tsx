@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { ColumnDef } from '@tanstack/react-table';
 import ClipLoader from 'react-spinners/ClipLoader';
@@ -35,7 +35,8 @@ const MainPage: React.FC = () => {
   const [step, setStep] = useState<'source' | 'command'>('source');
   const { isEditMode, setCanSaveJob } = useJobStore();
 
-  const commandMutation = useSendCommandList();
+  const { mutateAsync: commandMutation, isPending: isCommandLoading } =
+    useSendCommandList();
   const { mutateAsync: sourceDataMutation, isPending: isSourceDataLoading } =
     useGetSourceData();
 
@@ -92,37 +93,29 @@ const MainPage: React.FC = () => {
   };
 
   const handleRun = async () => {
-    const updateCommandStatus = (
-      index: number,
-      status: 'fail' | 'processing' | 'success',
-    ) => {
-      setCommandList(prevCommands =>
-        prevCommands.map((command, idx) =>
-          idx === index ? { ...command, status } : command,
-        ),
-      );
-    };
-
     try {
       await handleSendCommandList();
 
-      for (let i = 0; i < commandList.length; i++) {
-        updateCommandStatus(i, 'success');
-      }
-
-      const allCommandsSuccess = commandList.every(
-        command => command.status === 'success',
+      setCommandList(prevCommands =>
+        prevCommands.map(command => ({
+          ...command,
+          status: 'success' as const,
+        })),
       );
 
-      if (allCommandsSuccess) {
-        setCanSaveJob(allCommandsSuccess);
-      }
+      setCanSaveJob(true);
     } catch (error) {
-      for (let i = 0; i < commandList.length; i++) {
-        updateCommandStatus(i, 'fail');
-      }
+      setCommandList(prevCommands =>
+        prevCommands.map(command => ({ ...command, status: 'fail' as const })),
+      );
     }
   };
+
+  useEffect(() => {
+    return () => {
+      setCanSaveJob(false);
+    };
+  }, [setCanSaveJob]);
 
   return (
     <div className='relative mx-auto flex h-full w-full overflow-hidden'>
@@ -140,10 +133,18 @@ const MainPage: React.FC = () => {
                   <p className='text-lg font-bold'>Command List</p>
                   <div className='flex gap-2'>
                     <Button
-                      disabled={commandList.length === 0 || isEditMode}
+                      disabled={
+                        commandList.length === 0 ||
+                        isEditMode ||
+                        isCommandLoading
+                      }
                       onClick={handleRun}
                     >
-                      Run
+                      {isCommandLoading ? (
+                        <ClipLoader size={18} color='#000000' />
+                      ) : (
+                        'Run'
+                      )}
                     </Button>
                     <SaveJobDialog
                       sourceData={sourceData}

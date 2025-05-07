@@ -99,7 +99,7 @@ export const useSaveJob = () => {
 };
 
 export const useSendCommandList = () => {
-  const { mutateAsync } = useMutation({
+  const { mutateAsync, isPending } = useMutation({
     mutationFn: ({
       command_list,
       url,
@@ -112,7 +112,7 @@ export const useSendCommandList = () => {
     },
   });
 
-  return mutateAsync;
+  return { mutateAsync, isPending };
 };
 
 export const useGetSourceData = () => {
