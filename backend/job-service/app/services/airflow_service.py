@@ -5,6 +5,9 @@ from datetime import datetime, timedelta, timezone
 import calendar
 import os
 from croniter import croniter
+import re
+from app.db.database import get_db
+from app.models.models import Job, JobCommand
 
 class Settings:
     AIRFLOW_API_BASE_URL: str = os.getenv("AIRFLOW_API_BASE_URL", "http://job-service-airflow-webserver-1:8080/api/v1")
@@ -28,26 +31,38 @@ def create_dag(
     # DAG ID는 고유해야 함
     dag_id = f"{owner}_{name.lower().replace(' ', '_')}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
 
-    # 시작일과 종료일 문자열로 변환 (태그에 저장하기 위함)
+    # MySQL에서 job 정보 가져오기
+    db = next(get_db())
+    job_details = []
+
+    for job_id in job_ids:
+        job = db.query(Job).filter(Job.id == job_id).first()
+        if not job:
+            raise Exception(f"Job ID {job_id}를 찾을 수 없습니다.")
+        job_details.append({
+            "id": job.id,
+            "name": job.name,
+            "code": job.code
+        })
+
+    # 시작일과 종료일 문자열로 변환
     start_date_str = start_date.strftime("%Y-%m-%d")
     end_date_str = end_date.strftime("%Y-%m-%d") if end_date else "None"
 
-    # 태그 리스트 생성 (문자열로 변환하여 저장)
-    # 문자열 형식으로 명확하게 지정
+    # 태그 및 설명 설정
     tags_str = f"['custom', '{owner}', 'start_date:{start_date_str}'"
     if end_date:
         tags_str += f", 'end_date:{end_date_str}'"
     tags_str += "]"
 
-    # 또한 설명에도 시작일 정보를 포함
     enhanced_description = f"{description} (Start: {start_date_str})"
     if end_date:
         enhanced_description += f", End: {end_date_str}"
 
-    # DAG 코드 생성 (기존 코드 재사용)
+    # DAG 코드 생성
     dag_code = f"""
 from airflow import DAG
-from airflow.operators.bash import BashOperator
+from airflow.operators.python import PythonOperator
 from datetime import datetime, timedelta
 
 # START_DATE: {start_date_str}
@@ -75,21 +90,33 @@ dag = DAG(
 )
 """
 
-    # Job을 DAG 태스크로 변환
-    for idx, job_id in enumerate(job_ids):
-        task_id = f"job_{job_id}"
+    # 각 Job에 대한 Python 함수 정의
+    for idx, job in enumerate(job_details):
+        function_name = f"execute_job_{job['id']}"
+        task_id = f"job_{job['id']}"
+
+        # 코드에 들여쓰기 적용 (수정된 부분)
+        job_code = job['code'].rstrip()
+        # 각 줄 앞에 4칸 들여쓰기 추가
+        indented_code = "\n".join("    " + line for line in job_code.split("\n"))
+
+        # Python 함수 정의
         dag_code += f"""
-task_{idx} = BashOperator(
+def {function_name}(**kwargs):
+    # Job {job['id']} - {job['name']}
+{indented_code}
+
+task_{idx} = PythonOperator(
     task_id='{task_id}',
-    bash_command='python /app/execute_job.py --job-id {job_id}',
+    python_callable={function_name},
     dag=dag,
 )
 """
 
     # 태스크 의존성 설정 (순차 실행)
-    if len(job_ids) > 1:
+    if len(job_details) > 1:
         dag_code += "\n"
-        for i in range(len(job_ids) - 1):
+        for i in range(len(job_details) - 1):
             dag_code += f"task_{i} >> task_{i + 1}\n"
 
     # DAG 파일 저장
@@ -103,13 +130,14 @@ task_{idx} = BashOperator(
         with open(dag_file_path, 'w') as f:
             f.write(dag_code)
 
-        # 또한 메타데이터 파일도 생성 (백업 방법)
+        # 메타데이터 파일 생성
         meta_file_path = f"/opt/airflow/dags/{dag_id}.meta"
         with open(meta_file_path, 'w') as f:
             f.write(f"START_DATE: {start_date_str}\n")
             f.write(f"END_DATE: {end_date_str if end_date else 'None'}\n")
             f.write(f"OWNER: {owner}\n")
             f.write(f"CREATED: {datetime.now().isoformat()}\n")
+            f.write(f"JOBS: {','.join([str(job['id']) for job in job_details])}\n")
 
         return dag_id
     except Exception as e:
@@ -449,48 +477,257 @@ def delete_dag(dag_id: str) -> bool:
     
     return response.status_code in (200, 204)
 
+
 def update_dag(
-    dag_id: str,
-    name: Optional[str] = None,
-    description: Optional[str] = None,
-    cron_expression: Optional[str] = None,
-    job_ids: Optional[List[str]] = None,
-    start_date: Optional[datetime] = None,
-    end_date: Optional[datetime] = None,
-    success_emails: Optional[List[str]] = None,
-    failure_emails: Optional[List[str]] = None
+        dag_id: str,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        cron_expression: Optional[str] = None,
+        job_ids: Optional[List[str]] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        success_emails: Optional[List[str]] = None,
+        failure_emails: Optional[List[str]] = None
 ) -> bool:
-    """기존 DAG 업데이트"""
-    # 현재 DAG 정보 조회
-    current_dag = get_dag_detail(dag_id)
-    
-    # 업데이트할 값이 없으면 현재 값 유지
-    owner = current_dag.get("owner", "airflow")
-    dag_description = description or current_dag.get("description", "")
-    schedule_interval = cron_expression or current_dag.get("schedule_interval", "0 0 * * *")
-    
-    # DAG 파일 코드 생성
-    # (실제로는 Airflow API를 통해 DAG 코드를 업데이트하는 방식이 더 복잡할 수 있음)
-    
-    # Airflow API 요청 데이터
-    request_data = {
-        "is_paused": False,
-        "schedule_interval": schedule_interval,
-        "description": dag_description
-    }
-    
-    # API 호출
-    endpoint = f"{settings.AIRFLOW_API_BASE_URL}/dags/{dag_id}"
-    response = requests.patch(
-        endpoint,
-        json=request_data,
-        auth=(settings.AIRFLOW_USERNAME, settings.AIRFLOW_PASSWORD)
-    )
-    
-    if response.status_code not in (200, 204):
-        raise Exception(f"Failed to update DAG: {response.text}")
-    
-    return True
+    """기존 DAG 업데이트 - 동일한 DAG ID를 유지하면서 내용만 교체"""
+    try:
+        # 1. 기존 DAG 정보 조회
+        current_dag = get_dag_detail(dag_id)
+
+        # 2. 현재 파일 경로 확인
+        dag_file_path = f"/opt/airflow/dags/{dag_id}.py"
+        meta_file_path = f"/opt/airflow/dags/{dag_id}.meta"
+
+        # 3. DAG ID에서 owner 추출 (일반적으로 첫 부분)
+        parts = dag_id.split('_')
+        owner = parts[0]  # 기본값
+
+        # 태그에서 owner 확인 (더 정확함)
+        tags = current_dag.get("tags", [])
+        for tag in tags:
+            tag_value = tag
+            if isinstance(tag, dict) and "name" in tag:
+                tag_value = tag["name"]
+            if tag_value.startswith("user_"):
+                owner = tag_value
+                break
+
+        # 4. 업데이트할 값이 없으면 현재 값 유지
+        current_name = current_dag.get("name", "")
+        current_description = current_dag.get("description", "")
+        current_schedule = current_dag.get("schedule_interval", "")
+
+        # 변경할 값 설정
+        update_name = name if name is not None else current_name
+        update_description = description if description is not None else current_description
+        update_schedule = cron_expression if cron_expression is not None else current_schedule
+
+        # 5. 시작일과 종료일 설정
+        # 태그에서 시작일 추출
+        start_date_dt = None
+        end_date_dt = None
+
+        for tag in tags:
+            tag_value = tag
+            if isinstance(tag, dict) and "name" in tag:
+                tag_value = tag["name"]
+
+            if tag_value.startswith("start_date:"):
+                start_date_str = tag_value.split(':', 1)[1]
+                try:
+                    start_date_dt = datetime.strptime(start_date_str, "%Y-%m-%d")
+                except ValueError:
+                    pass
+
+            if tag_value.startswith("end_date:"):
+                end_date_str = tag_value.split(':', 1)[1]
+                if end_date_str != "None":
+                    try:
+                        end_date_dt = datetime.strptime(end_date_str, "%Y-%m-%d")
+                    except ValueError:
+                        pass
+
+        # 변경할 시작일/종료일
+        update_start_date = start_date if start_date is not None else start_date_dt
+        update_end_date = end_date if end_date is not None else end_date_dt
+
+        if update_start_date is None:
+            raise Exception("시작일을 찾을 수 없습니다.")
+
+        # 6. MySQL에서 job 정보 가져오기 (job_ids가 제공된 경우)
+        job_details = []
+
+        if job_ids:
+            db = next(get_db())
+            for job_id in job_ids:
+                job = db.query(Job).filter(Job.id == job_id).first()
+                if not job:
+                    raise Exception(f"Job ID {job_id}를 찾을 수 없습니다.")
+                job_details.append({
+                    "id": job.id,
+                    "name": job.name,
+                    "code": job.code
+                })
+        else:
+            # 기존 메타 파일에서 job 목록 가져오기
+            try:
+                with open(meta_file_path, 'r') as f:
+                    for line in f:
+                        if line.startswith("JOBS:"):
+                            job_ids_str = line.strip().split(':', 1)[1].strip()
+                            existing_job_ids = job_ids_str.split(',')
+
+                            # job 정보 조회
+                            db = next(get_db())
+                            for job_id in existing_job_ids:
+                                job = db.query(Job).filter(Job.id == job_id).first()
+                                if job:
+                                    job_details.append({
+                                        "id": job.id,
+                                        "name": job.name,
+                                        "code": job.code
+                                    })
+                            break
+            except Exception as e:
+                raise Exception(f"기존 job 정보 조회 실패: {str(e)}")
+
+        # 7. 시작일과 종료일 문자열로 변환
+        start_date_str = update_start_date.strftime("%Y-%m-%d")
+        end_date_str = update_end_date.strftime("%Y-%m-%d") if update_end_date else "None"
+
+        # 8. 태그 및 설명 설정
+        tags_str = f"['custom', '{owner}', 'start_date:{start_date_str}'"
+        if update_end_date:
+            tags_str += f", 'end_date:{end_date_str}'"
+        tags_str += "]"
+
+        enhanced_description = f"{update_description} (Start: {start_date_str})"
+        if update_end_date:
+            enhanced_description += f", End: {end_date_str}"
+
+        # 9. DAG 코드 생성 (동일한 DAG ID 유지)
+        dag_code = f"""
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from datetime import datetime, timedelta
+
+# START_DATE: {start_date_str}
+# END_DATE: {end_date_str if update_end_date else "None"}
+
+default_args = {{
+    'owner': '{owner}',
+    'depends_on_past': False,
+    'start_date': datetime({update_start_date.year}, {update_start_date.month}, {update_start_date.day}),
+    'end_date': {f"datetime({update_end_date.year}, {update_end_date.month}, {update_end_date.day})" if update_end_date else "None"},
+    'email': [{', '.join([f"'{email}'" for email in (success_emails or [])])}],
+    'email_on_failure': {bool(failure_emails or [])},
+    'email_on_retry': False,
+    'retries': 1,
+    'retry_delay': timedelta(minutes=5),
+}}
+
+dag = DAG(
+    '{dag_id}',
+    default_args=default_args,
+    description='{enhanced_description}',
+    schedule_interval='{update_schedule}',
+    tags={tags_str},
+    catchup=False,
+)
+"""
+
+        # 10. 각 Job에 대한 Python 함수 정의
+        for idx, job in enumerate(job_details):
+            function_name = f"execute_job_{job['id']}"
+            task_id = f"job_{job['id']}"
+
+            # 코드에 들여쓰기 적용
+            job_code = job['code'].rstrip()
+            # 각 줄 앞에 4칸 들여쓰기 추가
+            indented_code = "\n".join("    " + line for line in job_code.split("\n"))
+
+            # Python 함수 정의
+            dag_code += f"""
+def {function_name}(**kwargs):
+    # Job {job['id']} - {job['name']}
+{indented_code}
+
+task_{idx} = PythonOperator(
+    task_id='{task_id}',
+    python_callable={function_name},
+    dag=dag,
+)
+"""
+
+        # 11. 태스크 의존성 설정 (순차 실행)
+        if len(job_details) > 1:
+            dag_code += "\n"
+            for i in range(len(job_details) - 1):
+                dag_code += f"task_{i} >> task_{i + 1}\n"
+
+        # 12. DAG 파일 백업 및 교체
+        import os
+
+        # 백업 파일 생성 (안전장치)
+        backup_file_path = f"{dag_file_path}.bak"
+        try:
+            import shutil
+            if os.path.exists(dag_file_path):
+                shutil.copy2(dag_file_path, backup_file_path)
+                print(f"Created backup at {backup_file_path}")
+        except Exception as e:
+            print(f"Warning: Failed to create backup file: {str(e)}")
+
+        # DAG 파일 저장 (기존 파일 교체)
+        with open(dag_file_path, 'w') as f:
+            f.write(dag_code)
+            print(f"Updated DAG file at {dag_file_path}")
+
+        # 13. 메타데이터 파일 업데이트
+        with open(meta_file_path, 'w') as f:
+            f.write(f"START_DATE: {start_date_str}\n")
+            f.write(f"END_DATE: {end_date_str if update_end_date else 'None'}\n")
+            f.write(f"OWNER: {owner}\n")
+            f.write(f"UPDATED: {datetime.now().isoformat()}\n")
+            f.write(f"JOBS: {','.join([str(job['id']) for job in job_details])}\n")
+            print(f"Updated metadata file at {meta_file_path}")
+
+        # 14. 현재 DAG 상태 유지
+        try:
+            # 현재 DAG 상태 유지를 위해 is_paused 값을 가져옴
+            is_paused = current_dag.get("is_paused", False)
+
+            # DAG 활성화/비활성화 상태 업데이트 (Airflow API 호출)
+            toggle_dag_pause(dag_id, is_paused)
+            print(f"Maintained DAG pause state: is_paused={is_paused}")
+        except Exception as e:
+            print(f"Warning: Failed to update DAG state via API: {str(e)}")
+
+        # 15. 디버깅 정보 출력
+        print(f"Successfully updated DAG: {dag_id}")
+        print(f"- Name: {update_name}")
+        print(f"- Schedule: {update_schedule}")
+        print(f"- Start Date: {start_date_str}")
+        print(f"- End Date: {end_date_str if update_end_date else 'None'}")
+        print(f"- Jobs: {len(job_details)}")
+
+        return True
+
+    except Exception as e:
+        # 오류 발생 시 백업에서 복원 시도
+        try:
+            import os
+            backup_file_path = f"/opt/airflow/dags/{dag_id}.py.bak"
+            dag_file_path = f"/opt/airflow/dags/{dag_id}.py"
+
+            if os.path.exists(backup_file_path):
+                import shutil
+                shutil.copy2(backup_file_path, dag_file_path)
+                print(f"Restored DAG file from backup after error: {str(e)}")
+        except Exception as restore_error:
+            print(f"Failed to restore from backup: {str(restore_error)}")
+
+        raise Exception(f"Failed to update DAG: {str(e)}")
 
 def get_dag_runs(
     dag_id: str, 
@@ -632,7 +869,8 @@ def get_dag_runs_by_date(dags: List[Dict[str, Any]], target_date: str) -> Dict[s
             for run in dag_runs:
                 state = run.get("state", "").lower()
                 run_info = {
-                    "dag_id": dag_id,
+                    "schedule_id": dag_id,
+                    "run_id": run.get("dag_run_id"),
                     "title": title,
                     "owner": owner,
                     "status": state,
@@ -675,13 +913,27 @@ def get_dag_runs_by_date(dags: List[Dict[str, Any]], target_date: str) -> Dict[s
                 print(f"[DEBUG] No start_date found for {dag_id}, assuming it should be pending")
 
             if should_be_pending:
+                # 다음 실행 시간 계산 (schedule_interval 기반)
+                schedule_interval = dag.get("schedule_interval", "")
+                next_run_time = None
+
+                if isinstance(schedule_interval, dict) and "value" in schedule_interval:
+                    schedule_interval = schedule_interval["value"]
+
+                if schedule_interval and croniter.is_valid(schedule_interval):
+                    try:
+                        # 크론 표현식에서 다음 실행 시간 계산
+                        cron_iter = croniter(schedule_interval, start_dt)
+                        next_run_time = cron_iter.get_next(datetime).isoformat()
+                    except Exception as e:
+                        print(f"[DEBUG] Error calculating next run time for {dag_id}: {str(e)}")
+
                 result["pending"].append({
-                    "dag_id": dag_id,
+                    "schedule_id": dag_id,
                     "title": title,
                     "owner": owner,
                     "status": "pending",
-                    "start_time": None,
-                    "end_time": None
+                    "next_run_time": next_run_time
                 })
 
     # 결과 출력

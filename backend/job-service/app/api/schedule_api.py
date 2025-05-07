@@ -1,3 +1,4 @@
+import os
 from typing import List, Optional
 from fastapi import APIRouter, Request, Query, HTTPException
 from starlette.responses import JSONResponse
@@ -57,8 +58,8 @@ async def create_schedule(request: Request, schedule_request: ScheduleCreateRequ
             "message": f"스케줄 생성에 실패했습니다: {str(e)}"
         })
 
-@router.get("/calendar")
-async def get_schedule_calendar(
+@router.get("/statistics/monthly")
+async def get_monthly_statistics(
     request: Request,
     year: int = Query(...),
     month: int = Query(..., ge=1, le=12)
@@ -86,7 +87,25 @@ async def get_schedule_detail(request: Request, schedule_id: str) -> JSONRespons
         
         # DAG 실행에 포함된 태스크(job) 목록 조회
         tasks = []
-        
+        try:
+            # 메타데이터 파일에서 job IDs 조회
+            meta_file_path = f"/opt/airflow/dags/{schedule_id}.meta"
+            if os.path.exists(meta_file_path):
+                with open(meta_file_path, 'r') as f:
+                    for line in f:
+                        if line.startswith("JOBS:"):
+                            job_ids_str = line.strip().split(':', 1)[1].strip()
+                            job_ids = job_ids_str.split(',')
+
+                            # 단순히 ID와 순서만 반환
+                            for idx, job_id in enumerate(job_ids):
+                                tasks.append({
+                                    "id": job_id,
+                                    "order": idx + 1
+                                })
+                            break
+        except Exception as e:
+            print(f"Error getting job details: {str(e)}")
         # 응답 데이터 구성
         schedule_data = {
             "schedule_id": schedule_id,
@@ -153,23 +172,26 @@ async def delete_schedule(request: Request, schedule_id: str) -> JSONResponse:
 
 
 
-@router.get("/date/{date}")
+@router.get("/statistics/daily")
 async def get_schedule_executions_by_date(
     request: Request,
-    date: str  # 'YYYY-MM-DD' 형식
+    year: int = Query(...),
+    month: int = Query(..., ge=1, le=12),
+    day: int = Query(..., ge=1, le=31)
 ) -> JSONResponse:
     try:
         # 날짜 유효성 검사
         try:
-            datetime.strptime(date, '%Y-%m-%d')
+            date_str = f"{year}-{month:02d}-{day:02d}"
+            date_obj = datetime.strptime(date_str, '%Y-%m-%d')
         except ValueError:
             return JSONResponse(status_code=400, content={
                 "result": "error",
-                "message": "잘못된 날짜 형식입니다. 'YYYY-MM-DD' 형식으로 입력해주세요."
+                "message": "유효하지 않은 날짜입니다. 올바른 날짜를 입력해주세요."
             })
 
         dags = airflow_service.get_all_dags()
-        executions = airflow_service.get_dag_runs_by_date(dags, date)
+        executions = airflow_service.get_dag_runs_by_date(dags, date_str)
 
         return JSONResponse(content={
             "result": "success",
@@ -177,10 +199,10 @@ async def get_schedule_executions_by_date(
         })
 
     except Exception as e:
-        print(f"Error getting schedule executions by date: {str(e)}")
+        print(f"Error getting daily statistics: {str(e)}")
         return JSONResponse(status_code=500, content={
             "result": "error",
-            "message": f"날짜별 스케줄 실행 결과 조회에 실패했습니다: {str(e)}"
+            "message": f"일일 통계 조회에 실패했습니다: {str(e)}"
         })
 
 
@@ -202,31 +224,42 @@ async def get_schedule_runs(
     try:
         # DAG 상세 정보 조회
         dag_detail = airflow_service.get_dag_detail(schedule_id)
-        
+
         # 소유자 확인
         owner = f"user_{user_id}"
         dag_owner = dag_detail.get("owner", "")
-        
-        if owner != dag_owner and owner not in dag_detail.get("tags", []):
+
+        # 태그에서 소유자 확인
+        tags = dag_detail.get("tags", [])
+        # 태그가 문자열 또는 딕셔너리 형태로 올 수 있음
+        tag_values = []
+        for tag in tags:
+            if isinstance(tag, dict) and "name" in tag:
+                tag_values.append(tag["name"])
+            else:
+                tag_values.append(tag)
+
+        # 현재 사용자가 소유자인지 또는 태그에 포함되어 있는지 확인
+        if owner != dag_owner and owner not in tag_values:
             return JSONResponse(status_code=403, content={
                 "result": "error",
                 "message": "해당 스케줄에 접근 권한이 없습니다."
             })
-        
+
         # DAG 실행 목록 조회
         dag_runs = airflow_service.get_dag_runs(
-            schedule_id, 
+            schedule_id,
             limit=page * size,
             start_date=start_date,
             end_date=end_date
         )
-        
+
         # 페이징 처리
         total = len(dag_runs)
         start_idx = (page - 1) * size
         end_idx = start_idx + size
         paged_runs = dag_runs[start_idx:end_idx]
-        
+
         # 응답 데이터 구성
         run_list = []
         for run in paged_runs:
@@ -236,16 +269,16 @@ async def get_schedule_runs(
                 "start_time": run.get("start_date"),
                 "end_time": run.get("end_date"),
                 "duration": (
-                    datetime.fromisoformat(run.get("end_date").replace("Z", "+00:00")) - 
+                    datetime.fromisoformat(run.get("end_date").replace("Z", "+00:00")) -
                     datetime.fromisoformat(run.get("start_date").replace("Z", "+00:00"))
                 ).total_seconds() if run.get("end_date") and run.get("start_date") else None
             })
-        
+
         return JSONResponse(content={
             "result": "success",
             "data": {
                 "schedule_id": schedule_id,
-                "schedule_name": dag_detail.get("name", schedule_id),
+                "title": dag_detail.get("name", schedule_id),
                 "runs": run_list,
                 "page": page,
                 "size": size,
@@ -273,28 +306,39 @@ async def get_schedule_run_detail(
     try:
         # DAG 상세 정보 조회
         dag_detail = airflow_service.get_dag_detail(schedule_id)
-        
+
         # 소유자 확인
         owner = f"user_{user_id}"
         dag_owner = dag_detail.get("owner", "")
-        
-        if owner != dag_owner and owner not in dag_detail.get("tags", []):
+
+        # 태그에서 소유자 확인
+        tags = dag_detail.get("tags", [])
+        # 태그가 문자열 또는 딕셔너리 형태로 올 수 있음
+        tag_values = []
+        for tag in tags:
+            if isinstance(tag, dict) and "name" in tag:
+                tag_values.append(tag["name"])
+            else:
+                tag_values.append(tag)
+
+        # 현재 사용자가 소유자인지 또는 태그에 포함되어 있는지 확인
+        if owner != dag_owner and owner not in tag_values:
             return JSONResponse(status_code=403, content={
                 "result": "error",
                 "message": "해당 스케줄에 접근 권한이 없습니다."
             })
-        
+
         # DAG 실행 상세 정보 조회
         run_detail = airflow_service.get_dag_run_detail(schedule_id, run_id)
-        
+
         # 태스크 인스턴스 목록 조회
         task_instances = airflow_service.get_task_instances(schedule_id, run_id)
-        
+
         # 태스크 데이터 구성
         task_list = []
         for task in task_instances:
             task_id = task.get("task_id", "")
-            
+
             # job_id 추출 (task_id 형식: 'job_1' 등)
             job_id = None
             if task_id.startswith("job_"):
@@ -302,7 +346,7 @@ async def get_schedule_run_detail(
                     job_id = task_id.split("_")[1]
                 except (IndexError, ValueError):
                     pass
-            
+
             task_list.append({
                 "task_id": task_id,
                 "job_id": job_id,
@@ -312,23 +356,22 @@ async def get_schedule_run_detail(
                 "duration": task.get("duration"),
                 "logs_url": f"{airflow_service.settings.AIRFLOW_API_BASE_URL}/dags/{schedule_id}/dagRuns/{run_id}/taskInstances/{task_id}/logs"
             })
-        
+
         # 응답 데이터 구성
         run_data = {
             "schedule_id": schedule_id,
-            "schedule_name": dag_detail.get("name", schedule_id),
+            "title": dag_detail.get("name", schedule_id),  # schedule_name → title로 변경
             "run_id": run_id,
             "status": run_detail.get("state"),
             "start_time": run_detail.get("start_date"),
             "end_time": run_detail.get("end_date"),
             "duration": (
-                datetime.fromisoformat(run_detail.get("end_date").replace("Z", "+00:00")) - 
-                datetime.fromisoformat(run_detail.get("start_date").replace("Z", "+00:00"))
+                    datetime.fromisoformat(run_detail.get("end_date").replace("Z", "+00:00")) -
+                    datetime.fromisoformat(run_detail.get("start_date").replace("Z", "+00:00"))
             ).total_seconds() if run_detail.get("end_date") and run_detail.get("start_date") else None,
-            "conf": run_detail.get("conf", {}),
             "tasks": task_list
         }
-        
+
         return JSONResponse(content={
             "result": "success",
             "data": run_data
@@ -340,7 +383,7 @@ async def get_schedule_run_detail(
             "message": f"스케줄 실행 상세 조회에 실패했습니다: {str(e)}"
         })
 
-@router.post("/{schedule_id}/execute")
+@router.post("/{schedule_id}/start")
 async def execute_schedule(request: Request, schedule_id: str) -> JSONResponse:
     # user_id = request.headers.get("x-user-id")
     user_id=1
@@ -350,20 +393,31 @@ async def execute_schedule(request: Request, schedule_id: str) -> JSONResponse:
     try:
         # DAG 상세 정보 조회
         dag_detail = airflow_service.get_dag_detail(schedule_id)
-        
+
         # 소유자 확인
         owner = f"user_{user_id}"
         dag_owner = dag_detail.get("owner", "")
-        
-        if owner != dag_owner and owner not in dag_detail.get("tags", []):
+
+        # 태그에서 소유자 확인
+        tags = dag_detail.get("tags", [])
+        # 태그가 문자열 또는 딕셔너리 형태로 올 수 있음
+        tag_values = []
+        for tag in tags:
+            if isinstance(tag, dict) and "name" in tag:
+                tag_values.append(tag["name"])
+            else:
+                tag_values.append(tag)
+
+        # 현재 사용자가 소유자인지 또는 태그에 포함되어 있는지 확인
+        if owner != dag_owner and owner not in tag_values:
             return JSONResponse(status_code=403, content={
                 "result": "error",
                 "message": "해당 스케줄에 실행 권한이 없습니다."
             })
-        
+
         # DAG 실행
         result = airflow_service.trigger_dag(schedule_id)
-        
+
         return JSONResponse(content={
             "result": "success",
             "data": {
@@ -398,8 +452,19 @@ async def toggle_schedule(
         # 소유자 확인
         owner = f"user_{user_id}"
         dag_owner = dag_detail.get("owner", "")
-        
-        if owner != dag_owner and owner not in dag_detail.get("tags", []):
+
+        # 태그에서 소유자 확인
+        tags = dag_detail.get("tags", [])
+        # 태그가 문자열 또는 딕셔너리 형태로 올 수 있음
+        tag_values = []
+        for tag in tags:
+            if isinstance(tag, dict) and "name" in tag:
+                tag_values.append(tag["name"])
+            else:
+                tag_values.append(tag)
+
+        # 현재 사용자가 소유자인지 또는 태그에 포함되어 있는지 확인
+        if owner != dag_owner and owner not in tag_values:
             return JSONResponse(status_code=403, content={
                 "result": "error",
                 "message": "해당 스케줄에 변경 권한이 없습니다."
@@ -429,31 +494,44 @@ async def toggle_schedule(
             "message": f"스케줄 상태 변경에 실패했습니다: {str(e)}"
         })
 
-@router.put("/{schedule_id}")
+
+@router.patch("/{schedule_id}")
 async def update_schedule(
-    request: Request,
-    schedule_id: str,
-    schedule_request: ScheduleUpdateRequest
+        request: Request,
+        schedule_id: str,
+        schedule_request: ScheduleUpdateRequest
 ) -> JSONResponse:
+    # 사용자 ID 가져오기 (현재는 하드코딩, 실제로는 헤더에서 가져와야 함)
     # user_id = request.headers.get("x-user-id")
-    user_id=1
+    user_id = 1
     if user_id is None:
         return JSONResponse(status_code=400, content={"error": "Missing x-user-id header"})
 
     try:
         # DAG 상세 정보 조회
         dag_detail = airflow_service.get_dag_detail(schedule_id)
-        
+
         # 소유자 확인
         owner = f"user_{user_id}"
         dag_owner = dag_detail.get("owner", "")
-        
-        if owner != dag_owner and owner not in dag_detail.get("tags", []):
+
+        # 태그에서 소유자 확인
+        tags = dag_detail.get("tags", [])
+        # 태그가 문자열 또는 딕셔너리 형태로 올 수 있음
+        tag_values = []
+        for tag in tags:
+            if isinstance(tag, dict) and "name" in tag:
+                tag_values.append(tag["name"])
+            else:
+                tag_values.append(tag)
+
+        # 현재 사용자가 소유자인지 또는 태그에 포함되어 있는지 확인
+        if owner != dag_owner and owner not in tag_values:
             return JSONResponse(status_code=403, content={
                 "result": "error",
                 "message": "해당 스케줄에 변경 권한이 없습니다."
             })
-        
+
         # cron 표현식 변환 (frequency가 제공된 경우)
         cron_expression = None
         if schedule_request.frequency and schedule_request.execution_time:
@@ -461,18 +539,19 @@ async def update_schedule(
                 schedule_request.frequency,
                 schedule_request.execution_time
             )
-        
+
         # job_ids 정렬 (jobs가 제공된 경우)
         job_ids = None
         if schedule_request.jobs:
             sorted_jobs = sorted(schedule_request.jobs, key=lambda job: job.order)
             job_ids = [job.id for job in sorted_jobs]
-        
-        # DAG 업데이트
+
+        # DAG 업데이트 - description 제외
         result = airflow_service.update_dag(
             dag_id=schedule_id,
             name=schedule_request.title,
-            description=schedule_request.description,
+            # description 필드 제외 (Airflow API에서 읽기 전용)
+            # description=schedule_request.description,
             cron_expression=cron_expression,
             job_ids=job_ids,
             start_date=schedule_request.start_date,
@@ -480,7 +559,7 @@ async def update_schedule(
             success_emails=schedule_request.success_emails,
             failure_emails=schedule_request.failure_emails
         )
-        
+
         return JSONResponse(content={
             "result": "success",
             "data": {
