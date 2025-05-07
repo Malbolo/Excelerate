@@ -11,8 +11,10 @@ from app.schemas.job_update_schema import JobUpdateRequest
 async def create_job(db: Session, job: JobCreateRequest, user_id: int):
     db_job = models.Job(
         user_id=user_id,
+        user_name=user_name,
+        user_department=department,
         type=job.type,
-        name=job.name,
+        title=job.title,
         description=job.description,
         data_load_command=job.data_load_command,
         data_load_url=job.data_load_url,

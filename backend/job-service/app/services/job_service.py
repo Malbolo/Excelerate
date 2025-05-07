@@ -8,14 +8,40 @@ from app.models import models
 from app.schemas.job_create_schema import JobCreateRequest
 from app.schemas.job_update_schema import JobUpdateRequest
 
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
-async def create_job(request: JobCreateRequest, user_id: int) -> JSONResponse:
-    db = next(get_db())
+def get_user_info(user_id: int):
+    url = "http://user-service:8080/api/users/me/profile"
+    headers = {
+        "x-user-id": str(user_id)
+    }
+
+    response = requests.get(url, headers=headers)
+
+    if response.status_code == 200:
+        user_data = response.json()
+        name = user_data.get("name")
+        department = user_data.get("department")
+        role = user_data.get("role")
+
+        return {
+            "name": name,
+            "department": department,
+            "role": role
+        }
+    else:
+        # 실패한 경우 None 반환 또는 예외 처리
+        return None
+
+async def create_job(request: JobCreateRequest, user_id: int, db: Session) -> JSONResponse:
     try:
-        crud.create_job(db, request, user_id)
+        user_info = get_user_info(user_id)
+
+        await crud.create_job(db, request, user_id, user_info.get("name"), user_info.get("department"))
         return JSONResponse(status_code=200, content={"message": "Job이 생성되었습니다."})
     except Exception as e:
-        print(e)
+        logger.error(f"Failed to create job for user_id {user_id}: {e}", exc_info=True)  # 에러 로그 (예외 정보 포함)
         return JSONResponse(status_code=500, content={"message": "Job이 생성에 실패하였습니다."})
 
 async def get_job_detail(id: int, db: Session) -> JSONResponse:

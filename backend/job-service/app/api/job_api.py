@@ -12,18 +12,10 @@ router = APIRouter(
     prefix="/api/jobs"
 )
 
-
 @router.post("")
-async def create_job(request: Request, job_request: JobCreateRequest) -> JSONResponse:
-    user_id = request.headers.get("x-user-id")
-    if user_id is None:
-        return JSONResponse(status_code=400, content={"error": "Missing x-user-id header"})
-
-    try:
-        user_id = int(user_id)
-    except ValueError:
-        return JSONResponse(status_code=400, content={"error": "Invalid x-user-id header"})
+async def create_job(request: Request, job_request: JobCreateRequest, db: Session = Depends(get_db)) -> JSONResponse:
     user_id = auth.get_user_id_from_header(request)
+    return await job_service.create_job(job_request, user_id, db)
 
     return await job_service.create_job(job_request, user_id)
 

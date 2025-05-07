@@ -8,8 +8,10 @@ class Job(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, nullable=False)
+    user_name = Column(String, nullable=False)
+    user_department = Column(String, nullable=False)
     type = Column(String(50))
-    name = Column(String(100))
+    title = Column(String(100))
     description = Column(Text)
     data_load_command = Column(Text)
     data_load_url = Column(String(255))
