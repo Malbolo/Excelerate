@@ -120,11 +120,54 @@ async def update_job(db: Session, job_id: int, job_request: JobUpdateRequest, us
 def delete_job(db: Session, job_id: int, user_id: int):
     return crud.delete_job(db, job_id, user_id)
 
-def get_jobs_by_user(db: Session, user_id: int, page: int, size: int):
-    jobs, total_jobs = crud.get_jobs_by_user(db, user_id, page, size)
-    return {
-        "jobs": [{"id": job.id, "title": job.name, "description": job.description} for job in jobs],
-        "page": page,
-        "size": size,
-        "total": total_jobs
-    }
+def get_filtered_query(db: Session, mine: bool, name: Optional[str], dep: Optional[str], title: Optional[str], user_id: int):
+    query = db.query(models.Job)
+    if mine:
+        query = query.filter(models.Job.user_id == user_id)
+    else:
+        user_info = get_user_info(user_id)
+        if user_info is None or user_info.get("role") != "ADMIN":
+            raise HTTPException(
+                status_code=403,
+                detail="접근 권한이 없습니다. (관리자만 접근 가능)"
+            )
+
+        if name:
+            query = query.filter(models.Job.user_name == name)
+        else:
+            raise HTTPException(
+                status_code=404,
+                detail="조회할 사용자를 입력해주세요."
+            )
+        if dep:
+            query = query.filter(models.Job.user_department == dep)
+
+    if title:
+        query = query.filter(models.Job.title.ilike(f"%{title}%"))
+
+    return query
+
+
+def get_jobs(db: Session, mine: bool, name: Optional[str], dep: Optional[str], page: Optional[int], size: Optional[int], title: Optional[str], user_id: int):
+    query = get_filtered_query(db, mine, name, dep, title, user_id)
+
+    if size:
+        total = math.ceil(query.count() / size)
+    else:
+        total = 1
+
+    if page is not None and size is not None:
+        jobs = query.offset((page - 1) * size).limit(size).all()
+    else:
+        jobs = query.all()
+
+    job_data = [job_detail_schema.create_job_detail_schema(job) for job in jobs]
+
+    return JSONResponse(content=job_list_schema.JobListResponse(
+        result="success",
+        data={
+            "jobs": job_data,
+            "page": page,
+            "size": size,
+            "total": total
+        }).dict())
