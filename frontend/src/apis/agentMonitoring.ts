@@ -5,7 +5,9 @@ import { TLog } from '@/types/agent';
 import { Job } from '@/types/scheduler';
 
 interface GetJobListRequest {
-  uid: string;
+  name: string;
+  dep: string;
+  type: string;
   page: string;
   size: string;
 }
@@ -19,7 +21,7 @@ interface GetJobListResponse {
 
 const getJobList = async (request: GetJobListRequest) => {
   const { data, error, success } = await api<GetJobListResponse>(
-    `/api/jobs?uid=${request.uid}&page=${request.page}&size=${request.size}`,
+    `/api/jobs?mine=False&name=${request.name}&dep=${request.dep}&type=${request.type}&page=${request.page}&size=${request.size}`,
   );
 
   if (!success) {
@@ -43,7 +45,14 @@ const getJobLogs = async (job_id: string) => {
 
 export const useGetJobList = (request: GetJobListRequest) => {
   return useSuspenseQuery({
-    queryKey: ['jobList', request.uid, request.page, request.size],
+    queryKey: [
+      'jobList',
+      request.name,
+      request.dep,
+      request.type,
+      request.page,
+      request.size,
+    ],
     queryFn: () => getJobList(request),
   });
 };

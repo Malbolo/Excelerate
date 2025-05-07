@@ -22,12 +22,16 @@ import usePagination from '@/hooks/usePagination';
 const JobPagination: React.FC = () => {
   // TODO: 백엔드 서버 API 연동 시 사용
   const [searchParams] = useSearchParams();
-  const uid = searchParams.get('uid') || '';
+  const name = searchParams.get('name') || '';
+  const department = searchParams.get('dep') || '';
+  const jobType = searchParams.get('type') || '';
 
   const {
     data: { jobs, total },
   } = useGetJobList({
-    uid,
+    name: name,
+    dep: department,
+    type: jobType,
     page: '1',
     size: '4',
   });
