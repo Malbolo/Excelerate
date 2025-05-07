@@ -41,7 +41,7 @@ def create_dag(
             raise Exception(f"Job ID {job_id}를 찾을 수 없습니다.")
         job_details.append({
             "id": job.id,
-            "name": job.name,
+            "name": job.title,
             "code": job.code
         })
 
@@ -565,7 +565,7 @@ def update_dag(
                     raise Exception(f"Job ID {job_id}를 찾을 수 없습니다.")
                 job_details.append({
                     "id": job.id,
-                    "name": job.name,
+                    "name": job.title,
                     "code": job.code
                 })
         else:
@@ -584,7 +584,7 @@ def update_dag(
                                 if job:
                                     job_details.append({
                                         "id": job.id,
-                                        "name": job.name,
+                                        "name": job.title,
                                         "code": job.code
                                     })
                             break
