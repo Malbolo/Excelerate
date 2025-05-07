@@ -99,6 +99,7 @@ pytz
 PyYAML
 pyzmq
 RapidFuzz
+redis
 regex
 requests
 requests-toolbelt
