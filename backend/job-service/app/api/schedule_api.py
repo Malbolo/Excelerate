@@ -8,6 +8,7 @@ from app.schemas.schedule_schema import (
     ScheduleUpdateRequest
 )
 from app.services import airflow_service
+from app.core import auth
 
 router = APIRouter(
     prefix="/api/schedules"
@@ -15,10 +16,7 @@ router = APIRouter(
 
 @router.post("")
 async def create_schedule(request: Request, schedule_request: ScheduleCreateRequest) -> JSONResponse:
-    # user_id = request.headers.get("x-user-id")
-    user_id=1
-    if user_id is None:
-        return JSONResponse(status_code=400, content={"error": "Missing x-user-id header"})
+    user_id = auth.get_user_id_from_header(request)
 
     try:
         # frequency를 cron 표현식으로 변환
@@ -131,10 +129,7 @@ async def get_schedule_detail(request: Request, schedule_id: str) -> JSONRespons
 
 @router.delete("/{schedule_id}")
 async def delete_schedule(request: Request, schedule_id: str) -> JSONResponse:
-    # user_id = request.headers.get("x-user-id")
-    user_id=1
-    if user_id is None:
-        return JSONResponse(status_code=400, content={"error": "Missing x-user-id header"})
+    user_id = auth.get_user_id_from_header(request)
 
     try:
         # DAG 상세 정보 조회
@@ -216,10 +211,7 @@ async def get_schedule_runs(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None
 ) -> JSONResponse:
-    # user_id = request.headers.get("x-user-id")
-    user_id=1
-    if user_id is None:
-        return JSONResponse(status_code=400, content={"error": "Missing x-user-id header"})
+    user_id = auth.get_user_id_from_header(request)
 
     try:
         # DAG 상세 정보 조회
@@ -298,10 +290,7 @@ async def get_schedule_run_detail(
     schedule_id: str,
     run_id: str
 ) -> JSONResponse:
-    # user_id = request.headers.get("x-user-id")
-    user_id=1
-    if user_id is None:
-        return JSONResponse(status_code=400, content={"error": "Missing x-user-id header"})
+    user_id = auth.get_user_id_from_header(request)
 
     try:
         # DAG 상세 정보 조회
@@ -385,10 +374,7 @@ async def get_schedule_run_detail(
 
 @router.post("/{schedule_id}/start")
 async def execute_schedule(request: Request, schedule_id: str) -> JSONResponse:
-    # user_id = request.headers.get("x-user-id")
-    user_id=1
-    if user_id is None:
-        return JSONResponse(status_code=400, content={"error": "Missing x-user-id header"})
+    user_id = auth.get_user_id_from_header(request)
 
     try:
         # DAG 상세 정보 조회
@@ -440,10 +426,7 @@ async def toggle_schedule(
     request: Request, 
     schedule_id: str
 ) -> JSONResponse:
-    # user_id = request.headers.get("x-user-id")
-    user_id=1
-    if user_id is None:
-        return JSONResponse(status_code=400, content={"error": "Missing x-user-id header"})
+    user_id = auth.get_user_id_from_header(request)
 
     try:
         # DAG 상세 정보 조회
@@ -501,11 +484,7 @@ async def update_schedule(
         schedule_id: str,
         schedule_request: ScheduleUpdateRequest
 ) -> JSONResponse:
-    # 사용자 ID 가져오기 (현재는 하드코딩, 실제로는 헤더에서 가져와야 함)
-    # user_id = request.headers.get("x-user-id")
-    user_id = 1
-    if user_id is None:
-        return JSONResponse(status_code=400, content={"error": "Missing x-user-id header"})
+    user_id = auth.get_user_id_from_header(request)
 
     try:
         # DAG 상세 정보 조회
