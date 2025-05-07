@@ -113,8 +113,8 @@ class CodeGenerator:
 
         # State 업데이트
         return {
-            "classified_cmds": classified,
-            "queue_idx":       0,
+            "classified_cmds": prev_cls+ classified,
+            "queue_idx":       state["queue_idx"],
             "logs":            new_logs
         }
 
