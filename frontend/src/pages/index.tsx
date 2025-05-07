@@ -49,7 +49,7 @@ const MainPage: React.FC = () => {
 
     setSourceDataCommand(command);
     setData(response.dataframe);
-    setSourceData(response.url);
+    setSourceData(command);
     setColumns(columns);
   };
 

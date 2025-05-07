@@ -1,12 +1,14 @@
-import { memo, useMemo } from 'react';
+import { memo, useState } from 'react';
 
 import Editor from '@monaco-editor/react';
 import { ColumnDef } from '@tanstack/react-table';
-import { DownloadIcon } from 'lucide-react';
+import { DownloadIcon, Expand } from 'lucide-react';
 
 import DataTable from '@/components/DataTable';
 import Tabs from '@/components/Tabs';
 import { DataFrame, DataFrameRow } from '@/types/dataframe';
+
+import DataFrameModal from './DataFrameModal';
 
 interface MainSideBarProps {
   data: DataFrame | null;
@@ -16,14 +18,11 @@ interface MainSideBarProps {
 }
 
 const MainSideBar = memo<MainSideBarProps>(({ data, columns, code, trace }) => {
-  const tabPanels = useMemo(
-    () => [
-      <DataPanel key='data' data={data} columns={columns} />,
-      <CodePanel key='code' code={code} />,
-      <TracePanel key='trace' trace={trace} />,
-    ],
-    [data, columns, code, trace],
-  );
+  const tabPanels = [
+    <DataPanel key='data' data={data} columns={columns} />,
+    <CodePanel key='code' code={code} />,
+    <TracePanel key='trace' trace={trace} />,
+  ];
 
   return (
     <div className='relative flex h-full w-full bg-[#F0F0F0] px-2 py-6'>
@@ -40,10 +39,9 @@ const DataPanel = memo<{
   data: DataFrame | null;
   columns: ColumnDef<DataFrameRow>[];
 }>(({ data, columns }) => {
-  const memoizedColumns = useMemo(() => columns, [columns]);
-  const memoizedData = useMemo(() => data, [data]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  if (!memoizedData)
+  if (!data)
     return (
       <div className='border-border flex h-full items-center justify-center rounded-tl-md rounded-b-md border bg-white p-2'>
         No data
@@ -52,10 +50,25 @@ const DataPanel = memo<{
 
   return (
     <div className='flex h-[90vh] flex-col'>
-      <DataTable columns={memoizedColumns} data={memoizedData} />
-      <div className='absolute right-2 bottom-4 z-10 cursor-pointer rounded-full bg-black p-3'>
+      <DataTable columns={columns} data={data} />
+      <div className='absolute right-1 bottom-2 z-10 cursor-pointer rounded-full bg-black p-3'>
         <DownloadIcon color='white' size={18} />
       </div>
+      <div className='absolute bottom-2 left-1 z-10 cursor-pointer rounded-full border bg-white p-3'>
+        <Expand
+          color='black'
+          size={18}
+          onClick={() => {
+            setIsModalOpen(true);
+          }}
+        />
+      </div>
+      <DataFrameModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        data={data}
+        columns={columns}
+      />
     </div>
   );
 });
