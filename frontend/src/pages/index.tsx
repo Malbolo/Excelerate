@@ -31,7 +31,7 @@ const MainPage: React.FC = () => {
   const [columns, setColumns] = useState<ColumnDef<DataFrameRow>[]>([]);
   const [data, setData] = useState<DataFrame | null>(null);
   const [code, setCode] = useState<string>('');
-  const [trace] = useState<string>('');
+  const [logId, setLogId] = useState<string>('');
   const [downloadToken, setDownloadToken] = useState<string>('');
 
   const [step, setStep] = useState<'source' | 'command'>('source');
@@ -71,6 +71,7 @@ const MainPage: React.FC = () => {
     setCode(response.codes[response.codes.length - 1]);
     setColumns(columns);
     setDownloadToken(response.download_token);
+    setLogId(response.log_id);
   };
 
   const handleSubmitCommand = async () => {
@@ -213,7 +214,7 @@ const MainPage: React.FC = () => {
             data={data}
             columns={columns}
             code={code}
-            trace={trace}
+            logId={logId}
             downloadToken={downloadToken}
           />
         </ResizablePanel>

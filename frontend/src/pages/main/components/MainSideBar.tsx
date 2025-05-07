@@ -4,7 +4,9 @@ import Editor from '@monaco-editor/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { DownloadIcon, Expand } from 'lucide-react';
 
+import { useGetJobLogs } from '@/apis/agentMonitoring';
 import DataTable from '@/components/DataTable';
+import LLMGraph from '@/components/Graph/LLMGraph';
 import Tabs from '@/components/Tabs';
 import { DataFrame, DataFrameRow } from '@/types/dataframe';
 
@@ -16,12 +18,12 @@ interface MainSideBarProps {
   data: DataFrame | null;
   columns: ColumnDef<DataFrameRow>[];
   code: string;
-  trace: string;
+  logId: string;
   downloadToken: string;
 }
 
 const MainSideBar = memo<MainSideBarProps>(
-  ({ data, columns, code, trace, downloadToken }) => {
+  ({ data, columns, code, logId, downloadToken }) => {
     const tabPanels = [
       <DataPanel
         key='data'
@@ -30,7 +32,7 @@ const MainSideBar = memo<MainSideBarProps>(
         downloadToken={downloadToken}
       />,
       <CodePanel key='code' code={code} />,
-      <TracePanel key='trace' trace={trace} />,
+      <TracePanel key='trace' logId={logId} />,
     ];
 
     return (
@@ -114,10 +116,19 @@ const CodePanel: React.FC<{ code: string }> = ({ code }) => {
   );
 };
 
-const TracePanel: React.FC<{ trace: string }> = ({ trace }) => {
+const TracePanel: React.FC<{ logId: string }> = ({ logId }) => {
+  const { data: logs } = useGetJobLogs(logId);
+
+  if (!logId)
+    return (
+      <div className='border-border grow rounded-tl-md rounded-b-md border bg-white py-2'>
+        <div className='flex h-full items-center justify-center'>No Log</div>
+      </div>
+    );
+
   return (
-    <div className='border-border grow rounded-tl-md rounded-b-md border bg-white'>
-      {trace}
+    <div className='border-border grow overflow-auto rounded-tl-md rounded-b-md border bg-white p-4'>
+      <LLMGraph jobName='Current Job' logs={logs ?? []} />
     </div>
   );
 };
