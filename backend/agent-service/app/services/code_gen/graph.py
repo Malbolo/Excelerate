@@ -58,7 +58,39 @@ class CodeGenerator:
         self.logger.set_name("LLM Call: Split Command List")
         self.logger.reset()
 
-        cmds = state['command_list']
+        prev_cls = state.get("classified_cmds", [])
+        all_cmds = state["command_list"]
+
+        # 1) 이전에 처리된 커맨드 수(processed_count) 계산
+        processed_count = 0
+        for entry in prev_cls:
+            raw = entry.get("cmd")
+            # raw가 실제 list면 그대로, str이면 JSON 파싱 시도
+            if isinstance(raw, list):
+                cmd_list = raw
+            elif isinstance(raw, str) and raw.strip().startswith("["):
+                try:
+                    parsed = json.loads(raw)
+                    cmd_list = parsed if isinstance(parsed, list) else [raw]
+                except json.JSONDecodeError:
+                    cmd_list = [raw]
+            else:
+                cmd_list = [raw]
+
+            processed_count += len(cmd_list)
+
+        # 2) 건너뛸 커맨드 수만큼 앞부분 스킵 → 신규 명령어 목록
+        new_cmds = all_cmds[processed_count:]
+
+        # 3) 신규가 없으면 건너뛰기
+        if not new_cmds:
+            return {
+                "classified_cmds": prev_cls,
+                "queue_idx":       state["queue_idx"],
+                "logs":            state.get("logs", [])
+            }
+
+        cmds = new_cmds
         prompt = make_classify_template()
         # invoke
         cng_chain = prompt | self.sllm
@@ -88,8 +120,8 @@ class CodeGenerator:
 
         # State 업데이트
         return {
-            "classified_cmds": classified,
-            "queue_idx":       0,
+            "classified_cmds": prev_cls+ classified,
+            "queue_idx":       state["queue_idx"],
             "logs":            new_logs
         }
 
