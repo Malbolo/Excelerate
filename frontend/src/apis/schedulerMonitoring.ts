@@ -4,53 +4,56 @@ import { Status } from '@/types/scheduler';
 
 import { api } from './core';
 
-interface GetMonthScheduleResponse {
-  statistics: [
-    {
-      day: number;
-      pending: number;
-      success: number;
-      fail: number;
-    },
-  ];
+interface MonthSchedule {
+  date: string;
+  pending: number;
+  success: number;
+  failed: number;
 }
+
+type GetMonthScheduleResponse = MonthSchedule[];
 
 export interface DaySchedule {
-  id: string;
-  title: string;
+  schedule_id: string;
   description: string;
+  run_id: string;
+  title: string;
+  owner: string;
   status: Status;
+  start_time: string;
+  end_time: string;
 }
 
-interface DayScheduleResponse {
-  schedules: DaySchedule[];
+interface GetDayScheduleResponse {
+  date: string;
+  success: DaySchedule[];
+  failed: DaySchedule[];
+  pending: DaySchedule[];
 }
 
-interface ScheduleResponse {
-  id: string;
+interface GetRunIdResponse {
+  schedule_id: string;
   title: string;
-  description: string;
-  created_at: string;
-  userId: string;
-  status: Status;
+  run_id: string;
+  status: string;
+  start_time: string;
+  end_time: string;
+  duration: number;
+  conf: object;
   jobs: [
     {
-      id: string;
-      name: string;
-      order: number;
-      commands: [
-        {
-          content: string;
-          status: Status;
-          order: number;
-        },
-      ];
+      job_id: string;
+      status: string;
+      start_time: string;
+      end_time: string;
+      duration: number;
+      logs_url: string;
     },
   ];
 }
 
 const getDaySchedules = async (year: string, month: string, day: string) => {
-  const { data } = await api<DayScheduleResponse>(
+  const { data } = await api<GetDayScheduleResponse>(
     `/api/schedules/statistics/daily?year=${year}&month=${month}&day=${day}`,
     { method: 'GET' },
   );
@@ -77,14 +80,9 @@ const getMonthSchedules = async (year: string, month: string) => {
   return data;
 };
 
-const getSchedule = async (
-  year: string,
-  month: string,
-  day: string,
-  scheduleId: string,
-) => {
-  const { data } = await api<ScheduleResponse>(
-    `/api/schedules/${scheduleId}?year=${year}&month=${month}&day=${day}`,
+const getSchedule = async (schedule_id: string, run_id: string) => {
+  const { data } = await api<GetRunIdResponse>(
+    `/api/schedules/${schedule_id}/runs/${run_id}`,
     { method: 'GET' },
   );
 
@@ -114,14 +112,9 @@ export const useGetMonthSchedules = (year: string, month: string) => {
   });
 };
 
-export const useGetSchedule = (
-  year: string,
-  month: string,
-  day: string,
-  scheduleId: string,
-) => {
+export const useGetSchedule = (schedule_id: string, run_id: string) => {
   return useSuspenseQuery({
-    queryKey: ['schedule', year, month, day, scheduleId],
-    queryFn: () => getSchedule(year, month, day, scheduleId),
+    queryKey: ['schedule', schedule_id, run_id],
+    queryFn: () => getSchedule(schedule_id, run_id),
   });
 };

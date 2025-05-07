@@ -1,8 +1,13 @@
 import { useState } from 'react';
 
 import { Separator } from '@radix-ui/react-separator';
+import { useSearchParams } from 'react-router-dom';
 
-import { JobResponse, useGetJobDetail } from '@/apis/jobManagement';
+import {
+  JobResponse,
+  useGetJobDetail,
+  useGetJobList,
+} from '@/apis/jobManagement';
 
 import AvailableJobList from '../createScheduler/components/AvailableJobList';
 import JobPagination from '../createScheduler/components/JobPagination';
@@ -13,8 +18,14 @@ export const ITEMS_PER_PAGE = 6;
 
 const JobManagementPage = () => {
   const [selectedJob, setSelectedJob] = useState<JobResponse | null>(null);
-
   const getJobDetail = useGetJobDetail();
+  const [searchParams] = useSearchParams();
+  const keyword = searchParams.get('keyword') || '';
+  const currentPage = parseInt(searchParams.get('page') || '1', 10);
+
+  const { data: jobList } = useGetJobList(currentPage, keyword, true);
+
+  const { total, jobs } = jobList;
 
   const handleJobSelect = async (job: JobResponse) => {
     const jobDetail = await getJobDetail(job.id);
@@ -34,9 +45,9 @@ const JobManagementPage = () => {
           <AvailableJobList
             onJobSelect={handleJobSelect}
             selectedJob={selectedJob}
-            isMine={true}
+            jobs={jobs}
           />
-          <JobPagination />
+          <JobPagination total={total} />
         </div>
       </main>
       <Separator orientation='vertical' className='mx-2 hidden md:block' />

@@ -20,22 +20,7 @@ const DaySchedulePage = () => {
 
   const { data: daySchedules } = useGetDaySchedules(year, month, date);
 
-  const { schedules } = daySchedules;
-
-  // 대기 스케쥴
-  const pendingSchedules = schedules.filter(
-    schedule => schedule.status === 'pending',
-  );
-
-  // 성공 스케쥴
-  const successSchedules = schedules.filter(
-    schedule => schedule.status === 'success',
-  );
-
-  // 실패 스케쥴
-  const errorSchedules = schedules.filter(
-    schedule => schedule.status === 'error',
-  );
+  const { success, failed, pending } = daySchedules;
 
   return (
     <SchedulerMonitoringLayout title={title} backPath={backPath}>
@@ -46,7 +31,7 @@ const DaySchedulePage = () => {
             <h2 className='text-lg font-semibold text-yellow-800'>Pending</h2>
           </div>
           <div className='flex-grow p-4'>
-            <ScheduleList items={pendingSchedules} />
+            <ScheduleList items={success} />
           </div>
         </div>
 
@@ -55,7 +40,7 @@ const DaySchedulePage = () => {
             <h2 className='text-lg font-semibold text-green-800'>Success</h2>
           </div>
           <div className='flex-grow p-4'>
-            <ScheduleList items={successSchedules} />
+            <ScheduleList items={failed} />
           </div>
         </div>
 
@@ -64,7 +49,7 @@ const DaySchedulePage = () => {
             <h2 className='text-lg font-semibold text-red-800'>Error</h2>
           </div>
           <div className='flex-grow p-4'>
-            <ScheduleList items={errorSchedules} />
+            <ScheduleList items={pending} />
           </div>
         </div>
       </div>

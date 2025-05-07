@@ -26,7 +26,7 @@ const ScheduleList = ({ items }: ScheduleListProps) => {
     <div className='flow-root'>
       {items.map((item, index) => (
         <div
-          key={`${item.id}-${index}`}
+          key={`${item.run_id}-${index}`}
           className='group relative border-b border-gray-100 py-3 last:border-b-0'
         >
           <h3 className='mb-1 text-base font-semibold'>{item.title}</h3>
@@ -34,7 +34,7 @@ const ScheduleList = ({ items }: ScheduleListProps) => {
 
           <Button
             className='absolute top-2 right-0 rounded bg-blue-500 px-2 py-1 text-xs text-white opacity-0 shadow-sm transition-opacity group-hover:visible group-hover:opacity-100 hover:bg-blue-600'
-            onClick={() => handleViewDetails(item.id)}
+            onClick={() => handleViewDetails(item.run_id)}
             aria-label={`View details for ${item.title}`}
           >
             View Details

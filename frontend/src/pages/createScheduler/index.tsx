@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 
-import { JobResponse } from '@/apis/jobManagement';
+import { useSearchParams } from 'react-router-dom';
+
+import { JobResponse, useGetJobList } from '@/apis/jobManagement';
 import SchedulerMonitoringLayout from '@/components/Layout/SchedulerMonitoringLayout';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -14,6 +16,14 @@ import SelectedJobList from './components/SelectedJobList';
 const CreateSchedulerPage = () => {
   const [selectedJobs, setSelectedJobs] = useState<JobResponse[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchParams] = useSearchParams();
+
+  const keyword = searchParams.get('keyword') || '';
+  const currentPage = parseInt(searchParams.get('page') || '1', 10);
+
+  const { data: jobList } = useGetJobList(currentPage, keyword);
+
+  const { total, jobs } = jobList;
 
   const handleJobSelect = (job: JobResponse, checked: boolean) => {
     setSelectedJobs(prev =>
@@ -51,8 +61,9 @@ const CreateSchedulerPage = () => {
           <AvailableJobList
             selectedJobIds={selectedJobIds}
             onJobSelect={handleJobSelect}
+            jobs={jobs}
           />
-          <JobPagination />
+          <JobPagination total={total} />
         </div>
         <Separator orientation='vertical' className='mx-2 hidden md:block' />
         <div className='mt-6 flex w-full flex-col overflow-hidden md:mt-0 md:w-1/2'>
