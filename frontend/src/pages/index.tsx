@@ -92,7 +92,7 @@ const MainPage: React.FC = () => {
   const handleRun = async () => {
     const updateCommandStatus = (
       index: number,
-      status: 'processing' | 'success',
+      status: 'fail' | 'processing' | 'success',
     ) => {
       setCommandList(prevCommands =>
         prevCommands.map((command, idx) =>
@@ -105,9 +105,25 @@ const MainPage: React.FC = () => {
      * 추후 소켓 통신 시 제거 예정
      */
 
-    handleSendCommandList();
-    // TODO: 모든 command가 성공 시 저장 가능 상태로 변경
-    setCanSaveJob(true);
+    try {
+      await handleSendCommandList();
+
+      for (let i = 0; i < commandList.length; i++) {
+        updateCommandStatus(i, 'success');
+      }
+
+      const allCommandsSuccess = commandList.every(
+        command => command.status === 'success',
+      );
+
+      if (allCommandsSuccess) {
+        setCanSaveJob(allCommandsSuccess);
+      }
+    } catch (error) {
+      for (let i = 0; i < commandList.length; i++) {
+        updateCommandStatus(i, 'fail');
+      }
+    }
   };
 
   return (
