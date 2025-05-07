@@ -15,7 +15,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -35,18 +41,18 @@ const formSchema = z.object({
   jobName: z
     .string()
     .min(2, {
-      message: 'JobName must be at least 2 characters.',
+      message: 'Job name must be at least 2 characters.',
     })
     .max(20, {
-      message: 'JobName must be at most 20 characters.',
+      message: 'Job name must be at most 20 characters.',
     }),
   jobDescription: z
     .string()
     .min(2, {
-      message: 'JobDescription must be at least 2 characters.',
+      message: 'Job description must be at least 2 characters.',
     })
     .max(100, {
-      message: 'JobDescription must be at most 100 characters.',
+      message: 'Job description must be at most 100 characters.',
     }),
   sendEmail: z.boolean().default(false).optional(),
 });
@@ -134,6 +140,7 @@ const SaveJobDialog: React.FC<SaveJobDialogProps> = ({
                           </SelectContent>
                         </Select>
                       </FormControl>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -150,6 +157,7 @@ const SaveJobDialog: React.FC<SaveJobDialogProps> = ({
                           onChange={field.onChange}
                         />
                       </FormControl>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -164,9 +172,10 @@ const SaveJobDialog: React.FC<SaveJobDialogProps> = ({
                           placeholder='Job Description'
                           value={field.value}
                           onChange={field.onChange}
-                          className='h-24'
+                          className='h-24 resize-none'
                         />
                       </FormControl>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
