@@ -3,12 +3,11 @@ import { useState } from 'react';
 import { Separator } from '@radix-ui/react-separator';
 
 import { JobResponse, useGetJobDetail } from '@/apis/jobManagement';
-import { Button } from '@/components/ui/button';
 
 import AvailableJobList from '../createScheduler/components/AvailableJobList';
 import JobPagination from '../createScheduler/components/JobPagination';
 import JobSearchInput from '../createScheduler/components/JobSearchInput';
-import CommandItem from './components/CommandItem';
+import CommandList from './components/CommandList';
 
 export const ITEMS_PER_PAGE = 6;
 
@@ -40,29 +39,15 @@ const JobManagementPage = () => {
         </div>
       </main>
       <Separator orientation='vertical' className='mx-2 hidden md:block' />
-      <div className='flex w-[40%] flex-col overflow-hidden bg-gray-100/50 p-8'>
-        <section className='flex grow flex-col gap-2'>
-          <div className='flex items-center justify-between gap-2'>
-            <p className='text-lg font-bold'>{selectedJob?.title}</p>
-          </div>
-          <div className='mt-4 flex flex-col gap-2'>
-            {selectedJob?.commands.map(command => (
-              <CommandItem
-                key={`${command.content}-${command.order}`}
-                commandTitle={command.content}
-              />
-            ))}
-          </div>
-        </section>
-        <div className='flex items-center justify-center gap-4'>
-          <Button variant='destructive' className='h-12 w-1/2 p-4'>
-            delete
-          </Button>
-          <Button variant='default' className='h-12 w-1/2 p-4'>
-            edit
-          </Button>
+      {selectedJob ? (
+        <CommandList selectedJob={selectedJob} />
+      ) : (
+        <div className='flex w-[40%] flex-col overflow-hidden bg-gray-100/50 p-8'>
+          <p className='text-center text-lg font-bold'>
+            Select a job to view details
+          </p>
         </div>
-      </div>
+      )}
     </div>
   );
 };

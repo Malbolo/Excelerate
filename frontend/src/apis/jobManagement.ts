@@ -1,4 +1,8 @@
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import { api } from './core';
@@ -26,6 +30,12 @@ interface JobListResponse {
   total: number;
 }
 
+interface DeleteJobRequestParams {
+  id: string;
+  page: string;
+  keyword: string;
+}
+
 const getJobDetail = async (jobId: string) => {
   const { data, error, success } = await api<JobResponse>(`/api/jobs/${jobId}`);
 
@@ -36,35 +46,46 @@ const getJobDetail = async (jobId: string) => {
   return data;
 };
 
-const deleteJob = async (jobId: string) => {
-  const { error, success } = await api<JobResponse>(`/api/jobs/${jobId}`, {
-    method: 'DELETE',
-  });
+const deleteJob = async ({ id, page, keyword }: DeleteJobRequestParams) => {
+  const { error, success } = await api<JobResponse>(
+    `/api/jobs/${id}?page=${page}&keyword=${keyword}`,
+    {
+      method: 'DELETE',
+    },
+  );
 
   if (!success) {
     throw new Error(error);
   }
+
+  return { page: Number(page), keyword };
 };
 
 export const useDeleteJob = () => {
-  const { mutateAsync } = useMutation({
-    mutationFn: (jobId: string) => deleteJob(jobId),
+  const queryClient = useQueryClient();
+  const { mutate } = useMutation({
+    mutationFn: (requestParams: DeleteJobRequestParams) =>
+      deleteJob(requestParams),
     onError: error => {
       toast.error(error.message);
     },
-    onSuccess: () => {
+    onSuccess: ({ page, keyword }) => {
+      console.log('onSuccess', { page, keyword });
       toast.success('작업이 삭제되었습니다.');
+      queryClient.invalidateQueries({
+        queryKey: ['jobList', page, keyword],
+      });
     },
   });
 
-  return { mutateAsync };
+  return mutate;
 };
 
 // 기본적으로 모두 6개씩 조회할 예정이고
 // 페이지네이션에서 데이터가 없는경우 1페이지 빈문자열로 조회하는게 좋아서 기본값을 1, 6, '' 로 설정
-const getJobList = async (page = 1, size = 6, title = '') => {
+const getJobList = async (page = 1, title = '') => {
   const { data, error, success } = await api<JobListResponse>(
-    `/api/jobs/mine?page=${page}&size=${size}&title=${title}`,
+    `/api/jobs/mine?page=${page}&size=6&title=${title}`,
   );
 
   if (!success) {
@@ -74,10 +95,10 @@ const getJobList = async (page = 1, size = 6, title = '') => {
   return data;
 };
 
-export const useGetJobList = (page = 1, size = 6, title = '') => {
+export const useGetJobList = (page = 1, keyword = '') => {
   return useSuspenseQuery({
-    queryKey: ['jobList', page, size, title],
-    queryFn: () => getJobList(page, size, title),
+    queryKey: ['jobList', page, keyword],
+    queryFn: () => getJobList(page, keyword),
   });
 };
 
