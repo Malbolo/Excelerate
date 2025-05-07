@@ -26,12 +26,12 @@ def get_user_info(user_id: int):
 
     if response.status_code == 200:
         user_data = response.json()
-        name = user_data.get("name")
-        department = user_data.get("department")
-        role = user_data.get("role")
-        logger.info("name : ", name)
-        logger.info("department : ", department)
-        logger.info("role : ", role)
+        name = user_data.get("data").get("name")
+        department = user_data.get("data").get("department")
+        role = user_data.get("data").get("role")
+        logger.info("name : %s", name)
+        logger.info("department : %s", department)
+        logger.info("role : %s", role)
 
         return {
             "name": name,
