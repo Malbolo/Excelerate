@@ -2,6 +2,7 @@ from typing import Optional
 from fastapi import APIRouter, Request, Depends, Query
 from sqlalchemy.orm import Session
 from starlette.responses import JSONResponse
+from app.core import auth
 from app.db.database import get_db
 from app.schemas.job_create_schema import JobCreateRequest
 from app.schemas.job_update_schema import JobUpdateRequest
@@ -22,6 +23,7 @@ async def create_job(request: Request, job_request: JobCreateRequest) -> JSONRes
         user_id = int(user_id)
     except ValueError:
         return JSONResponse(status_code=400, content={"error": "Invalid x-user-id header"})
+    user_id = auth.get_user_id_from_header(request)
 
     return await job_service.create_job(job_request, user_id)
 
@@ -43,6 +45,7 @@ async def get_own_jobs(
         return JSONResponse(status_code=400, content={"error": "Invalid x-user-id header"})
 
     return await job_service.get_own_jobs(db, user_id, page, size, title)
+    user_id = auth.get_user_id_from_header(request)
 
 @router.get("/{job_id}")
 async def get_job_detail(job_id: int, db: Session = Depends(get_db)) -> JSONResponse:
@@ -55,14 +58,7 @@ async def update_job(
         job_request: JobUpdateRequest,
         db: Session = Depends(get_db)
 ) -> JSONResponse:
-    user_id = request.headers.get("x-user-id")
-    if user_id is None:
-        return JSONResponse(status_code=400, content={"error": "Missing x-user-id header"})
-
-    try:
-        user_id = int(user_id)
-    except ValueError:
-        return JSONResponse(status_code=400, content={"error": "Invalid x-user-id header"})
+    user_id = auth.get_user_id_from_header(request)
     return await job_service.update_job(db, job_id, job_request, user_id)
 
 
@@ -72,15 +68,7 @@ def delete_job(
         job_id: int,
         db: Session = Depends(get_db)
 ):
-    user_id = request.headers.get("x-user-id")
-    if user_id is None:
-        return JSONResponse(status_code=400, content={"error": "Missing x-user-id header"})
-
-    try:
-        user_id = int(user_id)
-    except ValueError:
-        return JSONResponse(status_code=400, content={"error": "Invalid x-user-id header"})
-
+    user_id = auth.get_user_id_from_header(request)
     return job_service.delete_job(db, job_id, user_id)
 
 @router.get("/")
