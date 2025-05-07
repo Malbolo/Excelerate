@@ -39,7 +39,6 @@ def get_user_info(user_id: int):
             "role": role
         }
     else:
-        # 실패한 경우 None 반환 또는 예외 처리
         return None
 
 async def create_job(request: JobCreateRequest, user_id: int, db: Session) -> JSONResponse:
