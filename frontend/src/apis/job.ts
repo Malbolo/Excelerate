@@ -7,7 +7,7 @@ import { api } from './core';
 
 export interface SaveJobRequest {
   type: string;
-  name: string;
+  title: string;
   description: string;
   data_load_command: string;
   data_load_url: string;

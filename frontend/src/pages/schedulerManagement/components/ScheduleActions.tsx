@@ -1,5 +1,7 @@
-import { Pause, Play, PlayCircle, StopCircle } from 'lucide-react';
+import { Pause, Play, PlayCircle } from 'lucide-react';
 
+import { useOneTimeSchedule } from '@/apis/schedulerManagement';
+import { useToggleSchedule } from '@/apis/schedulerManagement';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -14,26 +16,24 @@ interface ScheduleActionsProps {
 }
 
 const ScheduleActions = ({ schedule }: ScheduleActionsProps) => {
-  const isActive = schedule.status !== 'pending';
+  const toggleSchedule = useToggleSchedule();
+  const oneTimeSchedule = useOneTimeSchedule();
 
   const handleRun = (e: React.MouseEvent) => {
     // e.stopPropagation();사용한 이유는, 테이블 시 클릭 시 행 전체가 선택되는 것을 방지하기 위함
     e.stopPropagation();
+    toggleSchedule(schedule.scheduleId);
   };
 
   const handlePause = (e: React.MouseEvent) => {
     // e.stopPropagation();사용한 이유는, 테이블 시 클릭 시 행 전체가 선택되는 것을 방지하기 위함
     e.stopPropagation();
+    toggleSchedule(schedule.scheduleId);
   };
 
   const handleTrigger = (e: React.MouseEvent) => {
-    // e.stopPropagation();사용한 이유는, 테이블 시 클릭 시 행 전체가 선택되는 것을 방지하기 위함
     e.stopPropagation();
-  };
-
-  const handleStop = (e: React.MouseEvent) => {
-    // e.stopPropagation();사용한 이유는, 테이블 시 클릭 시 행 전체가 선택되는 것을 방지하기 위함
-    e.stopPropagation();
+    oneTimeSchedule(schedule.scheduleId);
   };
 
   return (
@@ -44,11 +44,13 @@ const ScheduleActions = ({ schedule }: ScheduleActionsProps) => {
             <Button
               variant='ghost'
               size='icon'
-              onClick={isActive ? handlePause : handleRun}
+              onClick={schedule.is_paused ? handleRun : handlePause}
               className='h-7 w-7'
-              aria-label={isActive ? 'Pause Schedule' : 'Resume Schedule'}
+              aria-label={
+                schedule.is_paused ? 'Resume Schedule' : 'Pause Schedule'
+              }
             >
-              {isActive ? (
+              {schedule.is_paused ? (
                 <Pause className='h-4 w-4' />
               ) : (
                 <Play className='h-4 w-4' />
@@ -56,7 +58,7 @@ const ScheduleActions = ({ schedule }: ScheduleActionsProps) => {
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>{isActive ? 'Pause Schedule' : 'Resume Schedule'}</p>
+            <p>{schedule.is_paused ? 'Pause Schedule' : 'Resume Schedule'}</p>
           </TooltipContent>
         </Tooltip>
 
@@ -75,23 +77,6 @@ const ScheduleActions = ({ schedule }: ScheduleActionsProps) => {
           </TooltipTrigger>
           <TooltipContent>
             <p>Trigger Schedule Once</p>
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant='ghost'
-              size='icon'
-              onClick={handleStop}
-              className='h-7 w-7 text-red-600 hover:bg-red-100'
-              aria-label='Stop Schedule Execution'
-              disabled={!isActive}
-            >
-              <StopCircle className='h-4 w-4' />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Stop Current/Pending Run</p>
           </TooltipContent>
         </Tooltip>
       </div>

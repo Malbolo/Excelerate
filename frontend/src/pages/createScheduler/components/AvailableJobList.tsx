@@ -1,7 +1,6 @@
 import { CheckIcon } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
 
-import { JobResponse, useGetJobList } from '@/apis/jobManagement';
+import { JobResponse } from '@/apis/jobManagement';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
@@ -9,23 +8,15 @@ interface AvailableJobListProps {
   selectedJobIds?: Set<string>;
   selectedJob?: JobResponse | null;
   onJobSelect?: (job: JobResponse, checked: boolean) => void;
-  isMine?: boolean;
+  jobs: JobResponse[];
 }
 
 const AvailableJobList = ({
   selectedJobIds,
   onJobSelect,
   selectedJob,
-  isMine = false,
+  jobs,
 }: AvailableJobListProps) => {
-  const [searchParams] = useSearchParams();
-  const keyword = searchParams.get('keyword') || '';
-  const currentPage = parseInt(searchParams.get('page') || '1', 10);
-
-  const { data: jobList } = useGetJobList(currentPage, keyword, isMine);
-
-  const { jobs } = jobList;
-
   const handleJobSelect = async (job: JobResponse, checked: boolean) => {
     onJobSelect && onJobSelect(job, checked);
   };

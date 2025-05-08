@@ -13,6 +13,7 @@ export const dummySchedules: Schedule[] = [
     lastRunAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
     nextRunAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     interval: { type: 'daily', time: '02:00' }, // Example for Daily interval
+    is_paused: false,
     jobList: [
       {
         jobId: 'job-001-a',
@@ -90,6 +91,7 @@ export const dummySchedules: Schedule[] = [
     lastRunAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
     nextRunAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     interval: { type: 'weekly', dayOfWeek: 'Mon', time: '09:00' }, // Example Weekly
+    is_paused: false,
     jobList: [
       {
         jobId: 'job-002-a',
@@ -139,6 +141,7 @@ export const dummySchedules: Schedule[] = [
     lastRunAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
     nextRunAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
     interval: { type: 'monthly', dayOfMonth: 1, time: '00:00' }, // Example Monthly
+    is_paused: true,
     jobList: [
       {
         jobId: 'job-003-a',

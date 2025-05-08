@@ -91,25 +91,21 @@ const SaveJobDialog: React.FC<SaveJobDialogProps> = ({
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    try {
-      const { jobType, jobName, jobDescription } = values;
-      const request: SaveJobRequest = {
-        type: jobType,
-        name: jobName,
-        description: jobDescription,
-        data_load_command: sourceDataCommand,
-        data_load_url: sourceData,
-        commands: commandList.map(command => command.title),
-        code,
-      };
+    const { jobType, jobName, jobDescription } = values;
+    const request: SaveJobRequest = {
+      type: jobType,
+      title: jobName,
+      description: jobDescription,
+      data_load_command: sourceDataCommand,
+      data_load_url: sourceData,
+      commands: commandList.map(command => command.title),
+      code,
+    };
 
-      await jobMutation(request);
-      setOpen(false);
-      form.reset();
-      push('/job-management');
-    } catch (error) {
-      // 에러 처리
-    }
+    await jobMutation(request);
+    setOpen(false);
+    form.reset();
+    push('/job-management');
   };
 
   return (

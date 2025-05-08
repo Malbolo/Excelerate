@@ -8,19 +8,17 @@ interface CalendarGridProps {
   month: number;
 }
 
-interface DailySummary {
-  day: number;
-  pending: number;
-  success: number;
-  fail: number;
-}
-
 const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const CalendarGrid = ({ year, month }: CalendarGridProps) => {
   const { data } = useGetMonthSchedules(year.toString(), month.toString());
 
-  const monthSchedules: DailySummary[] = data.statistics ?? [];
+  const monthSchedules = data.map(({ date, pending, success, failed }) => ({
+    day: Number(date.split('-')[2]),
+    pending,
+    success,
+    fail: failed,
+  }));
 
   const matrix = getCalendarMatrix(Number(year), Number(month), monthSchedules);
 

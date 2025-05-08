@@ -2,7 +2,6 @@ import { useCallback } from 'react';
 
 import { useSearchParams } from 'react-router-dom';
 
-import { useGetJobList } from '@/apis/jobManagement';
 import {
   Pagination,
   PaginationContent,
@@ -13,13 +12,9 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination';
 
-const JobPagination = () => {
+const JobPagination = ({ total }: { total: number }) => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const keyword = searchParams.get('keyword') || '';
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
-
-  const { data: jobList } = useGetJobList(currentPage, keyword);
-  const total = jobList?.total ?? 1;
 
   const handlePageChange = useCallback(
     (page: number) => {

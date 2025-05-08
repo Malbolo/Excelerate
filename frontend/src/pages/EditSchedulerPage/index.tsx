@@ -1,20 +1,28 @@
 import { useMemo, useState } from 'react';
 
-import { useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 
 import { JobResponse, useGetJobList } from '@/apis/jobManagement';
+import { useGetScheduleDetail } from '@/apis/schedulerManagement';
 import SchedulerMonitoringLayout from '@/components/Layout/SchedulerMonitoringLayout';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 
-import AvailableJobList from './components/AvailableJobList';
-import CreateScheduleModal from './components/CreateScheduleModal';
-import JobPagination from './components/JobPagination';
-import JobSearchInput from './components/JobSearchInput';
-import SelectedJobList from './components/SelectedJobList';
+import AvailableJobList from '../createScheduler/components/AvailableJobList';
+import JobPagination from '../createScheduler/components/JobPagination';
+import JobSearchInput from '../createScheduler/components/JobSearchInput';
+import SelectedJobList from '../createScheduler/components/SelectedJobList';
+import EditModal from './EditModal';
 
 const CreateSchedulerPage = () => {
-  const [selectedJobs, setSelectedJobs] = useState<JobResponse[]>([]);
+  const { scheduleId } = useParams() as { scheduleId: string };
+  const { data: scheduleDetail } = useGetScheduleDetail(scheduleId);
+
+  const { jobs: responseJobs } = scheduleDetail;
+
+  console.log(scheduleDetail);
+
+  const [selectedJobs, setSelectedJobs] = useState<JobResponse[]>(responseJobs);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchParams] = useSearchParams();
 
@@ -94,10 +102,11 @@ const CreateSchedulerPage = () => {
         </div>
       </div>
 
-      <CreateScheduleModal
+      <EditModal
         isOpen={isModalOpen}
         onOpenChange={setIsModalOpen}
         selectedJobs={selectedJobs}
+        scheduleDetail={scheduleDetail}
       />
     </SchedulerMonitoringLayout>
   );
