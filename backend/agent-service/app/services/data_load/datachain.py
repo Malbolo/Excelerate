@@ -2,6 +2,7 @@ import requests
 import pandas as pd
 import logging
 import time
+from datetime import date
 
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
@@ -51,6 +52,7 @@ class FileAPIClient:
 
         # Entity extractor chain
         prompt = ChatPromptTemplate.from_messages([
+            ("system", "오늘은 {today}입니다."),
             ("system", "다음 필드를 추출하세요: factory_name, system_name, metric, factory_id, product_code, start_date"),
             ("system", "해당하는 값이 없으면 null로 두세요."),
             ("system", "<context>\n{context}\n</context>"),
@@ -58,12 +60,21 @@ class FileAPIClient:
         ])
         llm = ChatOpenAI(model_name=model_name, temperature=0, callbacks=[self.mlogger])
         structured = llm.with_structured_output(FileAPIDetail)
+        
+        date_chain = TransformChain(
+            input_variables=[],
+            output_variables=["today"],
+            transform=lambda _: {"today": date.today().isoformat()}
+        )
+
+        print("today : ", date.today().isoformat())
+        
         flatten = TransformChain(
             input_variables=["context"],
             output_variables=["context"],
             transform=lambda i: {"context": "\n".join(d.page_content for d in i["context"])}
         )
-        self.extractor_chain = flatten | prompt | structured
+        self.extractor_chain = date_chain | flatten | prompt | structured
         self.base_url = base_url
 
     def _initialize_milvus(self, host, port, collection_name):

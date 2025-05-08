@@ -61,20 +61,55 @@ class DataDocs:
                     "system_name": "mes",
                     "factory_id": "FCT001",
                     "product": {
-                        "PROD001": {"name":"스마트폰A","category":"전자기기"},
-                        "PROD002": {"name":"스마트폰B","category":"전자기기"},
-                        "PROD004": {"name":"노트북D","category":"컴퓨터"}
+                        "PROD001": { "name": "스마트폰A", "category": "전자기기" },
+                        "PROD002": { "name": "스마트폰B", "category": "전자기기" },
+                        "PROD003": { "name": "노트북D", "category": "컴퓨터"   }
                     },
-                    "metric_list": ["defects","production","inventory","energy"]
+                    "metric_list": ["defects", "production", "inventory", "energy"]
                 },
                 {
                     "factory_name": "평택공장",
                     "system_name": "mes",
                     "factory_id": "FCT002",
                     "product": {
-                        "PROD003": {"name": "태블릿C", "category": "전자기기"}
+                        "PROD004": { "name": "태블릿C", "category": "전자기기" },
+                        "PROD005": { "name": "서스펜션B", "category": "자동차부품" },
+                        "PROD006": { "name": "브레이크패드C", "category": "자동차부품" }
                     },
-                    "metric_list":  ["defects","production","inventory","energy"]
+                    "metric_list": ["defects", "production", "inventory", "energy"]
+                },
+                {
+                    "factory_name": "화성공장",
+                    "system_name": "smmas",
+                    "factory_id": "FCT003",
+                    "product": {
+                        "PROD007": { "name": "PVC", "category": "화학" },
+                        "PROD008": { "name": "폴리프로필렌", "category": "화학" },
+                        "PROD009": { "name": "에틸렌", "category": "화학" }
+                    },
+                    "metric_list": ["defects", "production", "inventory", "energy"]
+                },
+                {
+                    "factory_name": "천안공장",
+                    "system_name": "smmas",
+                    "factory_id": "FCT004",
+                    "product": {
+                        "PROD010": { "name": "라면A", "category": "식품" },
+                        "PROD011": { "name": "음료B", "category": "식품" },
+                        "PROD012": { "name": "과자C", "category": "식품" }
+                    },
+                    "metric_list": ["defects", "production", "inventory", "energy"]
+                },
+                {
+                    "factory_name": "대전공장",
+                    "system_name": "mes",
+                    "factory_id": "FCT005",
+                    "product": {
+                        "PROD013": { "name": "프레스기", "category": "기계" },
+                        "PROD014": { "name": "밀링머신", "category": "기계" },
+                        "PROD015": { "name": "로봇팔",  "category": "기계" }
+                    },
+                    "metric_list": ["defects", "production", "inventory", "energy"]
                 }
             ]
         }

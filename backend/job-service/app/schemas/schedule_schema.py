@@ -14,7 +14,7 @@ class ScheduleCreateRequest(BaseModel):
     failure_emails: List[str] = Field(default_factory=list)
     start_date: datetime
     end_date: Optional[datetime] = None
-    execution_time: datetime
+    execution_time: str
     frequency: str  # "daily", "weekly", "monthly" 또는 cron 표현식
 
 class ScheduleUpdateRequest(BaseModel):
@@ -25,5 +25,5 @@ class ScheduleUpdateRequest(BaseModel):
     failure_emails: Optional[List[str]] = None
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
-    execution_time: Optional[datetime] = None
+    execution_time: Optional[str] = None
     frequency: Optional[str] = None

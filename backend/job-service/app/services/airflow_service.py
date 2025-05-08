@@ -5,9 +5,9 @@ from datetime import datetime, timedelta, timezone
 import calendar
 import os
 from croniter import croniter
-import re
 from app.db.database import get_db
 from app.models.models import Job, JobCommand
+from app.crud import crud
 
 class Settings:
     AIRFLOW_API_URL: str = os.getenv("AIRFLOW_API_URL")
@@ -25,7 +25,8 @@ def create_dag(
         start_date: datetime,
         end_date: Optional[datetime] = None,
         success_emails: List[str] = None,
-        failure_emails: List[str] = None
+        failure_emails: List[str] = None,
+        execution_time: str = None
 ) -> str:
     # DAG ID는 고유해야 함
     dag_id = f"{owner}_{name.lower().replace(' ', '_')}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
@@ -133,15 +134,20 @@ task_{idx} = PythonOperator(
         # 메타데이터 파일 생성
         meta_file_path = f"/opt/airflow/dags/{dag_id}.meta"
         with open(meta_file_path, 'w') as f:
-            f.write(f"START_DATE: {start_date_str}\n")
-            f.write(f"END_DATE: {end_date_str if end_date else 'None'}\n")
-            f.write(f"OWNER: {owner}\n")
-            f.write(f"CREATED: {datetime.now().isoformat()}\n")
-            f.write(f"JOBS: {','.join([str(job['id']) for job in job_details])}\n")
+            f.write(f"JOBS:{','.join(job_ids)}\n")
+            f.write(f"START_DATE:{start_date.isoformat()}\n")
+            if end_date:
+                f.write(f"END_DATE:{end_date.isoformat()}\n")
+            else:
+                f.write("END_DATE:None\n")
+            f.write(f"SUCCESS_EMAILS:{','.join(success_emails or [])}\n")
+            f.write(f"FAILURE_EMAILS:{','.join(failure_emails or [])}\n")
+            f.write(f"EXECUTION_TIME:{execution_time}\n")
 
-        return dag_id
     except Exception as e:
         raise Exception(f"Failed to create DAG file: {str(e)}")
+
+    return dag_id
 
 def get_dags_by_owner(owner: str) -> List[Dict[str, Any]]:
     """특정 소유자(owner)의 DAG 목록 조회"""
@@ -179,7 +185,6 @@ def get_all_dags(limit: int = 200) -> List[Dict[str, Any]]:
         raise Exception(f"Failed to get all DAGs: {response.text}")
 
     return response.json().get("dags", [])
-
 
 def build_monthly_dag_calendar(dags: List[Dict[str, Any]], year: int, month: int) -> List[Dict[str, Any]]:
     """
@@ -944,3 +949,230 @@ def get_dag_runs_by_date(dags: List[Dict[str, Any]], target_date: str) -> Dict[s
         f"[DEBUG] Final result for {target_date}: success={len(result['success'])}, failed={len(result['failed'])}, pending={len(result['pending'])}")
 
     return result
+
+def get_schedule_detail(schedule_id: str) -> Dict[str, Any]:
+    """
+    스케줄(DAG) 상세 정보 조회와 관련 job 정보를 함께 반환
+    """
+    db = next(get_db())
+
+    try:
+        # DAG 상세 정보 조회
+        dag_detail = get_dag_detail(schedule_id)
+
+        # 메타데이터에서 추가 정보 조회
+        metadata = get_dag_metadata(schedule_id)
+
+        # job 정보 조회 (데이터베이스에서)
+        tasks = []
+        job_ids = metadata.get("job_ids", [])
+        for idx, job_id in enumerate(job_ids):
+            # DB에서 job 정보 조회
+            job_info = crud.get_job_by_id(db, job_id)
+
+            task = {
+                "id": job_id,
+                "order": idx + 1
+            }
+
+            # job_info가 있으면 title과 description 추가
+            if job_info:
+                task["title"] = job_info.get("title", "")
+                task["description"] = job_info.get("description", "")
+
+            tasks.append(task)
+
+        # 크론 표현식 처리
+        frequency_cron = ""
+        if "schedule_interval" in dag_detail:
+            schedule_interval = dag_detail.get("schedule_interval")
+            if isinstance(schedule_interval, dict) and "__type" in schedule_interval:
+                frequency_cron = schedule_interval.get("value", "")
+            else:
+                frequency_cron = schedule_interval
+
+        # 주기 문자열로 변환 (역변환)
+        frequency = convert_cron_to_frequency(frequency_cron)
+        frequency_display = parse_cron_to_friendly_format(frequency_cron)
+        # execution_time이 메타데이터에 없으면 cron에서 추출
+        execution_time = metadata.get("execution_time")
+        if not execution_time:
+            execution_time = extract_execution_time_from_cron(dag_detail.get("schedule_interval"))
+
+        # 응답 데이터 구성
+        schedule_data = {
+            "schedule_id": schedule_id,
+            "title": dag_detail.get("name", schedule_id),
+            "description": dag_detail.get("description", ""),
+            "frequency": frequency,
+            "frequency_cron": frequency_cron,
+            "frequency_display": frequency_display,
+            "is_paused": dag_detail.get("is_paused", False),
+            "created_at": dag_detail.get("created_at", datetime.now().isoformat()),
+            "updated_at": dag_detail.get("updated_at", None),
+            "start_date": metadata.get("start_date"),
+            "end_date": metadata.get("end_date"),
+            "execution_time": execution_time,
+            "success_emails": metadata.get("success_emails", []),
+            "failure_emails": metadata.get("failure_emails", []),
+            "jobs": tasks
+        }
+
+        return schedule_data
+
+    finally:
+        db.close()
+
+def extract_execution_time_from_cron(cron_expression: str) -> Optional[str]:
+    """
+    cron 표현식에서 실행 시간(HH:MM) 추출
+    """
+    if not cron_expression:
+        return None
+
+    if isinstance(cron_expression, dict) and "__type" in cron_expression and cron_expression[
+        "__type"] == "CronExpression":
+        cron_parts = cron_expression.get("value", "").split(" ")
+    else:
+        cron_parts = cron_expression.strip().split(" ")
+
+    if len(cron_parts) >= 2:
+        minute, hour = cron_parts[0], cron_parts[1]
+        # 간단한 시간 형식인 경우만 처리 (*/2 같은 복잡한 패턴은 제외)
+        if hour.isdigit() and minute.isdigit():
+            return f"{int(hour):02d}:{int(minute):02d}"
+
+    return None
+
+
+def convert_cron_to_frequency(cron_expression: str) -> str:
+    """
+    cron 표현식을 사용자 친화적인 주기 표현으로 변환
+    """
+    if not cron_expression:
+        return ""
+
+    parts = cron_expression.strip().split(" ")
+    if len(parts) < 5:
+        return cron_expression  # 유효하지 않은 cron 표현식은 그대로 반환
+
+    minute, hour, day_of_month, month, day_of_week = parts[:5]
+
+    # 일일 주기 (특정 시간에 매일)
+    if day_of_month == "*" and month == "*" and day_of_week == "*":
+        return "daily"
+
+    # 주간 주기 (특정 요일마다)
+    if day_of_month == "*" and month == "*" and day_of_week.isdigit():
+        return "weekly"
+
+    # 월간 주기 (매월 특정 일)
+    if day_of_month.isdigit() and month == "*" and day_of_week == "*":
+        return "monthly"
+
+    # 시간 간격 주기
+    if hour.startswith("*/") and day_of_month == "*" and month == "*" and day_of_week == "*":
+        interval = hour.replace("*/", "")
+        if interval.isdigit():
+            return f"every_{interval}_hours"
+
+    # 일 간격 주기
+    if day_of_month.startswith("*/") and month == "*" and day_of_week == "*":
+        interval = day_of_month.replace("*/", "")
+        if interval.isdigit():
+            # 7의 배수면 주 단위로 변환
+            if int(interval) % 7 == 0 and int(interval) > 0:
+                weeks = int(interval) // 7
+                return f"every_{weeks}_weeks"
+            return f"every_{interval}_days"
+
+    # 변환할 수 없는 경우 원본 표현식 반환
+    return cron_expression
+
+
+def get_dag_metadata(dag_id: str) -> Dict[str, Any]:
+    """
+    메타데이터 파일에서 DAG 추가 정보 조회
+    """
+    metadata = {
+        "job_ids": [],
+        "start_date": None,
+        "end_date": None,
+        "success_emails": [],
+        "failure_emails": [],
+        "execution_time": None
+    }
+
+    meta_file_path = f"/opt/airflow/dags/{dag_id}.meta"
+    if os.path.exists(meta_file_path):
+        try:
+            with open(meta_file_path, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith("JOBS:"):
+                        job_ids_str = line.split(':', 1)[1].strip()
+                        metadata["job_ids"] = job_ids_str.split(',') if job_ids_str else []
+                    elif line.startswith("START_DATE:"):
+                        metadata["start_date"] = line.split(':', 1)[1].strip()
+                    elif line.startswith("END_DATE:"):
+                        end_date_str = line.split(':', 1)[1].strip()
+                        if end_date_str.lower() != "none":
+                            metadata["end_date"] = end_date_str
+                    elif line.startswith("SUCCESS_EMAILS:"):
+                        emails_str = line.split(':', 1)[1].strip()
+                        metadata["success_emails"] = emails_str.split(',') if emails_str else []
+                    elif line.startswith("FAILURE_EMAILS:"):
+                        emails_str = line.split(':', 1)[1].strip()
+                        metadata["failure_emails"] = emails_str.split(',') if emails_str else []
+                    elif line.startswith("EXECUTION_TIME:"):
+                        metadata["execution_time"] = line.split(':', 1)[1].strip()
+        except Exception as e:
+            print(f"Error reading metadata file: {str(e)}")
+
+    return metadata
+
+
+def parse_cron_to_friendly_format(cron_expression: str) -> dict:
+    """
+    cron 표현식을 사용자 친화적인 형식으로 변환
+
+    예시:
+    "0 9 * * *" -> {"type": "daily", "time": "09:00"}
+    "0 9 * * 1" -> {"type": "weekly", "dayOfWeek": "Mon", "time": "09:00"}
+    "0 0 1 * *" -> {"type": "monthly", "dayOfMonth": 1, "time": "00:00"}
+    """
+    if not cron_expression:
+        return None
+
+    # cron 형식이 아닌 경우 처리
+    if not isinstance(cron_expression, str) or cron_expression.count(" ") < 4:
+        return None
+
+    parts = cron_expression.strip().split()
+    if len(parts) < 5:
+        return None
+
+    minute, hour, day_of_month, month, day_of_week = parts[:5]
+
+    # 시간 형식 변환
+    time_str = f"{int(hour):02d}:{int(minute):02d}" if hour.isdigit() and minute.isdigit() else "00:00"
+
+    # 일간 (모든 날짜, 모든 월, 모든 요일)
+    if day_of_month == "*" and month == "*" and day_of_week == "*":
+        return {"type": "daily", "time": time_str}
+
+    # 주간 (모든 날짜, 모든 월, 특정 요일)
+    if day_of_month == "*" and month == "*" and day_of_week != "*":
+        # 요일 변환 (0,7=일요일, 1=월요일, ..., 6=토요일)
+        day_of_week_num = int(day_of_week) if day_of_week.isdigit() else 1
+        days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+        day_name = days[day_of_week_num % 7] if day_of_week_num != 7 else days[0]
+        return {"type": "weekly", "dayOfWeek": day_name, "time": time_str}
+
+    # 월간 (특정 날짜, 모든 월, 모든 요일)
+    if day_of_month != "*" and month == "*" and (day_of_week == "*" or day_of_week == "?"):
+        day = int(day_of_month) if day_of_month.isdigit() else 1
+        return {"type": "monthly", "dayOfMonth": day, "time": time_str}
+
+    # 기타 복잡한 경우 원본 cron 표현식 반환
+    return {"type": "custom", "cronExpression": cron_expression}
