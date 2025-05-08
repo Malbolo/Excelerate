@@ -95,7 +95,7 @@ const routes = [
     name: 'SchedulerMonitoring',
   },
   {
-    path: '/scheduler-monitoring/detail/:dayId/:scheduleId',
+    path: '/scheduler-monitoring/detail/:dayId/:scheduleId/:runId',
     element: (
       <Layout>
         <Suspense fallback={<div>로딩중...</div>}>

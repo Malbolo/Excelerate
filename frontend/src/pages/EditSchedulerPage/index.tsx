@@ -20,8 +20,6 @@ const CreateSchedulerPage = () => {
 
   const { jobs: responseJobs } = scheduleDetail;
 
-  console.log(scheduleDetail);
-
   const [selectedJobs, setSelectedJobs] = useState<JobResponse[]>(responseJobs);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchParams] = useSearchParams();

@@ -1,10 +1,10 @@
-import { Job } from '@/types/scheduler';
+import { Task } from '@/apis/schedulerMonitoring';
 
-export const getJobStatus = (job: Job): 'success' | 'error' | 'default' => {
-  if (job.commandList.some(cmd => cmd.commandStatus === 'error')) {
-    return 'error';
+export const getJobStatus = (task: Task): 'success' | 'failed' | 'default' => {
+  if (task.status === 'failed') {
+    return 'failed';
   }
-  if (job.commandList.every(cmd => cmd.commandStatus === 'success')) {
+  if (task.status === 'success') {
     return 'success';
   }
   return 'default';

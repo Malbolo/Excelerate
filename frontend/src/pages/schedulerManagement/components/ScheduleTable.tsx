@@ -1,3 +1,4 @@
+import { useGetScheduleList } from '@/apis/schedulerManagement';
 import {
   Table,
   TableBody,
@@ -6,35 +7,37 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-import { dummySchedules } from '../data';
 import ScheduleRow from './ScheduleRow';
 
 const ScheduleTable = () => {
-  if (!dummySchedules || dummySchedules.length === 0) {
-    return (
-      <div className='mt-10 text-center text-gray-500'>No schedules found.</div>
-    );
-  }
+  const { data } = useGetScheduleList();
+
+  const { schedules } = data;
+
+  console.log(schedules);
 
   return (
     <div className='rounded-md border'>
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className='w-[50px]'></TableHead>
+            <TableHead></TableHead>
             <TableHead>Schedule Title</TableHead>
-            <TableHead className='w-[250px]'>Owner</TableHead>
-            <TableHead className='w-[100px]'>Interval</TableHead>
-            <TableHead className='w-[200px]'>Last Run</TableHead>
-            <TableHead className='w-[200px]'>Last Run Time</TableHead>
-            <TableHead className='w-[250px]'>Actions</TableHead>
+            <TableHead>Owner</TableHead>
+            <TableHead>Interval</TableHead>
+
+            <TableHead>Status</TableHead>
+            <TableHead>Last Run Time</TableHead>
+            <TableHead>Next Run Time</TableHead>
+            <TableHead>End Date</TableHead>
+            <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {dummySchedules.map((schedule, index) => (
+          {schedules.map((schedule, index) => (
             <ScheduleRow
-              key={`${schedule.scheduleId}-${index}`}
-              schedule={schedule}
+              key={`${schedule.schedule_id}-${index}`}
+              schedule={{ ...schedule, status: 'success' }}
             />
           ))}
         </TableBody>
