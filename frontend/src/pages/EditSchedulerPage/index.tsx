@@ -12,7 +12,7 @@ import AvailableJobList from '../createScheduler/components/AvailableJobList';
 import JobPagination from '../createScheduler/components/JobPagination';
 import JobSearchInput from '../createScheduler/components/JobSearchInput';
 import SelectedJobList from '../createScheduler/components/SelectedJobList';
-import EditScheduleModal from './EditScheduleModal';
+import EditModal from './EditModal';
 
 const CreateSchedulerPage = () => {
   const { scheduleId } = useParams() as { scheduleId: string };
@@ -102,7 +102,7 @@ const CreateSchedulerPage = () => {
         </div>
       </div>
 
-      <EditScheduleModal
+      <EditModal
         isOpen={isModalOpen}
         onOpenChange={setIsModalOpen}
         selectedJobs={selectedJobs}
