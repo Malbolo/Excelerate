@@ -87,7 +87,7 @@ const NavigationBar = () => {
       <div className='mt-auto border-t p-4'>
         {name ? (
           <div className='flex flex-col items-center gap-3'>
-            <span className='text-sm text-gray-800'>Hello, {name}!</span>
+            <span className='text-sm text-gray-800'>안녕하세요, {name}님!</span>
             <Button
               variant='outline'
               size='sm'
