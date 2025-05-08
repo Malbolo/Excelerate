@@ -40,7 +40,14 @@ const AgentMonitoringPage: React.FC = () => {
   // };
 
   const handleSearchJobList = () => {
-    push(`/agent-monitoring?uid=${name}&page=1`);
+    const searchParams = new URLSearchParams();
+
+    if (name) searchParams.set('name', name);
+    if (department) searchParams.set('dep', department);
+    if (jobType) searchParams.set('type', jobType);
+    searchParams.set('page', '1');
+
+    push(`/agent-monitoring?${searchParams.toString()}`);
   };
 
   return (

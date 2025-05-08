@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { Suspense, memo, useState } from 'react';
 
 import Editor from '@monaco-editor/react';
 import { ColumnDef } from '@tanstack/react-table';
@@ -37,7 +37,9 @@ const MainSideBar = memo<MainSideBarProps>(
 
     return (
       <div className='relative flex h-full w-full bg-[#F0F0F0] px-2 py-6'>
-        <Tabs tabList={['Data', 'Code', 'Trace']} tabPanels={tabPanels} />
+        <Suspense fallback={<div>Loading...</div>}>
+          <Tabs tabList={['Data', 'Code', 'Trace']} tabPanels={tabPanels} />
+        </Suspense>
       </div>
     );
   },
@@ -56,7 +58,7 @@ const DataPanel = memo<{
 
   if (!data)
     return (
-      <div className='border-border flex h-full items-center justify-center rounded-tl-md rounded-b-md border bg-white p-2'>
+      <div className='border-border flex h-full items-center justify-center border bg-white p-2'>
         No data
       </div>
     );
@@ -96,13 +98,13 @@ DataPanel.displayName = 'DataPanel';
 const CodePanel: React.FC<{ code: string }> = ({ code }) => {
   if (!code)
     return (
-      <div className='border-border grow rounded-tl-md rounded-b-md border bg-white py-2'>
+      <div className='border-border grow border bg-white py-2'>
         <div className='flex h-full items-center justify-center'>No code</div>
       </div>
     );
 
   return (
-    <div className='border-border grow rounded-tl-md rounded-b-md border bg-white py-2'>
+    <div className='border-border grow border bg-white py-2'>
       <Editor
         defaultLanguage='python'
         defaultValue={code}
@@ -121,13 +123,13 @@ const TracePanel: React.FC<{ logId: string }> = ({ logId }) => {
 
   if (!logId)
     return (
-      <div className='border-border grow rounded-tl-md rounded-b-md border bg-white py-2'>
+      <div className='border-border grow border bg-white py-2'>
         <div className='flex h-full items-center justify-center'>No Log</div>
       </div>
     );
 
   return (
-    <div className='border-border grow overflow-auto rounded-tl-md rounded-b-md border bg-white p-4'>
+    <div className='border-border grow overflow-auto border bg-white p-4'>
       <LLMGraph jobName='Current Job' logs={logs ?? []} />
     </div>
   );

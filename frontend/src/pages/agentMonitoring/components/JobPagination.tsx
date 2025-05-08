@@ -22,12 +22,16 @@ import usePagination from '@/hooks/usePagination';
 const JobPagination: React.FC = () => {
   // TODO: 백엔드 서버 API 연동 시 사용
   const [searchParams] = useSearchParams();
-  const uid = searchParams.get('uid') || '';
+  const name = searchParams.get('name') || '';
+  const department = searchParams.get('dep') || '';
+  const jobType = searchParams.get('type') || '';
 
   const {
     data: { jobs, total },
   } = useGetJobList({
-    uid,
+    name: name,
+    dep: department,
+    type: jobType,
     page: '1',
     size: '4',
   });
@@ -41,8 +45,8 @@ const JobPagination: React.FC = () => {
       <section className='flex flex-1 flex-col gap-4'>
         {jobs.map(job => (
           <Card
-            key={job.jobId}
-            onClick={() => push(`/agent-monitoring/job/${job.jobId}`)}
+            key={job.id}
+            onClick={() => push(`/agent-monitoring/job/${job.id}`)}
             className='cursor-pointer p-5'
           >
             <CardHeader>
@@ -50,8 +54,8 @@ const JobPagination: React.FC = () => {
               <CardDescription>{job.description}</CardDescription>
             </CardHeader>
             <CardContent className='flex w-full justify-between'>
-              <p>{job.userName}</p>
-              <p>{job.createdAt}</p>
+              <p>{job.user_name}</p>
+              <p>{job.created_at}</p>
             </CardContent>
           </Card>
         ))}

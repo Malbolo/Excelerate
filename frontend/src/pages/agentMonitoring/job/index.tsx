@@ -19,7 +19,7 @@ const JobAgentMonitoringPage: React.FC = () => {
 
   const { data: logs } = useGetJobLogs(jobId);
 
-  const [selectedLog, setSelectedLog] = useState<TLog>(logs[0]);
+  const [selectedLog, setSelectedLog] = useState<TLog>();
 
   const handleClickLog = (log: TLog) => {
     setSelectedLog(log);
@@ -27,15 +27,18 @@ const JobAgentMonitoringPage: React.FC = () => {
 
   return (
     <div className='flex h-screen w-full'>
-      <section className='h-full w-[400px] overflow-y-auto bg-[#F0F0F0] p-6'>
+      <section className='h-full min-w-[400px] overflow-y-auto bg-[#F0F0F0] p-6'>
         <LLMGraph jobName='job name' logs={logs} onLogClick={handleClickLog} />
       </section>
       <section className='h-full flex-1 p-4'>
         <Tabs
           tabList={['Run', 'Metadata']}
           tabPanels={[
-            <RunPanel input={selectedLog.input} output={selectedLog.output} />,
-            <MetadataPanel metadata={selectedLog.metadata} />,
+            <RunPanel
+              input={selectedLog?.input}
+              output={selectedLog?.output}
+            />,
+            <MetadataPanel metadata={selectedLog?.metadata} />,
           ]}
         />
       </section>
@@ -46,13 +49,13 @@ const JobAgentMonitoringPage: React.FC = () => {
 export default JobAgentMonitoringPage;
 
 interface RunPanelProps {
-  input: string;
-  output: string;
+  input?: string;
+  output?: string;
 }
 
 const RunPanel: React.FC<RunPanelProps> = ({ input, output }) => {
   return (
-    <div className='border-border flex h-full rounded-tl-md rounded-b-md border bg-white'>
+    <div className='border-border flex h-full overflow-y-auto rounded-tl-md rounded-b-md border bg-white'>
       <div className='w-full px-6 py-4'>
         <Accordion type='multiple' defaultValue={['input', 'output']}>
           <AccordionItem value='input'>
@@ -70,19 +73,20 @@ const RunPanel: React.FC<RunPanelProps> = ({ input, output }) => {
 };
 
 interface MetadataPanelProps {
-  metadata: Record<string, string>;
+  metadata?: Record<string, string>;
 }
 
 const MetadataPanel: React.FC<MetadataPanelProps> = ({ metadata }) => {
   return (
-    <div className='border-border flex h-full rounded-tl-md rounded-b-md border bg-white p-2'>
+    <div className='border-border flex h-full overflow-y-auto rounded-tl-md rounded-b-md border bg-white p-2'>
       <div className='flex flex-col gap-2 px-4 py-5'>
-        {Object.entries(metadata).map(([key, value]) => (
-          <div key={key} className='flex gap-2'>
-            <Badge className='font-bold'>{key}</Badge>
-            <span className='text-sm'>{value}</span>
-          </div>
-        ))}
+        {metadata &&
+          Object.entries(metadata).map(([key, value]) => (
+            <div key={key} className='flex gap-2'>
+              <Badge className='font-bold'>{key}</Badge>
+              <span className='text-sm'>{value}</span>
+            </div>
+          ))}
       </div>
     </div>
   );

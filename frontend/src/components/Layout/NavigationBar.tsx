@@ -48,7 +48,7 @@ const NavigationBar = () => {
   };
 
   return (
-    <nav className='flex h-full w-60 flex-col bg-[#F5F5F5] py-6'>
+    <nav className='flex h-full min-w-60 shrink-0 flex-col bg-[#F5F5F5] py-6'>
       <div className='mt-9 mb-15 text-center text-2xl'>Samsung</div>
 
       <ul className='flex grow flex-col'>

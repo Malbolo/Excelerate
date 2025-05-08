@@ -1,17 +1,20 @@
-import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQuery } from '@tanstack/react-query';
 
 import { api } from '@/apis/core';
 import { TLog } from '@/types/agent';
-import { Job } from '@/types/scheduler';
+
+import { JobResponse } from './jobManagement';
 
 interface GetJobListRequest {
-  uid: string;
+  name: string;
+  dep: string;
+  type: string;
   page: string;
   size: string;
 }
 
 interface GetJobListResponse {
-  jobs: Job[];
+  jobs: JobResponse[];
   page: number;
   size: number;
   total: number;
@@ -19,7 +22,7 @@ interface GetJobListResponse {
 
 const getJobList = async (request: GetJobListRequest) => {
   const { data, error, success } = await api<GetJobListResponse>(
-    `/api/jobs?uid=${request.uid}&page=${request.page}&size=${request.size}`,
+    `/api/jobs?mine=False&name=${request.name}&dep=${request.dep}&type=${request.type}&page=${request.page}&size=${request.size}`,
   );
 
   if (!success) {
@@ -43,13 +46,20 @@ const getJobLogs = async (job_id: string) => {
 
 export const useGetJobList = (request: GetJobListRequest) => {
   return useSuspenseQuery({
-    queryKey: ['jobList', request.uid, request.page, request.size],
+    queryKey: [
+      'jobList',
+      request.name,
+      request.dep,
+      request.type,
+      request.page,
+      request.size,
+    ],
     queryFn: () => getJobList(request),
   });
 };
 
 export const useGetJobLogs = (job_id: string) => {
-  return useQuery({
+  return useSuspenseQuery({
     queryKey: ['jobLogs', job_id],
     queryFn: () => getJobLogs(job_id),
   });
