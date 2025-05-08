@@ -6,7 +6,7 @@ class CommandSchema(BaseModel):
     order: int
 
 class JobDetailSchema(BaseModel):
-    id: int
+    id: str
     type: str
     title: str
     description: str
@@ -21,7 +21,7 @@ class JobDetailResponse(BaseModel):
 
 def create_job_detail_schema(job):
     return JobDetailSchema(
-        id=job.id,
+        id=str(job.id),
         type=job.type,
         title=job.title,
         description=job.description,
