@@ -18,10 +18,20 @@ const CreateSchedulerPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchParams] = useSearchParams();
 
-  const keyword = searchParams.get('keyword') || '';
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
+  const dep = searchParams.get('dep') || '';
+  const type = searchParams.get('type') || '';
+  const title = searchParams.get('title') || '';
+  const name = searchParams.get('name') || '';
 
-  const { data: jobList } = useGetJobList(currentPage, keyword);
+  const { data: jobList } = useGetJobList({
+    page: currentPage,
+    title,
+    dep,
+    type,
+    name,
+    mine: false,
+  });
 
   const { total, jobs } = jobList;
 

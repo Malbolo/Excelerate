@@ -20,10 +20,20 @@ const JobManagementPage = () => {
   const [selectedJob, setSelectedJob] = useState<JobResponse | null>(null);
   const getJobDetail = useGetJobDetail();
   const [searchParams] = useSearchParams();
-  const keyword = searchParams.get('keyword') || '';
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
+  const title = searchParams.get('title') || '';
+  const dep = searchParams.get('dep') || '';
+  const type = searchParams.get('type') || '';
+  const name = searchParams.get('name') || '';
 
-  const { data: jobList } = useGetJobList(currentPage, keyword, true);
+  const { data: jobList } = useGetJobList({
+    page: currentPage,
+    title,
+    dep,
+    type,
+    name,
+    mine: true,
+  });
 
   const { total, jobs } = jobList;
 
