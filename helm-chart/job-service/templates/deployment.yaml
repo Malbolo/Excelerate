@@ -25,3 +25,10 @@ spec:
           envFrom:
             - secretRef:
                 name: {{ .Values.envFromSecret }}
+          volumeMounts:
+            - mountPath: /opt/airflow/dags
+              name: shared-dag-volume
+      volumes:
+        - name: shared-dag-volume
+          persistentVolumeClaim:
+            claimName: job-dags-pvc
