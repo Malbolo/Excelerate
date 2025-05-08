@@ -41,7 +41,7 @@ const AgentMonitoringPage: React.FC = () => {
 
   const handleSearchJobList = () => {
     push(
-      `/agent-monitoring?name=${name || ''}&dep=${department || ''}&type=${jobType || ''}&page=1`,
+      `/agent-monitoring?name=${name}&dep=${department}&type=${jobType}&page=1`,
     );
   };
 
