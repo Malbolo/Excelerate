@@ -1,13 +1,19 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 from app.utils.redis_client import get_logs_from_redis
 from app.utils.dummy import dummy_log
+from app.core import auth
 
 router = APIRouter()
 
 
 @router.get("/{job_id}")
-def get_logs(job_id: str, user_id: str = "guest"):
+def get_logs(request: Request, job_id: str):
+    try:
+        user_id = auth.get_user_id_from_header(request)
+    except:
+        user_id = "guest"
+
     log_id = f"logs:{user_id}:{job_id}"
     logs = get_logs_from_redis(log_id)
     if not logs:
