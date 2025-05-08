@@ -72,7 +72,7 @@ const NavigationBar = () => {
             <Link key={to} to={to}>
               <li
                 className={cn(
-                  'block w-full px-4 py-6 font-["Pretendard-Bold"] text-[20px] transition-colors duration-150 ease-in-out hover:bg-gray-200',
+                  'block w-full px-4 py-6 text-[20px] font-bold transition-colors duration-150 ease-in-out hover:bg-gray-200',
                   isActive
                     ? 'bg-[#034EA2] text-[#ffffff] hover:bg-[#023a81]'
                     : 'text-gray-700',
@@ -88,9 +88,7 @@ const NavigationBar = () => {
       <div className='mt-auto border-gray-300 p-4'>
         {name ? (
           <div className='flex flex-col items-center gap-3'>
-            <span className='text-sm font-medium text-gray-800'>
-              안녕하세요, {name}님!
-            </span>
+            <span className='text-sm text-gray-800'>안녕하세요, {name}님!</span>
             <Button
               variant='outline'
               size='sm'
