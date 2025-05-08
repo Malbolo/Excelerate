@@ -6,10 +6,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { JobResponse } from '@/apis/jobManagement';
-import {
-  ScheduleDetailResponse,
-  useCreateSchedule,
-} from '@/apis/schedulerManagement';
+import { Schedule, useCreateSchedule } from '@/apis/schedulerManagement';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -96,7 +93,7 @@ interface EditScheduleModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   selectedJobs: JobResponse[];
-  scheduleDetail: ScheduleDetailResponse;
+  scheduleDetail: Schedule;
 }
 
 const EditScheduleModal = ({
@@ -133,7 +130,6 @@ const EditScheduleModal = ({
       selectedJobs,
     };
 
-    // 스케쥴 생성
     createSchedule(submissionData);
 
     onOpenChange(false);

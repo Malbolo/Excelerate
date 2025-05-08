@@ -1,6 +1,8 @@
-import { Schedule } from '@/types/scheduler';
+import { Schedule } from '@/apis/schedulerManagement';
 
-export const formatInterval = (interval: Schedule['interval']): string => {
+export const formatInterval = (
+  interval: Schedule['frequency_display'],
+): string => {
   if (!interval) return 'Manual';
   switch (interval.type) {
     case 'daily':
