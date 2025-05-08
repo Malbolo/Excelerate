@@ -113,7 +113,7 @@ const Command: React.FC<CommandProps> = ({
       ) : (
         <Popover>
           <PopoverTrigger>
-            <div className='border-border flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border bg-white'>
+            <div className='flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border bg-white'>
               <MoreVertical className='h-4 w-4' />
             </div>
           </PopoverTrigger>

@@ -20,7 +20,7 @@ const Tabs: React.FC<TabsProps> = ({ tabList, tabPanels }) => {
               'cursor-pointer rounded-t-md border px-2',
               activeTab === tab
                 ? 'border-[#034EA2] bg-[#034EA2] text-white'
-                : 'border-border bg-white',
+                : 'bg-white',
             )}
           >
             {tab}
