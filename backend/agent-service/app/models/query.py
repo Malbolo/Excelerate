@@ -8,7 +8,6 @@ class CommandRequest(BaseModel):
     command_list: List[str] = None
     url: str = None
     uid: Optional[str] = None
-    user_id: Optional[str] = None
 
 class DataRequest(BaseModel):
     command: str = None

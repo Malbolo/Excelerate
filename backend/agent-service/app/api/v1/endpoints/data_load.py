@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 from app.utils.docs import DataDocs
 from app.models.query import DataRequest, RagRequest
@@ -6,7 +6,7 @@ from app.services.data_load.datachain import FileAPIClient
 from app.services.data_load.makerag import CatalogIngestor
 from app.core.config import settings
 from app.utils.redis_client import generate_log_id, save_logs_to_redis
-
+from app.core import auth
 
 router = APIRouter()
 docs = DataDocs()
@@ -15,11 +15,15 @@ data_loader = FileAPIClient()
 # FastAPI 엔드포인트: 사용자의 질의를 받고 graph를 통해 답변 생성
 @router.post("/load")
 async def command_code(
+    req: Request,
     request: DataRequest = docs.base["data"]
 ):
     try:
-        url, result, logs = data_loader.run(request.command)
-        user_id = "guest" # 나중에 여기도 유저 아이디 받기
+        url, result, logs, code = data_loader.run(request.command)
+        try:
+            user_id = auth.get_user_id_from_header(req)
+        except:
+            user_id = "guest"
         log_id = generate_log_id(user_id)
         save_logs_to_redis(log_id, logs)
         log_id = log_id.split(':')[-1] # 일관성 있게 uid만 반환
@@ -29,7 +33,7 @@ async def command_code(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    return JSONResponse(status_code=200, content={"result" : "success", "data" : {"url": url, "dataframe" : result.to_dict(orient="records"), "log_id": log_id}})
+    return JSONResponse(status_code=200, content={"result" : "success", "data" : {"url": url, "dataframe" : result.to_dict(orient="records"), "log_id": log_id, "code": code}})
 
 
 @router.post("/make")

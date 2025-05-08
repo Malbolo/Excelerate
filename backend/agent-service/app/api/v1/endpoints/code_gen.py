@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from app.utils.docs import CodeGenDocs
 from app.models.query import CommandRequest
@@ -6,6 +6,7 @@ from app.services.code_gen.graph import CodeGenerator
 from app.utils.depend import get_code_gen
 from app.utils.api_utils import make_initial_query
 from fastapi.encoders import jsonable_encoder
+from app.core import auth
 
 from app.utils.redis_client import generate_log_id, save_logs_to_redis, save_states_to_redis, get_states_from_redis
 from uuid import uuid4
@@ -18,6 +19,7 @@ docs = CodeGenDocs()
 # FastAPI 엔드포인트: 사용자의 질의를 받고 graph를 통해 답변 생성
 @router.post("/generate")
 async def command_code(
+    req = Request,
     request: CommandRequest = docs.base["data"],
     code_gen: CodeGenerator = Depends(get_code_gen)
 ):
@@ -26,7 +28,11 @@ async def command_code(
 
         query = make_initial_query(request.url, request.command_list)
 
-        user_id = request.user_id or "guest" # user_id는 추후 jwt등으로 체크
+        try:
+            user_id = auth.get_user_id_from_header(req)
+        except:
+            user_id = "guest"
+
         if request.uid:
             uid = request.uid
             session_id = f"sessions:{user_id}:{uid}"

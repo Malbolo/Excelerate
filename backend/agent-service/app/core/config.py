@@ -10,7 +10,7 @@ if os.getenv("ENV", "DEV") == "DEV":
 
 
 class Settings(BaseSettings):
-    APP_NAME: str = "FastAPI Server"
+    APP_NAME: str = "Excelerate Agent Server"
     DEBUG: bool = False
     ALLOWED_ORIGINS: List[str]
 
