@@ -1,7 +1,8 @@
 import redis
 import os
 import json
-from datetime import timedelta
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from app.models.log import LogDetail
 from uuid import uuid4
 import pandas as pd
@@ -13,15 +14,44 @@ def generate_log_id(user_id: str) -> str:
     # timestamp = datetime.now(ZoneInfo("Asia/Seoul")).isoformat(timespec="seconds")
     return f"logs:{user_id}:{uuid4().hex}"
 
-def save_logs_to_redis(log_id: str, logs: list[LogDetail], ttl_minutes: int = 60*24*7): # 1주 보관
-    logs_json = json.dumps([log.model_dump(mode="json") for log in logs])
-    redis_client.setex(log_id, timedelta(minutes=ttl_minutes), logs_json)
+# def save_logs_to_redis(log_id: str, logs: list[LogDetail], ttl_minutes: int = 60*24*7): # 1주 보관
+#     logs_json = json.dumps([log.model_dump(mode="json") for log in logs])
+#     redis_client.setex(log_id, timedelta(minutes=ttl_minutes), logs_json)
 
-def get_logs_from_redis(log_id: str) -> list[dict] | None:
+# def get_logs_from_redis(log_id: str) -> list[dict] | None:
+#     data = redis_client.get(log_id)
+#     if data:
+#         return json.loads(data)
+#     return None
+
+def save_logs_to_redis(log_id: str, logs: list[LogDetail], metadata: dict | None = None, ttl_minutes: int = 60*24*7): # 1주 보관
+    meta = metadata.copy() if metadata else {}
+    meta["created_at"] = datetime.now(ZoneInfo("Asia/Seoul")).isoformat()
+
+    payload = {
+        "metadata": meta,
+        "logs": [log.model_dump(mode="json") for log in logs]
+    }
+    redis_client.setex(log_id, timedelta(minutes=ttl_minutes), json.dumps(payload))
+
+def get_logs_from_redis(log_id: str) -> dict | None:
     data = redis_client.get(log_id)
     if data:
         return json.loads(data)
     return None
+
+def get_logs_data_from_redis(log_id: str) -> list[dict] | None:
+    """
+    기존 인터페이스 호환용: Redis에서 순수 로그 리스트만 반환합니다.
+
+    :param log_id: 조회할 Redis 키
+    :return:       LogDetail 모델 덤프된 dict 리스트 또는 None
+    """
+    raw = get_logs_from_redis(log_id)
+    if raw is None:
+        return None
+    # 기존 코드가 기대하는 순수 logs 리스트 반환
+    return raw.get("logs", [])
 
 def serialize_state(state: dict) -> dict:
     """

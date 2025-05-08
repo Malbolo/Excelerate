@@ -20,12 +20,15 @@ async def command_code(
 ):
     try:
         url, result, logs, code = data_loader.run(request.command)
-        try:
-            user_id = auth.get_user_id_from_header(req)
-        except:
+        user_id = auth.get_user_id_from_header(req) 
+        if user_id is None:
             user_id = "guest"
         log_id = generate_log_id(user_id)
-        save_logs_to_redis(log_id, logs)
+        save_logs_to_redis(log_id, logs, metadata={
+            "agent_name":  "Data Loader",
+            "log_detail":  "데이터를 불러옵니다."
+        })
+        
         log_id = log_id.split(':')[-1] # 일관성 있게 uid만 반환
 
     except HTTPException:
