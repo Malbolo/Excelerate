@@ -25,7 +25,7 @@ async def command_code(
             user_id = "guest"
 
         try:
-            user_name = auth.get_user_info(user_id)
+            user_name = auth.get_user_info(user_id).name
         except:
             user_name = "guest"
         log_id = generate_log_id(user_name)
