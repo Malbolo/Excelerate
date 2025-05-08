@@ -52,7 +52,7 @@ async def list_user_logs(
     }, …]
     """
     if user_id:
-        pattern = f"logs:{user_id}:*"
+        pattern = f"logs:*{user_id}*:*"
     else: 
         pattern = f"logs:*:*"
     keys = list(redis_client.scan_iter(match=pattern, count=1000))
