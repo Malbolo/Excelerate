@@ -1283,3 +1283,45 @@ def get_all_schedules_with_details(
         db.close()
 
     return schedule_list
+
+
+def get_job_details(job_ids: List[str]) -> Dict[str, Any]:
+    """
+    주어진 job ID 리스트에 대한 상세 정보를 DB에서 조회
+
+    Args:
+        job_ids: 조회할 job ID 목록
+
+    Returns:
+        job_id를 키로 하는 job 상세 정보 딕셔너리
+    """
+    db = next(get_db())
+    try:
+        job_details = {}
+        for job_id in job_ids:
+            try:
+                # DB에서 job 정보 조회
+                job = db.query(Job).filter(Job.id == job_id).first()
+                if job:
+                    # 명령어 목록 조회
+                    commands = db.query(JobCommand).filter(JobCommand.job_id == job.id).order_by(JobCommand.order).all()
+                    command_list = [{"content": cmd.content, "order": cmd.order} for cmd in commands]
+
+                    job_details[job_id] = {
+                        "id": job_id,
+                        "title": job.title,
+                        "description": job.description,
+                        "commands": command_list
+                    }
+            except Exception as e:
+                print(f"Error getting job details for job_id {job_id}: {str(e)}")
+                # 오류 시 최소한의 정보만 포함
+                job_details[job_id] = {
+                    "id": job_id,
+                    "title": f"Job {job_id}",
+                    "description": "",
+                    "commands": []
+                }
+        return job_details
+    finally:
+        db.close()

@@ -16,7 +16,8 @@ router = APIRouter(
 
 @router.post("")
 async def create_schedule(request: Request, schedule_request: ScheduleCreateRequest) -> JSONResponse:
-    user_id = auth.get_user_id_from_header(request)
+    # user_id = auth.get_user_id_from_header(request)
+    user_id=1
 
     try:
         # frequency를 cron 표현식으로 변환
@@ -179,8 +180,8 @@ async def get_schedule_runs(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None
 ) -> JSONResponse:
-    user_id = auth.get_user_id_from_header(request)
-
+    # user_id = auth.get_user_id_from_header(request)
+    user_id=1
     try:
         # DAG 상세 정보 조회
         dag_detail = airflow_service.get_dag_detail(schedule_id)
@@ -252,11 +253,12 @@ async def get_schedule_runs(
             "message": f"스케줄 실행 이력 조회에 실패했습니다: {str(e)}"
         })
 
+
 @router.get("/{schedule_id}/runs/{run_id}")
 async def get_schedule_run_detail(
-    request: Request,
-    schedule_id: str,
-    run_id: str
+        request: Request,
+        schedule_id: str,
+        run_id: str
 ) -> JSONResponse:
     user_id = auth.get_user_id_from_header(request)
 
@@ -291,33 +293,58 @@ async def get_schedule_run_detail(
         # 태스크 인스턴스 목록 조회
         task_instances = airflow_service.get_task_instances(schedule_id, run_id)
 
-        # 태스크 데이터 구성
-        task_list = []
+        # job_id 목록 추출
+        job_ids = []
         for task in task_instances:
             task_id = task.get("task_id", "")
-
-            # job_id 추출 (task_id 형식: 'job_1' 등)
-            job_id = None
             if task_id.startswith("job_"):
                 try:
                     job_id = task_id.split("_")[1]
+                    job_ids.append(job_id)
                 except (IndexError, ValueError):
                     pass
 
-            task_list.append({
-                "task_id": task_id,
-                "job_id": job_id,
-                "status": task.get("state"),
-                "start_time": task.get("start_date"),
-                "end_time": task.get("end_date"),
-                "duration": task.get("duration"),
-                "logs_url": f"{airflow_service.settings.AIRFLOW_API_URL}/dags/{schedule_id}/dagRuns/{run_id}/taskInstances/{task_id}/logs"
-            })
+        # job 상세 정보 조회
+        job_details = airflow_service.get_job_details(job_ids)
+
+        # 태스크 데이터 구성 (job_id를 키로 사용)
+        jobs_data = {}
+        for task in task_instances:
+            task_id = task.get("task_id", "")
+
+            # job_id 추출
+            if task_id.startswith("job_"):
+                try:
+                    job_id = task_id.split("_")[1]
+
+                    # job 정보 가져오기
+                    job_info = job_details.get(job_id, {})
+
+                    # 작업 상태 및 실행 정보
+                    job_data = {
+                        "id": job_id,
+                        "title": job_info.get("title", f"Job {job_id}"),
+                        "description": job_info.get("description", ""),
+                        "commands": job_info.get("commands", []),
+                        "status": task.get("state"),
+                        "start_time": task.get("start_date"),
+                        "end_time": task.get("end_date"),
+                        "duration": task.get("duration"),
+                        "logs_url": f"{airflow_service.settings.AIRFLOW_API_URL}/dags/{schedule_id}/dagRuns/{run_id}/taskInstances/{task_id}/logs"
+                    }
+
+                    jobs_data[job_id] = job_data
+                except (IndexError, ValueError):
+                    pass
+
+        # 스케줄 정보 조회 (description 포함)
+        schedule_data = airflow_service.get_schedule_detail(schedule_id)
 
         # 응답 데이터 구성
         run_data = {
             "schedule_id": schedule_id,
-            "title": dag_detail.get("name", schedule_id),  # schedule_name → title로 변경
+            "title": schedule_data.get("title", dag_detail.get("name", schedule_id)),
+            "description": schedule_data.get("description", ""),
             "run_id": run_id,
             "status": run_detail.get("state"),
             "start_time": run_detail.get("start_date"),
@@ -326,7 +353,7 @@ async def get_schedule_run_detail(
                     datetime.fromisoformat(run_detail.get("end_date").replace("Z", "+00:00")) -
                     datetime.fromisoformat(run_detail.get("start_date").replace("Z", "+00:00"))
             ).total_seconds() if run_detail.get("end_date") and run_detail.get("start_date") else None,
-            "tasks": task_list
+            "jobs": list(jobs_data.values())  # 딕셔너리를 리스트로 변환
         }
 
         return JSONResponse(content={
