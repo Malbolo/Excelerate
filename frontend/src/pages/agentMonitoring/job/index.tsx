@@ -1,15 +1,19 @@
 import { useState } from 'react';
 
+import { ArrowLeftIcon } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 
 import { useGetJobLogs } from '@/apis/agentMonitoring';
 import LLMGraph from '@/components/Graph/LLMGraph';
 import Tabs from '@/components/Tabs';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import useInternalRouter from '@/hooks/useInternalRouter';
 import { TLog, TLogMessage, TLogMetadata } from '@/types/agent';
 
 const JobAgentMonitoringPage: React.FC = () => {
   const { jobId } = useParams() as { jobId: string };
+  const { goBack } = useInternalRouter();
 
   const { data: logs } = useGetJobLogs(jobId);
 
@@ -22,6 +26,17 @@ const JobAgentMonitoringPage: React.FC = () => {
   return (
     <div className='flex h-screen w-full'>
       <section className='h-full min-w-[400px] overflow-y-auto bg-[#F0F0F0] p-6'>
+        <div className='mb-4'>
+          <Button
+            variant='ghost'
+            size='sm'
+            onClick={goBack}
+            className='flex items-center gap-2'
+          >
+            <ArrowLeftIcon className='h-4 w-4' />
+            Back
+          </Button>
+        </div>
         <LLMGraph jobName='job name' logs={logs} onLogClick={handleClickLog} />
       </section>
       <section className='h-full flex-1 p-4'>
