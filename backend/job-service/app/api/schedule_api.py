@@ -343,7 +343,7 @@ async def get_schedule_run_detail(
                 "start_time": task.get("start_date"),
                 "end_time": task.get("end_date"),
                 "duration": task.get("duration"),
-                "logs_url": f"{airflow_service.settings.AIRFLOW_API_BASE_URL}/dags/{schedule_id}/dagRuns/{run_id}/taskInstances/{task_id}/logs"
+                "logs_url": f"{airflow_service.settings.AIRFLOW_API_URL}/dags/{schedule_id}/dagRuns/{run_id}/taskInstances/{task_id}/logs"
             })
 
         # 응답 데이터 구성
