@@ -61,10 +61,10 @@ const ScheduleRow = ({ schedule }: ScheduleRowProps) => {
           <StatusIcon status={schedule.status} />
         </TableCell>
 
-        {/* Last run , Next run, End Date */}
         <TableCell>{formatDate(schedule.execution_time)}</TableCell>
         <TableCell>{formatDate(schedule.execution_time)}</TableCell>
-        <TableCell>{formatDate(schedule.execution_time)}</TableCell>
+
+        <TableCell>{formatDate(schedule.end_date)}</TableCell>
 
         <TableCell className='w-[150px]'>
           <ScheduleActions schedule={schedule} />
@@ -81,14 +81,7 @@ const ScheduleRow = ({ schedule }: ScheduleRowProps) => {
               </h4>
               {schedule.jobs.length > 0 ? (
                 schedule.jobs.map(job => (
-                  <JobDisplay
-                    key={job.id}
-                    task={{
-                      task_id: job.id,
-                      job_id: job.id,
-                      status: 'failed',
-                    }}
-                  />
+                  <JobDisplay key={job.id} title={job.title} />
                 ))
               ) : (
                 <p className='px-2 py-1 text-sm text-gray-500'>

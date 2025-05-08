@@ -44,8 +44,8 @@ const ScheduleDetail = () => {
           <h2 className='mb-4 border-b pb-2 text-xl font-semibold text-gray-700'>
             Jobs
           </h2>
-          {scheduleData.tasks.map(task => (
-            <JobDisplay key={task.job_id} task={task} />
+          {scheduleData.jobs.map(job => (
+            <JobDisplay key={job.id} status={job.status} title={job.title} />
           ))}
         </div>
 
