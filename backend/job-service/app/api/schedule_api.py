@@ -575,3 +575,39 @@ def _convert_frequency_to_cron(frequency: str, execution_time: str, start_date: 
 
     # 알 수 없는 형식이면 기본값 (매일 정해진 시간)
     return f"{minute} {hour} * * *"
+
+@router.get("")
+async def get_all_schedules(
+        request: Request,
+        status: Optional[str] = Query(None, description="Filter by status (active/paused)"),
+        search: Optional[str] = Query(None, description="Search by title"),
+        include_job_status: bool = Query(False, description="Include job status from recent run")
+) -> JSONResponse:
+    """
+    모든 스케줄(DAG) 목록을 반환하는 API
+    - 각 DAG의 상세 정보 포함
+    - 상태별 필터링 (활성/비활성)
+    - 제목 검색
+    - 작업 상태 포함 여부 설정
+    """
+    try:
+        # 서비스 함수 호출
+        schedules = airflow_service.get_all_schedules_with_details(
+            status=status,
+            search=search,
+            include_job_status=include_job_status
+        )
+
+        return JSONResponse(content={
+            "result": "success",
+            "data": {
+                "schedules": schedules,
+                "total": len(schedules)
+            }
+        })
+    except Exception as e:
+        print(f"Error getting schedules: {str(e)}")
+        return JSONResponse(status_code=500, content={
+            "result": "error",
+            "message": f"스케줄 목록 조회에 실패했습니다: {str(e)}"
+        })

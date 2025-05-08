@@ -1176,3 +1176,110 @@ def parse_cron_to_friendly_format(cron_expression: str) -> dict:
 
     # 기타 복잡한 경우 원본 cron 표현식 반환
     return {"type": "custom", "cronExpression": cron_expression}
+
+def get_all_schedules_with_details(
+        status: Optional[str] = None,
+        search: Optional[str] = None,
+        include_job_status: bool = False
+) -> List[Dict[str, Any]]:
+    """
+    모든 스케줄(DAG) 목록을 상세 정보와 함께 반환
+
+    Args:
+        status: 필터링할 상태 (active/paused)
+        search: 검색어 (제목, 설명에서 검색)
+        include_job_status: 작업 상태 포함 여부
+
+    Returns:
+        스케줄 목록 (각 스케줄의 상세 정보 포함)
+    """
+    # 모든 DAG 기본 정보 조회
+    dags = get_all_dags(limit=1000)
+
+    # 상태별 필터링
+    if status:
+        if status.lower() == "active":
+            dags = [dag for dag in dags if not dag.get("is_paused", False)]
+        elif status.lower() == "paused":
+            dags = [dag for dag in dags if dag.get("is_paused", False)]
+
+    # 제목 검색
+    if search:
+        search = search.lower()
+        dags = [dag for dag in dags if search in dag.get("dag_id", "").lower() or
+                search in dag.get("description", "").lower()]
+
+    # 각 DAG의 상세 정보 조회
+    schedule_list = []
+    db = next(get_db())
+    try:
+        for dag in dags:
+            dag_id = dag.get("dag_id", "")
+
+            try:
+                # 상세 정보 조회
+                schedule_data = get_schedule_detail(dag_id)
+
+                # 작업 상태 포함 여부에 따라 최근 실행 정보 조회
+                if include_job_status:
+                    # 최근 실행 정보 조회
+                    recent_runs = get_dag_runs(dag_id, limit=1)
+
+                    if recent_runs:
+                        recent_run = recent_runs[0]
+                        run_id = recent_run.get("dag_run_id")
+
+                        # 작업 실행 상태 조회
+                        task_instances = get_task_instances(dag_id, run_id)
+
+                        # 작업 정보에 상태 추가
+                        tasks_with_status = []
+                        for job in schedule_data.get("jobs", []):
+                            job_id = job.get("id")
+                            # 해당 job_id와 일치하는 태스크 인스턴스 찾기
+                            matching_task = None
+                            for task in task_instances:
+                                task_id = task.get("task_id", "")
+                                if task_id == f"job_{job_id}":
+                                    matching_task = task
+                                    break
+
+                            # 작업 정보에 상태 추가
+                            job_with_status = job.copy()
+                            if matching_task:
+                                job_with_status["status"] = matching_task.get("state", "unknown")
+                                job_with_status["start_time"] = matching_task.get("start_date")
+                                job_with_status["end_time"] = matching_task.get("end_date")
+                                job_with_status["duration"] = matching_task.get("duration")
+                            else:
+                                job_with_status["status"] = "not_run"
+
+                            tasks_with_status.append(job_with_status)
+
+                        # 원래 jobs 배열 교체
+                        schedule_data["jobs"] = tasks_with_status
+
+                        # 실행 정보 추가
+                        schedule_data["last_run"] = {
+                            "run_id": run_id,
+                            "status": recent_run.get("state"),
+                            "start_time": recent_run.get("start_date"),
+                            "end_time": recent_run.get("end_date")
+                        }
+
+                schedule_list.append(schedule_data)
+            except Exception as detail_err:
+                print(f"Error getting detail for {dag_id}: {str(detail_err)}")
+                # 오류 시 기본 정보만 추가
+                schedule_list.append({
+                    "schedule_id": dag_id,
+                    "title": dag.get("description", "").split(" (Start:")[0] or dag_id,
+                    "description": dag.get("description", ""),
+                    "is_paused": dag.get("is_paused", False),
+                    "frequency": "unknown",
+                    "jobs": []
+                })
+    finally:
+        db.close()
+
+    return schedule_list
