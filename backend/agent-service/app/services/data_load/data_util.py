@@ -5,6 +5,22 @@ from langchain_core.prompts import (
     HumanMessagePromptTemplate,
 )
 
+def make_entity_extraction_prompt() -> ChatPromptTemplate:
+    """
+    FileAPIClient.__init__에서 쓰이는 FileAPIDetail 객체 추출용 ChatPromptTemplate을 반환합니다.
+    """
+    system_template = SystemMessagePromptTemplate.from_template("""
+오늘은 {today}입니다.
+다음 필드를 추출하세요: factory_name, system_name, metric, factory_id, product_code, start_date.
+start_date의 경우, 지난 달, 어제 등의 상대 표현일 경우 해당 단어 그대로 추출하세요.
+해당하는 값이 없으면 null로 두세요.
+<context>
+{context}
+</context>
+""")
+    human_template = HumanMessagePromptTemplate.from_template("{input}")
+    
+    return ChatPromptTemplate.from_messages([system_template, human_template])
 
 def is_iso_date(s: str) -> bool:
     """YYYY-MM-DD 형식인지 간단히 체크"""

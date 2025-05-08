@@ -18,7 +18,7 @@ from app.models.structure import FileAPIDetail
 from app.utils.memory_logger import MemoryLogger
 
 from app.core.config import settings
-from app.services.data_load.data_util import make_date_code_template, is_iso_date
+from app.services.data_load.data_util import make_entity_extraction_prompt, make_date_code_template, is_iso_date
 
 # 로깅 설정
 logger = logging.getLogger(__name__)
@@ -52,14 +52,7 @@ class FileAPIClient:
             self.retriever = None
 
         # Entity extractor chain
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", "오늘은 {today}입니다."),
-            ("system", "다음 필드를 추출하세요: factory_name, system_name, metric, factory_id, product_code, start_date"),
-            ("system", "start_date의 경우, 지난 달, 어제 등의 상대 표현일 경우 해당 단어 그대로 추출하세요"),
-            ("system", "해당하는 값이 없으면 null로 두세요."),
-            ("system", "<context>\n{context}\n</context>"),
-            ("human", "{input}")
-        ])
+        prompt = make_entity_extraction_prompt()
         self.llm = ChatOpenAI(model_name=model_name, temperature=0, callbacks=[self.mlogger])
         structured = self.llm.with_structured_output(FileAPIDetail)
         
