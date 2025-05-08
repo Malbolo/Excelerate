@@ -56,7 +56,7 @@ class FileAPIClient:
         self.llm = ChatOpenAI(model_name=model_name, temperature=0, callbacks=[self.mlogger])
         structured = self.llm.with_structured_output(FileAPIDetail)
         
-        date_chain = TransformChain(
+        today_chain = TransformChain(
             input_variables=[],
             output_variables=["today"],
             transform=lambda _: {"today": date.today().isoformat()}
@@ -67,7 +67,7 @@ class FileAPIClient:
             output_variables=["context"],
             transform=lambda i: {"context": "\n".join(d.page_content for d in i["context"])}
         )
-        self.extractor_chain = date_chain | flatten | prompt | structured
+        self.extractor_chain = today_chain | flatten | prompt | structured
         self.base_url = base_url
 
     def _initialize_milvus(self, host, port, collection_name):
