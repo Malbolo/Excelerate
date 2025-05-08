@@ -10,9 +10,9 @@ from app.core.config import settings
 
 redis_client = redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB, decode_responses=True)
 
-def generate_log_id(user_id: str) -> str:
+def generate_log_id(user_name: str) -> str:
     # timestamp = datetime.now(ZoneInfo("Asia/Seoul")).isoformat(timespec="seconds")
-    return f"logs:{user_id}:{uuid4().hex}"
+    return f"logs:{user_name}:{uuid4().hex}"
 
 # def save_logs_to_redis(log_id: str, logs: list[LogDetail], ttl_minutes: int = 60*24*7): # 1주 보관
 #     logs_json = json.dumps([log.model_dump(mode="json") for log in logs])

@@ -23,7 +23,12 @@ async def command_code(
         user_id = auth.get_user_id_from_header(req) 
         if user_id is None:
             user_id = "guest"
-        log_id = generate_log_id(user_id)
+
+        try:
+            user_name = auth.get_user_info(user_id)
+        except:
+            user_name = "guest"
+        log_id = generate_log_id(user_name)
         save_logs_to_redis(log_id, logs, metadata={
             "agent_name":  "Data Loader",
             "log_detail":  "데이터를 불러옵니다."
