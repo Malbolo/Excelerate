@@ -21,14 +21,15 @@ async def create_schedule(request: Request, schedule_request: ScheduleCreateRequ
     try:
         # frequency를 cron 표현식으로 변환
         cron_expression = _convert_frequency_to_cron(
-            schedule_request.frequency, 
-            schedule_request.execution_time
+            schedule_request.frequency,
+            schedule_request.execution_time,
+            schedule_request.start_date
         )
-        
+
         # 작업 목록 정렬
         sorted_jobs = sorted(schedule_request.jobs, key=lambda job: job.order)
         job_ids = [job.id for job in sorted_jobs]
-        
+
         # Airflow DAG 생성
         dag_id = airflow_service.create_dag(
             name=schedule_request.title,
@@ -41,7 +42,7 @@ async def create_schedule(request: Request, schedule_request: ScheduleCreateRequ
             success_emails=schedule_request.success_emails,
             failure_emails=schedule_request.failure_emails
         )
-        
+
         return JSONResponse(status_code=200, content={
             "result": "success",
             "data": {
@@ -80,42 +81,9 @@ async def get_monthly_statistics(
 @router.get("/{schedule_id}")
 async def get_schedule_detail(request: Request, schedule_id: str) -> JSONResponse:
     try:
-        # DAG 상세 정보 조회
-        dag_detail = airflow_service.get_dag_detail(schedule_id)
-        
-        # DAG 실행에 포함된 태스크(job) 목록 조회
-        tasks = []
-        try:
-            # 메타데이터 파일에서 job IDs 조회
-            meta_file_path = f"/opt/airflow/dags/{schedule_id}.meta"
-            if os.path.exists(meta_file_path):
-                with open(meta_file_path, 'r') as f:
-                    for line in f:
-                        if line.startswith("JOBS:"):
-                            job_ids_str = line.strip().split(':', 1)[1].strip()
-                            job_ids = job_ids_str.split(',')
+        # 서비스 함수 호출
+        schedule_data = airflow_service.get_schedule_detail(schedule_id)
 
-                            # 단순히 ID와 순서만 반환
-                            for idx, job_id in enumerate(job_ids):
-                                tasks.append({
-                                    "id": job_id,
-                                    "order": idx + 1
-                                })
-                            break
-        except Exception as e:
-            print(f"Error getting job details: {str(e)}")
-        # 응답 데이터 구성
-        schedule_data = {
-            "schedule_id": schedule_id,
-            "title": dag_detail.get("name", schedule_id),
-            "description": dag_detail.get("description", ""),
-            "frequency": dag_detail.get("schedule_interval", ""),
-            "is_paused": dag_detail.get("is_paused", False),
-            "created_at": dag_detail.get("created_at", datetime.now().isoformat()),
-            "updated_at": dag_detail.get("updated_at", None),
-            "jobs": tasks  # 태스크 목록 추가
-        }
-        
         return JSONResponse(content={
             "result": "success",
             "data": schedule_data
@@ -554,33 +522,46 @@ async def update_schedule(
             "message": f"스케줄 업데이트에 실패했습니다: {str(e)}"
         })
 
-def _convert_frequency_to_cron(frequency: str, execution_time: datetime) -> str:
+
+def _convert_frequency_to_cron(frequency: str, execution_time: str, start_date: datetime) -> str:
     """
     사용자 친화적인 주기 표현을 cron 표현식으로 변환
+    시작 날짜를 기준으로 weekly, monthly 주기 설정
+
+    Args:
+        frequency: 주기 표현 ("daily", "weekly", "monthly" 등)
+        execution_time: "HH:MM" 형식의 실행 시간 (예: "09:30")
+        start_date: 스케줄 시작 날짜
     """
-    hour = execution_time.hour
-    minute = execution_time.minute
-    
+    # 시간과 분 추출
+    try:
+        hour, minute = map(int, execution_time.split(':'))
+        if not (0 <= hour < 24 and 0 <= minute < 60):
+            raise ValueError("시간 형식이 잘못되었습니다. 형식은 'HH:MM'이어야 합니다.")
+    except ValueError as e:
+        raise ValueError(f"시간 형식이 잘못되었습니다. 형식은 'HH:MM'이어야 합니다. 상세: {str(e)}")
+
     # 이미 cron 표현식인 경우
-    if frequency.count(" ") >= 4:  # 간단한 cron 표현식 체크 (최소 5개 필드)
+    if frequency.count(" ") >= 4:
         return frequency
-    
-    # 일반적인 표현을 cron으로 변환
+
     if frequency == "daily":
         return f"{minute} {hour} * * *"
     elif frequency == "weekly":
-        # 월요일(1)에 실행
-        return f"{minute} {hour} * * 1"
+        day_of_week = start_date.weekday()
+        cron_day = (day_of_week + 1) % 7
+        return f"{minute} {hour} * * {cron_day}"
     elif frequency == "monthly":
-        # 매월 1일에 실행
-        return f"{minute} {hour} 1 * *"
+        # 시작 날짜의 일자에 실행
+        day_of_month = start_date.day
+        return f"{minute} {hour} {day_of_month} * *"
     elif frequency.startswith("every_"):
         # every_2_days, every_3_hours 등의 형식 처리
         parts = frequency.split("_")
         if len(parts) == 3:
             interval = int(parts[1])
             unit = parts[2]
-            
+
             if unit == "hours":
                 if interval >= 24:
                     # hours는 24 미만이어야 함
@@ -590,7 +571,7 @@ def _convert_frequency_to_cron(frequency: str, execution_time: datetime) -> str:
                 return f"{minute} {hour} */{interval} * *"
             elif unit == "weeks":
                 # 주 단위로는 cron에서 직접 지원하지 않으므로 7*interval 일로 변환
-                return f"{minute} {hour} */{7*interval} * *"
-            
+                return f"{minute} {hour} */{7 * interval} * *"
+
     # 알 수 없는 형식이면 기본값 (매일 정해진 시간)
     return f"{minute} {hour} * * *"

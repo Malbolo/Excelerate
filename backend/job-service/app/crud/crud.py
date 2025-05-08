@@ -73,3 +73,28 @@ def delete_job(db: Session, job_id: int, user_id: int):
     db.commit()
 
     return {"result": "success", "data": None}
+
+
+def get_job_by_id(db: Session, job_id: str):
+    """
+    DB에서 job_id로 job 정보를 조회
+    """
+    try:
+        job = db.query(Job).filter(Job.id == job_id).first()
+        if not job:
+            return None
+
+        return {
+            "id": job.id,
+            "title": job.title,
+            "description": job.description,
+            "type": job.type,
+            "user_id": job.user_id,
+            "user_name": job.user_name,
+            "user_department": job.user_department,
+            "created_at": job.created_at.isoformat() if job.created_at else None,
+            "updated_at": job.updated_at.isoformat() if job.updated_at else None
+        }
+    except Exception as e:
+        print(f"Error fetching job from DB: {str(e)}")
+        return None
