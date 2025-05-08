@@ -45,7 +45,8 @@
 }
 
 :root {
-  font-family: var(--font-sans);
+  font-family:
+    'Pretendard-Regular', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
