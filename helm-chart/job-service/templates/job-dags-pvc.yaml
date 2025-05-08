@@ -5,7 +5,7 @@ metadata:
   namespace: job-service
 spec:
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   resources:
     requests:
       storage: 30Gi
