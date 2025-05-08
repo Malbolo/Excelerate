@@ -8,10 +8,10 @@ def get_user_id_from_header(request: Request) -> str:
     except (TypeError, ValueError):
         raise HTTPException(status_code=400, detail="Invalid x-user-id header")
 
-def get_user_info(user_id: int):
+def get_user_info(user_id: str):
     url = "http://user-service.user-service.svc.cluster.local:8080/api/users/me/profile"
     headers = {
-        "x-user-id": str(user_id)
+        "x-user-id": user_id
     }
 
     response = requests.get(url, headers=headers)
