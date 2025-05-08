@@ -15,25 +15,20 @@ def make_code_template() -> ChatPromptTemplate:
     # 3) 휴먼 메시지: start_date, end_date 변수를 받아 df 필터링 함수 코드를 만들어 달라는 요청
     human_template = HumanMessagePromptTemplate.from_template(
         """
-사용자의 요청에 따라 DataFrame을 조작하는 함수 코드를 작성하세요.
-사용자의 요청은 순서가 있는 여러 개별적인 요청으로 나뉘어져 있습니다.
-각 요청에 대해 주석에 번호를 붙여 구분해주세요.
-반드시 dataframe에 존재하는 컬럼명을 사용하고 type과 포맷에 맞게 적절한 코드를 작성하세요. 
-주어진 DataFrame의 컬럼 별 타입 정보는 다음과 같습니다:
+사용자의 요청에 따라 pandas DataFrame(`df`)을 단계별로 변형하는 **직접 실행 가능한 스크립트**를 작성하세요.
+- 시작 시 `intermediate = []` 로 빈 리스트를 만들고,
+- 각 변형 결과마다 `intermediate.append(…)` 를 호출하세요.
+- 마지막 줄에 `intermediate` 변수만 출력(반환)하도록 해주세요.
+함수 정의(`def …`)나 `return` 문은 쓰지 마세요.
+
+주어진 DataFrame의 컬럼 타입 정보:
 {dftypes}
-주어진 DataFrame의 5번째 줄 까지는 다음과 같습니다:
+주어진 DataFrame 상위 5행:
 {df}
-""" +
-"""
-함수는 df_manipulate(df)라는 이름으로 작성되어야 합니다.
-각 필터/변환 단계마다 `intermediate.append(…)` 로 DataFrame을 수집하고,
-마지막에는 `return intermediate` 로 리스트를 반환해주세요.
-"""
-+
-"""
+
 설명 없이 오직 코드만 작성해 주세요.
 
-사용자의 요청은 다음과 같습니다:
+사용자 요청:
 {input}
 """
     )
@@ -294,22 +289,23 @@ def make_excel_code_snippet(template_name: str,
     sheet_repr = repr(sheet_name) if sheet_name is not None else 'None'
     return f"""
 from tempfile import TemporaryDirectory
-import os, pandas as pd
+import os
+import pandas as pd
 from app.services.code_gen.graph_util import insert_df_to_excel
 from app.utils.minio_client import MinioClient
 
-def df_manipulate(df):
-    minio = MinioClient()
-    with TemporaryDirectory() as workdir:
-        tpl = os.path.join(workdir, "{template_name}.xlsx")
-        out = os.path.join(workdir, "{output_name}")
-        # 다운로드
-        minio.download_template("{template_name}", tpl)
-        # 삽입
-        insert_df_to_excel(df, tpl, out,
-                        sheet_name={sheet_repr},
-                        start_row={start_row},
-                        start_col={start_col})
-        # 업로드
-        minio.upload_result("{user_id}", "{template_name}", out)
+# {template_name} 템플릿에 처리된 dataframe 붙여넣기
+minio = MinioClient()
+with TemporaryDirectory() as workdir:
+    tpl = os.path.join(workdir, "{template_name}.xlsx")
+    out = os.path.join(workdir, "{output_name}")
+    # 다운로드
+    minio.download_template("{template_name}", tpl)
+    # 삽입
+    insert_df_to_excel(df, tpl, out,
+                    sheet_name={sheet_repr},
+                    start_row={start_row},
+                    start_col={start_col})
+    # 업로드
+    minio.upload_result("{user_id}", "{template_name}", out)
 """

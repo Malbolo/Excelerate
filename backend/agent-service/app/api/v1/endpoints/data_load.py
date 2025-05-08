@@ -5,6 +5,8 @@ from app.models.query import DataRequest, RagRequest
 from app.services.data_load.datachain import FileAPIClient
 from app.services.data_load.makerag import CatalogIngestor
 from app.core.config import settings
+from app.utils.redis_client import generate_log_id, save_logs_to_redis
+
 
 router = APIRouter()
 docs = DataDocs()
@@ -16,14 +18,18 @@ async def command_code(
     request: DataRequest = docs.base["data"]
 ):
     try:
-        url, result = data_loader.run(request.command)
+        url, result, logs = data_loader.run(request.command)
+        user_id = "guest" # 나중에 여기도 유저 아이디 받기
+        log_id = generate_log_id(user_id)
+        save_logs_to_redis(log_id, logs)
+        log_id = log_id.split(':')[-1] # 일관성 있게 uid만 반환
 
     except HTTPException:
         # service에서 던진 HTTPException(400, 502 등)은 그대로 propagate
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    return JSONResponse(status_code=200, content={"result" : "success", "data" : {"url": url, "dataframe" : result.to_dict(orient="records")}})
+    return JSONResponse(status_code=200, content={"result" : "success", "data" : {"url": url, "dataframe" : result.to_dict(orient="records"), "log_id": log_id}})
 
 
 @router.post("/make")

@@ -25,6 +25,8 @@ from itsdangerous import TimestampSigner
 from app.models.log import LogDetail
 from app.core.config import settings
 
+from app.services.code_gen.merge_utils import merge_code_snippets
+
 load_dotenv()
 
 class AgentState(MessagesState):
@@ -221,7 +223,7 @@ class CodeGenerator:
         m = fence_pattern.search(code_str)
         code_body = m.group(1) if m else code_str
 
-        namespace: dict = {"pd": pd}
+        namespace: dict = {"pd": pd, "df": df}
 
         # 1) exec 단계
         try:
@@ -231,18 +233,12 @@ class CodeGenerator:
             # 위치 인자로만 stage를 넘김
             return extract_error_info(e, code_body, "exec")
 
-        # df_manipulate 함수 존재 확인
-        if "df_manipulate" not in namespace:
-            return {
-                "error_msg": {
-                    "stage": "validation",
-                    "message": "생성된 코드 안에 df_manipulate 함수가 없습니다."
-                }
-            }
-
-        # 2) invoke 단계
+        # 2) invoke 단계 → 스크립트 실행 직후 intermediate 변수에서 결과 목록 추출
         try:
-            dfs: list[pd.DataFrame] = namespace["df_manipulate"](df)
+            # 스크립트 안에서 df와 intermediate 변수가 정의됨
+            dfs: list[pd.DataFrame] = namespace.get("intermediate")
+            if not isinstance(dfs, list):
+                raise ValueError("`intermediate` 리스트가 없습니다.")
         except Exception as e:
             return extract_error_info(e, code_body, "invoke")
         
@@ -250,8 +246,11 @@ class CodeGenerator:
         new_dataframes = state.get("dataframe", []) + dfs
         codes = state.get("python_codes_list", []) + [code_str]
 
+        merged_code = merge_code_snippets(codes)
+
         # 4) 정상 리턴
         return {
+            "python_code": merged_code,
             "dataframe": new_dataframes,
             "error_msg": None,
             "python_codes_list": codes,
@@ -306,12 +305,14 @@ class CodeGenerator:
 
         codes = state.get("python_codes_list", []) + [code_snippet]
 
+        merged_code = merge_code_snippets(codes)
+
         # 가장 마지막 LLM 로그 항목 추출
         llm_entry = self.logger.get_logs()[-1] if self.logger.get_logs() else None
         # state 업데이트
         new_logs = state.get("logs", []) + [llm_entry] if llm_entry else state.get("logs", [])
 
-        return {"download_token": token, "error_msg": None, "logs": new_logs, "python_code":code_snippet, "python_codes_list": codes}
+        return {"download_token": token, "error_msg": None, "logs": new_logs, "python_code":merged_code, "python_codes_list": codes}
 
     def build(self):
         graph_builder = StateGraph(AgentState)
