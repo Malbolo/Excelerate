@@ -10,6 +10,7 @@ from app.utils.docs import RootDocs
 from contextlib import asynccontextmanager
 from app.services.llmtest import LLMTest
 from app.services.code_gen.graph import CodeGenerator
+from app.core import auth
 
 # Lifespan 컨텍스트 매니저로 startup과 shutdown 로직을 한 곳에 정의
 @asynccontextmanager
@@ -57,4 +58,9 @@ app.include_router(endpoints.router, prefix="/api/agent")
     responses=docs.base["res"],
 )
 async def read_root(request: Request):
-    return JSONResponse(status_code=200, content={"result" : "success", "data" : {"message": "Hello, FastAPI!"}})
+    try:
+        user_id = auth.get_user_id_from_header(request)
+        user_name = auth.get_user_info(user_id).name
+    except:
+        user_name = "guest"
+    return JSONResponse(status_code=200, content={"result" : "success", "data" : {"message": f"Hello, {user_name}!"}})
