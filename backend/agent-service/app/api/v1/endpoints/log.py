@@ -35,7 +35,7 @@ async def get_logs_data(
         # raise HTTPException(status_code=404, detail="Log not found")
     return JSONResponse(status_code=200, content={"result" : "success", "data" : logs})
 
-@router.get("/", summary="유저의 전체 로그 조회") # 보안 설정 필요
+@router.get("", summary="유저의 전체 로그 조회") # 보안 설정 필요
 async def list_user_logs(
     user_id: Optional[str] = Query(None, description="조회할 사용자 ID")
 ):
