@@ -11,7 +11,10 @@ from langchain.chains.transform import TransformChain
 from pymilvus import connections, utility
 from fastapi import HTTPException
 
+from app.models.log import LogDetail
 from app.models.structure import FileAPIDetail
+
+from app.utils.memory_logger import MemoryLogger
 
 from app.core.config import settings
 
@@ -34,6 +37,7 @@ class FileAPIClient:
         # 임베딩 초기화
         self.emb = OpenAIEmbeddings()
 
+        self.mlogger = MemoryLogger()
         # Milvus 초기화 시도
         self.store = self._initialize_milvus(host, port, collection_name)
 
@@ -52,7 +56,7 @@ class FileAPIClient:
             ("system", "<context>\n{context}\n</context>"),
             ("human", "{input}")
         ])
-        llm = ChatOpenAI(model_name=model_name, temperature=0)
+        llm = ChatOpenAI(model_name=model_name, temperature=0, callbacks=[self.mlogger])
         structured = llm.with_structured_output(FileAPIDetail)
         flatten = TransformChain(
             input_variables=["context"],
@@ -155,7 +159,10 @@ class FileAPIClient:
             query += f"&product_code={q.product_code}"
         return self.base_url + path + query
 
-    def run(self, user_input: str) -> pd.DataFrame:
+    def run(self, user_input: str) -> tuple[str, pd.DataFrame, list[LogDetail]]:
+        self.mlogger.set_name("LLM Call: Extract DataCall Params")
+        self.mlogger.reset()
+
         # 1) 엔티티 추출
         if self.retriever:
             result = create_retrieval_chain(self.retriever, self.extractor_chain).invoke({
@@ -169,6 +176,8 @@ class FileAPIClient:
                 "input": user_input
             })
             entities: FileAPIDetail = result
+
+        entity_logs: list[LogDetail] = self.mlogger.get_logs()
 
         # 2) 검증
         self._validate(entities)
@@ -184,4 +193,4 @@ class FileAPIClient:
             raise HTTPException(status_code=404, detail=f"Data fetch failed: {e}")
 
         # 4) DataFrame 반환
-        return url, pd.DataFrame(raw["data"])
+        return url, pd.DataFrame(raw["data"]), entity_logs

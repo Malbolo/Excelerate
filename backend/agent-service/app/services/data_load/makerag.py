@@ -13,29 +13,35 @@ logger = logging.getLogger(__name__)
 
 def build_catalog_documents(catalog: List[Dict]) -> List[Document]:
     """
-    catalog: List of dicts, each mapping factory_name to its info dict:
+    catalog: List of dicts, each containing factory_name, system_name, factory_id, product, metric_list, etc.
     [
-      {"수원공장": {"system_name":..., "factory_id":..., ...}},
-      {"서울공장": {...}},
+      {
+        "factory_name": "수원공장",
+        "system_name": "mes",
+        "factory_id": "FCT001",
+        "product": { ... },
+        "metric_list": [ ... ]
+      },
       ...
     ]
     """
     docs: List[Document] = []
-    for entry in catalog:
-        # 각 entry는 {factory_name: info_dict}
-        for factory_name, info in entry.items():
-            # 전체 JSON 구조 저장
-            content = json.dumps({factory_name: info}, ensure_ascii=False)
-            # metadata에는 검색 및 검증 필드만
-            metadata = {
-                "type":         "factory_info",
-                "factory_name": factory_name,
-                "system_name":  info.get("system_name", ""),
-                "factory_id":   info.get("factory_id", ""),
-                "product_list": ",".join(info.get("product", {}).keys()),
-                "metric_list":  ",".join(info.get("metric_list", [])),
-            }
-            docs.append(Document(page_content=content, metadata=metadata))
+    for info in catalog:
+        factory_name = info.get("factory_name", "")
+        # page_content엔 전체 엔트리 JSON 직렬화
+        content = json.dumps(info, ensure_ascii=False)
+        # metadata엔 검색·검증용 필드만
+        metadata = {
+            "type":         "factory_info",
+            "factory_name": factory_name,
+            "system_name":  info.get("system_name", ""),
+            "factory_id":   info.get("factory_id", ""),
+            # product 딕셔너리 키 목록을 쉼표로 연결
+            "product_list": ",".join(info.get("product", {}).keys()),
+            # metric_list를 쉼표로 연결
+            "metric_list":  ",".join(info.get("metric_list", [])),
+        }
+        docs.append(Document(page_content=content, metadata=metadata))
     return docs
 
 
