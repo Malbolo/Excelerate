@@ -1,4 +1,5 @@
 # memory_logger.py
+import re, json
 
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -12,6 +13,25 @@ class MemoryLogger(BaseCallbackHandler):
         self.logs: List[LogDetail] = []
         self.current_name: Optional[str] = None
         self._last_prompts: Optional[List[str]] = None
+
+    @staticmethod
+    def _parse_role_messages(text: str) -> List[dict]:
+        """
+        "System: ...\nHuman: ...\nAI: ..." 형태의 스트링을
+        [{"role":"system","message":...}, ...] 로 분할 반환
+        """
+        pattern = re.compile(
+            r'(System|Human|AI):\s*'          # Role
+            r'(.*?)'                          # Message (non-greedy)
+            r'(?=(?:System|Human|AI):|$)',    # Lookahead for next role or end
+            re.DOTALL
+        )
+        out = []
+        for m in pattern.finditer(text):
+            role = m.group(1).lower()
+            msg  = m.group(2).strip()
+            out.append({"role": role, "message": msg})
+        return out
 
     def set_name(self, name: str):
         """로깅할 때 사용할 이름을 지정합니다."""
@@ -30,10 +50,13 @@ class MemoryLogger(BaseCallbackHandler):
         now = datetime.now(ZoneInfo("Asia/Seoul"))
 
         gen = response.generations[0][0].message
+        # raw prompt 문자열 가져와 role별 메시지 리스트로 파싱
+        raw = self._last_prompts[-1] if self._last_prompts else ""
+        parsed = self._parse_role_messages(raw)
         entry = LogDetail(
             name=self.current_name or "<unknown>",
-            input=self._last_prompts[-1] if self._last_prompts else "",
-            output=gen.content,
+            input=parsed, # list[dict] 형태로
+            output=[{"role":"ai", "message": gen.content}],  # list[dict]
             timestamp=now,
             metadata=gen.response_metadata or {}
         )
