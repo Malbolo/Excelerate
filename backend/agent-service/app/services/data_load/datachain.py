@@ -66,6 +66,8 @@ class FileAPIClient:
             output_variables=["today"],
             transform=lambda _: {"today": date.today().isoformat()}
         )
+
+        print("today : ", date.today().isoformat())
         
         flatten = TransformChain(
             input_variables=["context"],
