@@ -82,14 +82,14 @@ const MessageItem: React.FC<{ message: TLogMessage }> = ({ message }) => {
 const RunPanel: React.FC<RunPanelProps> = ({ input, output }) => {
   if ((!input || input.length === 0) && (!output || output.length === 0)) {
     return (
-      <div className='border-border flex h-full items-center justify-center rounded-tl-md rounded-b-md border bg-white p-2'>
+      <div className='flex h-full items-center justify-center rounded-tl-md rounded-b-md border bg-white p-2'>
         <p className='text-sm text-gray-500'>No data available</p>
       </div>
     );
   }
 
   return (
-    <div className='border-border flex h-full overflow-y-auto rounded-tl-md rounded-b-md border bg-white p-2'>
+    <div className='flex h-full overflow-y-auto rounded-tl-md rounded-b-md border bg-white p-2'>
       <div className='flex w-full flex-col gap-4 px-4 py-5'>
         {input && input.length > 0 && (
           <div className='flex flex-col gap-4'>
@@ -166,14 +166,14 @@ const MetadataItem: React.FC<{
 const MetadataPanel: React.FC<MetadataPanelProps> = ({ metadata }) => {
   if (!metadata || Object.keys(metadata).length === 0) {
     return (
-      <div className='border-border flex h-full items-center justify-center rounded-tl-md rounded-b-md border bg-white p-2'>
+      <div className='flex h-full items-center justify-center rounded-tl-md rounded-b-md border bg-white p-2'>
         <p className='text-sm text-gray-500'>No metadata available</p>
       </div>
     );
   }
 
   return (
-    <div className='border-border flex h-full overflow-y-auto rounded-tl-md rounded-b-md border bg-white p-2'>
+    <div className='flex h-full overflow-y-auto rounded-tl-md rounded-b-md border bg-white p-2'>
       <div className='flex flex-col gap-4 px-4 py-5'>
         {Object.entries(metadata).map(([key, value]) => (
           <MetadataItem key={key} label={key} value={value} />
