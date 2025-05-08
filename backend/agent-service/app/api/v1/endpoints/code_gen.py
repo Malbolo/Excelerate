@@ -52,6 +52,8 @@ async def command_code(
 
         try:
             user_name = auth.get_user_info(user_id).name
+            if user_name == "None":
+                user_name = "guest"
         except:
             user_name = "guest"
         log_id = generate_log_id(user_name)
