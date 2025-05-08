@@ -1,8 +1,14 @@
+import re
 from langchain_core.prompts import (
     ChatPromptTemplate,
     SystemMessagePromptTemplate,
     HumanMessagePromptTemplate,
 )
+
+
+def is_iso_date(s: str) -> bool:
+    """YYYY-MM-DD 형식인지 간단히 체크"""
+    return bool(re.fullmatch(r"\d{4}-\d{2}-\d{2}", s))
 
 def make_date_code_template() -> ChatPromptTemplate:
     """
@@ -24,9 +30,10 @@ def make_date_code_template() -> ChatPromptTemplate:
     startdate = "<ISO 8601 날짜 문자열>"
 
 형태로 `startdate` 변수가 설정되어 있어야 합니다.
+마크다운 없이 코드만 반환해주세요.
 
 예시) expr="지난달"
-```python
+
 from datetime import date
 from dateutil.relativedelta import relativedelta
 
@@ -34,7 +41,7 @@ today = date.today()
 first_of_this = today.replace(day=1)
 first_of_last = first_of_this - relativedelta(months=1)
 startdate = first_of_last.isoformat()
-```
+
 이제 expr="{expr}"에 대해 코드를 작성하세요.
 """
     )

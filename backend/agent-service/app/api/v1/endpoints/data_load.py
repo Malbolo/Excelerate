@@ -18,7 +18,7 @@ async def command_code(
     request: DataRequest = docs.base["data"]
 ):
     try:
-        url, result, logs = data_loader.run(request.command)
+        url, result, logs, code = data_loader.run(request.command)
         user_id = "guest" # 나중에 여기도 유저 아이디 받기
         log_id = generate_log_id(user_id)
         save_logs_to_redis(log_id, logs)
@@ -29,7 +29,7 @@ async def command_code(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    return JSONResponse(status_code=200, content={"result" : "success", "data" : {"url": url, "dataframe" : result.to_dict(orient="records"), "log_id": log_id}})
+    return JSONResponse(status_code=200, content={"result" : "success", "data" : {"url": url, "dataframe" : result.to_dict(orient="records"), "log_id": log_id, "code": code}})
 
 
 @router.post("/make")

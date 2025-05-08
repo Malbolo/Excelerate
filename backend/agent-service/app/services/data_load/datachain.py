@@ -18,6 +18,7 @@ from app.models.structure import FileAPIDetail
 from app.utils.memory_logger import MemoryLogger
 
 from app.core.config import settings
+from app.services.data_load.data_util import make_date_code_template, is_iso_date
 
 # 로깅 설정
 logger = logging.getLogger(__name__)
@@ -32,7 +33,7 @@ class FileAPIClient:
             port: int = settings.MILVUS_PORT,
             collection_name: str = "factory_catalog",
             k: int = 3,
-            model_name: str = "gpt-4o-mini",
+            model_name: str = "gpt-4.1-nano",
             base_url: str = settings.FILESYSTEM_URL,
     ):
         # 임베딩 초기화
@@ -54,20 +55,19 @@ class FileAPIClient:
         prompt = ChatPromptTemplate.from_messages([
             ("system", "오늘은 {today}입니다."),
             ("system", "다음 필드를 추출하세요: factory_name, system_name, metric, factory_id, product_code, start_date"),
+            ("system", "start_date의 경우, 지난 달, 어제 등의 상대 표현일 경우 해당 단어 그대로 추출하세요"),
             ("system", "해당하는 값이 없으면 null로 두세요."),
             ("system", "<context>\n{context}\n</context>"),
             ("human", "{input}")
         ])
-        llm = ChatOpenAI(model_name=model_name, temperature=0, callbacks=[self.mlogger])
-        structured = llm.with_structured_output(FileAPIDetail)
+        self.llm = ChatOpenAI(model_name=model_name, temperature=0, callbacks=[self.mlogger])
+        structured = self.llm.with_structured_output(FileAPIDetail)
         
         date_chain = TransformChain(
             input_variables=[],
             output_variables=["today"],
             transform=lambda _: {"today": date.today().isoformat()}
         )
-
-        print("today : ", date.today().isoformat())
         
         flatten = TransformChain(
             input_variables=["context"],
@@ -174,6 +174,8 @@ class FileAPIClient:
         self.mlogger.set_name("LLM Call: Extract DataCall Params")
         self.mlogger.reset()
 
+        python_code = None
+
         # 1) 엔티티 추출
         if self.retriever:
             result = create_retrieval_chain(self.retriever, self.extractor_chain).invoke({
@@ -187,6 +189,21 @@ class FileAPIClient:
                 "input": user_input
             })
             entities: FileAPIDetail = result
+
+        # 2) start_date가 ISO 포맷이 아니면 → LLM으로 코드 생성 후 exec
+        if not is_iso_date(entities.start_date):
+            self.mlogger.set_name("LLM Call: Transfrom Date Param")
+            # 2-1) 날짜 계산용 템플릿 꺼내기
+            prompt = make_date_code_template()
+            date_chain = prompt | self.llm
+
+            # 2-2) expr 에 원본 텍스트 넣고 코드 스니펫 받기
+            code_snippet: str = date_chain.invoke({"expr": entities.start_date}).content
+            # 2-3) exec 으로 실행해서 namespace 에서 startdate 꺼내기
+            namespace: dict = {}
+            exec(code_snippet, namespace)
+            entities.start_date = namespace["startdate"]
+            python_code = code_snippet
 
         entity_logs: list[LogDetail] = self.mlogger.get_logs()
 
@@ -204,4 +221,4 @@ class FileAPIClient:
             raise HTTPException(status_code=404, detail=f"Data fetch failed: {e}")
 
         # 4) DataFrame 반환
-        return url, pd.DataFrame(raw["data"]), entity_logs
+        return url, pd.DataFrame(raw["data"]), entity_logs, python_code
