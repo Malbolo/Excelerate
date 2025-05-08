@@ -33,7 +33,7 @@ def get_jobs(
     return job_service.get_jobs(db, mine, name, dep, type, page, size, title, user_id)
 
 @router.get("/{job_id}")
-async def get_job_detail(request: Request, job_id: int, db: Session = Depends(get_db)) -> JSONResponse:
+async def get_job_detail(request: Request, job_id: str, db: Session = Depends(get_db)) -> JSONResponse:
     user_id = auth.get_user_id_from_header(request)
     return await job_service.get_job_detail(job_id, db)
 

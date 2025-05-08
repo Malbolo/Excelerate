@@ -6,14 +6,16 @@ class CommandSchema(BaseModel):
     order: int
 
 class JobDetailSchema(BaseModel):
-    id: int
+    id: str
     type: str
+    user_name: str
     title: str
     description: str
     data_load_command: str
     data_load_url: str
     commands: List[CommandSchema]
     code: str
+    created_at: str
 
 class JobDetailResponse(BaseModel):
     result: str
@@ -21,8 +23,9 @@ class JobDetailResponse(BaseModel):
 
 def create_job_detail_schema(job):
     return JobDetailSchema(
-        id=job.id,
+        id=str(job.id),
         type=job.type,
+        user_name=job.user_name,
         title=job.title,
         description=job.description,
         data_load_command=job.data_load_command,
@@ -31,5 +34,6 @@ def create_job_detail_schema(job):
         commands=[
             CommandSchema(content=cmd.content, order=cmd.order)
             for cmd in sorted(job.commands, key=lambda x: x.order)
-        ]
+        ],
+        created_at=str(job.created_at)
     )

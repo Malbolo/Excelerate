@@ -48,7 +48,7 @@ async def create_job(request: JobCreateRequest, user_id: int, db: Session) -> JS
         logger.error(f"Failed to create job for user_id {user_id}: {e}", exc_info=True)  # 에러 로그 (예외 정보 포함)
         return JSONResponse(status_code=500, content={"message": "Job이 생성에 실패하였습니다."})
 
-async def get_job_detail(id: int, db: Session) -> JSONResponse:
+async def get_job_detail(id: str, db: Session) -> JSONResponse:
     job = db.query(models.Job).filter(models.Job.id == id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
