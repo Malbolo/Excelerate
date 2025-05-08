@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 import calendar
 import os
 from croniter import croniter
+import re
 from app.db.database import get_db
 from app.models.models import Job, JobCommand
 from app.crud import crud
@@ -1341,15 +1342,13 @@ def get_task_logs(schedule_id: str, run_id: str, task_id: str) -> str:
     """
     try:
         # Airflow API URL 구성
-        logs_url = f"{settings.AIRFLOW_API_URL}/dags/{schedule_id}/dagRuns/{run_id}/taskInstances/{task_id}/logs"
-
-        # 인증 헤더 설정
-        headers = {
-            "Authorization": f"Basic {settings.AIRFLOW_AUTH_TOKEN}"
-        }
+        endpoint = f"{settings.AIRFLOW_API_URL}/dags/{schedule_id}/dagRuns/{run_id}/taskInstances/{task_id}/logs"
 
         # API 요청
-        response = requests.get(logs_url, headers=headers)
+        response = requests.get(
+            endpoint,
+            auth=(settings.AIRFLOW_USERNAME, settings.AIRFLOW_PASSWORD)
+        )
 
         if response.status_code == 200:
             return response.text
