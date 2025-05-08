@@ -50,9 +50,12 @@ async def command_code(
             for single_df in df_list
         ]
 
-        # logs는 redis에 따로 저장하는 것을 고려
-        # log_id = generate_log_id(user_id)
-        log_id = f"logs:{user_id}:{uid}"
+        try:
+            user_name = auth.get_user_info(user_id)
+        except:
+            user_name = "guest"
+        log_id = generate_log_id(user_name)
+        
         save_logs_to_redis(log_id, answer["logs"], metadata={
             "agent_name":  "Code Generetor",
             "log_detail":  "코드를 생성합니다."
