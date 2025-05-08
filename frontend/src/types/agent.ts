@@ -3,8 +3,8 @@ import { DEPARTMENT } from '@/constant/user';
 
 export interface TLog {
   name: string;
-  input: string;
-  output: string;
+  input: TLogMessage[];
+  output: TLogMessage[];
   timestamp: string;
   metadata: TLogMetadata;
   subEvents: TLog[];
@@ -12,6 +12,11 @@ export interface TLog {
 
 export interface TLogMetadata {
   [key: string]: TLogMetadata | string | number | null;
+}
+
+export interface TLogMessage {
+  role: string;
+  message: string;
 }
 
 export type TJobType = (typeof JOB_TYPE)[keyof typeof JOB_TYPE];
