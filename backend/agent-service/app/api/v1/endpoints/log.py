@@ -47,11 +47,11 @@ async def list_user_logs(
     user_name: Optional[str] = Query(None, description="조회할 사용자 이름")
 ):
     """
-    Redis 키 패턴 logs:{user_id}:* 에 매칭되는
-    모든 log_id 세션을 찾아, 그 안의 LogDetail을 아래 형태로 반환합니다:
+    Redis 키 패턴 logs:*{user_name}*:* 에 매칭되는
+    모든 log_id 세션을 찾아, 그 정보를 아래 형태로 반환합니다:
 
     [{
-      "user_id":    "사용자 ID",
+      "user_name":    "사용자 이름",
       "agent_name":   "로그를 남긴 Agent의 이름",
       "log_detail": "커스텀 상세정보 or 마지막 output",
       "createdAt":  "마지막 timestamp 기준",
