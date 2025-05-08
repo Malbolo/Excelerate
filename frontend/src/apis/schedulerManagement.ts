@@ -1,12 +1,33 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import { CreateScheduleFormData } from '@/pages/createScheduler/components/CreateScheduleModal';
 
 import { api } from './core';
+import { JobResponse } from './jobManagement';
 
 interface CreateScheduleResponse {
   message: string;
+}
+
+export interface ScheduleDetailResponse {
+  schedule_id: string;
+  title: string;
+  description: string;
+  frequency: string;
+  frequency_display: {
+    type: string;
+    time: string;
+  };
+  is_paused: boolean;
+  created_at: string;
+  updated_at: string | null;
+  start_date: string;
+  end_date: string;
+  execution_time: string;
+  success_emails: string[];
+  failure_emails: string[];
+  jobs: JobResponse[];
 }
 
 const createSchedule = async (schedule: CreateScheduleFormData) => {
@@ -36,6 +57,18 @@ const createSchedule = async (schedule: CreateScheduleFormData) => {
   }
 
   return;
+};
+
+const getScheduleDetail = async (scheduleId: string) => {
+  const { error, success, data } = await api<ScheduleDetailResponse>(
+    `/api/schedules/${scheduleId}`,
+  );
+
+  if (!success) {
+    throw new Error(error);
+  }
+
+  return data;
 };
 
 const updateSchedule = async (schedule: CreateScheduleFormData) => {
@@ -89,6 +122,13 @@ const oneTimeSchedule = async (scheduleId: string) => {
   }
 
   return;
+};
+
+export const useGetScheduleDetail = (scheduleId: string) => {
+  return useSuspenseQuery({
+    queryKey: ['scheduleDetail', scheduleId],
+    queryFn: () => getScheduleDetail(scheduleId),
+  });
 };
 
 export const useToggleSchedule = () => {

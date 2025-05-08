@@ -16,25 +16,19 @@ import {
 const JobSearchInput = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Initialize state from URL params or defaults
-  // 1 & 2. Department와 Type의 초기값을 ''로 설정하여 placeholder가 보이도록 함
-  const initialDep = searchParams.get('dep') || ''; // ''로 설정하여 placeholder 표시 유도
-  const initialType = searchParams.get('type') || ''; // ''로 설정하여 placeholder 표시 유도
+  const initialDep = searchParams.get('dep') || '';
+  const initialType = searchParams.get('type') || '';
 
-  // 4. searchField는 URL에서 직접 읽지 않고, title 또는 name 파라미터 존재 여부로 유추
-  let determinedInitialSearchField = 'title'; // 기본값
+  let determinedInitialSearchField = 'title';
   let determinedInitialSearchQuery = '';
 
   if (searchParams.has('title')) {
     determinedInitialSearchField = 'title';
     determinedInitialSearchQuery = searchParams.get('title') || '';
   } else if (searchParams.has('name')) {
-    // 'user' 검색 필드에 해당하는 URL 파라미터가 'name'이라고 가정
     determinedInitialSearchField = 'user';
     determinedInitialSearchQuery = searchParams.get('name') || '';
   }
-  // 만약 'searchField' 파라미터가 레거시로 여전히 존재할 수 있다면, 그 값을 우선할 수도 있습니다.
-  // 하지만 요청사항은 searchField를 URL 파라미터로 사용하지 않는 것이므로 위 로직을 따릅니다.
 
   const [dep, setDep] = useState<string>(initialDep);
   const [type, setType] = useState<string>(initialType);
