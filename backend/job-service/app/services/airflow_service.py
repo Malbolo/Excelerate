@@ -1325,3 +1325,220 @@ def get_job_details(job_ids: List[str]) -> Dict[str, Any]:
         return job_details
     finally:
         db.close()
+
+
+def get_task_logs(schedule_id: str, run_id: str, task_id: str) -> str:
+    """
+    Airflow API에서 태스크 로그를 가져옵니다.
+
+    Args:
+        schedule_id: DAG ID
+        run_id: DAG Run ID
+        task_id: Task ID
+
+    Returns:
+        태스크 로그 문자열
+    """
+    try:
+        # Airflow API URL 구성
+        logs_url = f"{settings.AIRFLOW_API_URL}/dags/{schedule_id}/dagRuns/{run_id}/taskInstances/{task_id}/logs"
+
+        # 인증 헤더 설정
+        headers = {
+            "Authorization": f"Basic {settings.AIRFLOW_AUTH_TOKEN}"
+        }
+
+        # API 요청
+        response = requests.get(logs_url, headers=headers)
+
+        if response.status_code == 200:
+            return response.text
+        else:
+            print(f"Failed to get task logs. Status code: {response.status_code}")
+            return ""
+    except Exception as e:
+        print(f"Error getting task logs: {str(e)}")
+        return ""
+
+
+def extract_error_message(logs: str) -> str:
+    """
+    로그에서 에러 메시지를 추출합니다.
+
+    Args:
+        logs: 태스크 로그 문자열
+
+    Returns:
+        추출된 에러 메시지
+    """
+    # 일반적인 에러 패턴 탐색 (예: Exception, Error 등으로 끝나는 줄)
+    error_patterns = [
+        r"([\w\.]+Error: .+)",
+        r"([\w\.]+Exception: .+)",
+        r"(ERROR: .+)",
+        r"(Task failed with exception)"
+    ]
+
+    for pattern in error_patterns:
+        matches = re.findall(pattern, logs)
+        if matches:
+            return matches[0]
+
+    # 기본 에러 메시지
+    return "작업 실행 중 오류가 발생했습니다."
+
+
+def extract_error_trace(logs: str) -> str:
+    """
+    로그에서 스택 트레이스를 추출합니다.
+
+    Args:
+        logs: 태스크 로그 문자열
+
+    Returns:
+        추출된 스택 트레이스
+    """
+    # 파이썬 스택 트레이스 패턴
+    trace_pattern = r"Traceback \(most recent call last\):.*?(?=\n\n|\Z)"
+    match = re.search(trace_pattern, logs, re.DOTALL)
+
+    if match:
+        return match.group(0)
+
+    # 스택 트레이스가 없으면 로그 일부 반환 (너무 길지 않게)
+    log_lines = logs.splitlines()
+    if len(log_lines) > 20:
+        return "\n".join(log_lines[-20:])  # 마지막 20줄만 반환
+
+    return logs
+
+
+def get_schedule_run_detail_with_logs(schedule_id: str, run_id: str) -> Dict[str, Any]:
+    """
+    스케줄 실행 상세 정보와 작업별 에러 로그를 함께 조회합니다.
+
+    Args:
+        schedule_id: 스케줄 ID (DAG ID)
+        run_id: 실행 ID (DAG Run ID)
+
+    Returns:
+        스케줄 실행 상세 정보 (에러 로그 포함)
+    """
+    try:
+        # DAG 상세 정보 조회
+        dag_detail = get_dag_detail(schedule_id)
+
+        # DAG 실행 상세 정보 조회
+        run_detail = get_dag_run_detail(schedule_id, run_id)
+
+        # 태스크 인스턴스 목록 조회
+        task_instances = get_task_instances(schedule_id, run_id)
+
+        # job_id 목록 추출
+        job_ids = []
+        for task in task_instances:
+            task_id = task.get("task_id", "")
+            if task_id.startswith("job_"):
+                try:
+                    job_id = task_id.split("_")[1]
+                    job_ids.append(job_id)
+                except (IndexError, ValueError):
+                    pass
+
+        # job 상세 정보 조회
+        job_details = get_job_details(job_ids)
+
+        # 태스크 데이터 구성 (job_id를 키로 사용)
+        jobs_data = {}
+        successful_jobs = 0
+        failed_jobs = 0
+        pending_jobs = 0
+
+        for task in task_instances:
+            task_id = task.get("task_id", "")
+
+            # job_id 추출
+            if task_id.startswith("job_"):
+                try:
+                    job_id = task_id.split("_")[1]
+
+                    # job 정보 가져오기
+                    job_info = job_details.get(job_id, {})
+
+                    # 작업 상태 확인
+                    status = task.get("state")
+                    if status == "success":
+                        successful_jobs += 1
+                    elif status in ["failed", "upstream_failed"]:
+                        failed_jobs += 1
+                    else:  # 'running', 'queued', 등
+                        pending_jobs += 1
+
+                    # 에러 로그 가져오기 (실패한 작업만)
+                    error_log = None
+                    if status in ["failed", "upstream_failed"]:
+                        # Airflow API에서 로그 가져오기
+                        task_logs = get_task_logs(schedule_id, run_id, task_id)
+
+                        if task_logs:
+                            # 에러 메시지 및 스택 트레이스 추출
+                            error_message = extract_error_message(task_logs)
+                            error_trace = extract_error_trace(task_logs)
+
+                            error_log = {
+                                "error_message": error_message,
+                                "error_trace": error_trace,
+                                "error_time": task.get("end_date"),
+                                "error_code": f"TASK_ERROR_{job_id}"
+                            }
+
+                    # 작업 상태 및 실행 정보
+                    job_data = {
+                        "id": job_id,
+                        "title": job_info.get("title", f"Job {job_id}"),
+                        "description": job_info.get("description", ""),
+                        "commands": job_info.get("commands", []),
+                        "status": status,
+                        "start_time": task.get("start_date"),
+                        "end_time": task.get("end_date"),
+                        "duration": task.get("duration"),
+                        "logs_url": f"{settings.AIRFLOW_API_URL}/dags/{schedule_id}/dagRuns/{run_id}/taskInstances/{task_id}/logs",
+                        "error_log": error_log
+                    }
+
+                    jobs_data[job_id] = job_data
+                except (IndexError, ValueError):
+                    pass
+
+        # 스케줄 정보 조회 (description 포함)
+        schedule_data = get_schedule_detail(schedule_id)
+
+        # 작업 요약 정보 구성
+        summary = {
+            "total_jobs": len(jobs_data),
+            "successful_jobs": successful_jobs,
+            "failed_jobs": failed_jobs,
+            "pending_jobs": pending_jobs
+        }
+
+        # 응답 데이터 구성
+        run_data = {
+            "schedule_id": schedule_id,
+            "title": schedule_data.get("title", dag_detail.get("name", schedule_id)),
+            "description": schedule_data.get("description", ""),
+            "run_id": run_id,
+            "status": run_detail.get("state"),
+            "start_time": run_detail.get("start_date"),
+            "end_time": run_detail.get("end_date"),
+            "duration": (
+                    datetime.fromisoformat(run_detail.get("end_date").replace("Z", "+00:00")) -
+                    datetime.fromisoformat(run_detail.get("start_date").replace("Z", "+00:00"))
+            ).total_seconds() if run_detail.get("end_date") and run_detail.get("start_date") else None,
+            "jobs": list(jobs_data.values()),  # 딕셔너리를 리스트로 변환
+            "summary": summary
+        }
+
+        return run_data
+    except Exception as e:
+        print(f"Error getting schedule run detail: {str(e)}")
+        raise e
