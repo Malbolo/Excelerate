@@ -10,6 +10,8 @@ from fastapi.encoders import jsonable_encoder
 from app.utils.redis_client import generate_log_id, save_logs_to_redis, save_states_to_redis, get_states_from_redis
 from uuid import uuid4
 
+from app.services.code_gen.merge_utils import merge_code_snippets
+
 router = APIRouter()
 docs = CodeGenDocs()
 
@@ -54,7 +56,7 @@ async def command_code(
         save_states_to_redis(session_id, answer)
 
         payload = {
-            "codes":      answer["python_codes_list"],
+            "codes":      [answer["python_code"]],
             "dataframe": serialized,      # 여전히 to_dict 직후의 리스트
             "error_msg": answer["error_msg"],
             "download_token":answer["download_token"],
