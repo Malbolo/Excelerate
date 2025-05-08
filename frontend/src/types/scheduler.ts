@@ -1,11 +1,13 @@
 export type Status = 'pending' | 'success' | 'error';
 
-export type Interval = {
-  type: 'daily' | 'weekly' | 'monthly';
+export type FrequencyType = 'daily' | 'weekly' | 'monthly' | string;
+
+export interface FrequencyDisplay {
+  type: FrequencyType;
   time: string;
   dayOfWeek?: string;
   dayOfMonth?: number;
-};
+}
 
 export interface Command {
   commandId: string;
@@ -14,27 +16,28 @@ export interface Command {
 }
 
 export interface Job {
+  id: string;
+  order: number;
   title: string;
   description: string;
-  createdAt: string;
-  jobId: string;
-  commandList: Command[];
-  sourceData?: string;
-  userName?: string;
 }
 
 export interface Schedule {
-  is_paused: boolean;
-  scheduleId: string;
-  createdAt: string;
+  schedule_id: string;
   title: string;
   description: string;
-  lastRunAt: string;
-  nextRunAt: string;
-  interval: Interval;
-  userId: string;
-  status: Status;
-  jobList: Job[];
+  frequency: FrequencyType;
+  frequency_cron: string;
+  frequency_display: FrequencyDisplay;
+  is_paused: boolean;
+  created_at: string;
+  updated_at: string | null;
+  start_date: string;
+  end_date: string;
+  execution_time: string;
+  success_emails: string[];
+  failure_emails: string[];
+  jobs: Job[];
 }
 
 export interface DaySchedule {

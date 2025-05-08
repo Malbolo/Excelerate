@@ -1,6 +1,6 @@
 import { Pause, Play, PlayCircle } from 'lucide-react';
 
-import { useOneTimeSchedule } from '@/apis/schedulerManagement';
+import { Schedule, useOneTimeSchedule } from '@/apis/schedulerManagement';
 import { useToggleSchedule } from '@/apis/schedulerManagement';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,7 +9,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Schedule } from '@/types/scheduler';
 
 interface ScheduleActionsProps {
   schedule: Schedule;
@@ -22,18 +21,18 @@ const ScheduleActions = ({ schedule }: ScheduleActionsProps) => {
   const handleRun = (e: React.MouseEvent) => {
     // e.stopPropagation();사용한 이유는, 테이블 시 클릭 시 행 전체가 선택되는 것을 방지하기 위함
     e.stopPropagation();
-    toggleSchedule(schedule.scheduleId);
+    toggleSchedule(schedule.schedule_id);
   };
 
   const handlePause = (e: React.MouseEvent) => {
     // e.stopPropagation();사용한 이유는, 테이블 시 클릭 시 행 전체가 선택되는 것을 방지하기 위함
     e.stopPropagation();
-    toggleSchedule(schedule.scheduleId);
+    toggleSchedule(schedule.schedule_id);
   };
 
   const handleTrigger = (e: React.MouseEvent) => {
     e.stopPropagation();
-    oneTimeSchedule(schedule.scheduleId);
+    oneTimeSchedule(schedule.schedule_id);
   };
 
   return (
@@ -70,7 +69,7 @@ const ScheduleActions = ({ schedule }: ScheduleActionsProps) => {
               onClick={handleTrigger}
               className='h-7 w-7'
               aria-label='Trigger Schedule Once'
-              disabled={schedule.status === 'success'}
+              // disabled={schedule.status === 'success'}
             >
               <PlayCircle className='h-4 w-4' />
             </Button>

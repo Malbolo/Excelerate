@@ -10,15 +10,20 @@ interface CreateScheduleResponse {
   message: string;
 }
 
-export interface ScheduleDetailResponse {
+export interface FrequencyDisplay {
+  type: string;
+  time: string;
+  dayOfWeek?: string;
+  dayOfMonth?: number;
+}
+
+export interface Schedule {
   schedule_id: string;
   title: string;
   description: string;
   frequency: string;
-  frequency_display: {
-    type: string;
-    time: string;
-  };
+  frequency_cron: string;
+  frequency_display: FrequencyDisplay;
   is_paused: boolean;
   created_at: string;
   updated_at: string | null;
@@ -29,6 +34,47 @@ export interface ScheduleDetailResponse {
   failure_emails: string[];
   jobs: JobResponse[];
 }
+
+interface ScheduleListResponse {
+  schedules: Schedule[];
+}
+
+const getScheduleDetail = async (scheduleId: string) => {
+  const { error, success, data } = await api<Schedule>(
+    `/api/schedules/${scheduleId}`,
+  );
+
+  if (!success) {
+    throw new Error(error);
+  }
+
+  return data;
+};
+
+export const useGetScheduleDetail = (scheduleId: string) => {
+  return useSuspenseQuery({
+    queryKey: ['scheduleDetail', scheduleId],
+    queryFn: () => getScheduleDetail(scheduleId),
+  });
+};
+
+const getScheduleList = async () => {
+  const { error, success, data } =
+    await api<ScheduleListResponse>('/api/schedules');
+
+  if (!success) {
+    throw new Error(error);
+  }
+
+  return data;
+};
+
+export const useGetScheduleList = () => {
+  return useSuspenseQuery({
+    queryKey: ['scheduleList'],
+    queryFn: getScheduleList,
+  });
+};
 
 const createSchedule = async (schedule: CreateScheduleFormData) => {
   const { error, success } = await api<CreateScheduleResponse>(
@@ -46,7 +92,7 @@ const createSchedule = async (schedule: CreateScheduleFormData) => {
         failure_emails: [schedule.failEmail],
         start_date: schedule.startDate.toISOString().split('.')[0],
         end_date: schedule.endDate?.toISOString().split('.')[0],
-        execution_time: `2025-05-06T${schedule.executionTime}:00`,
+        execution_time: schedule.executionTime,
         frequency: schedule.interval,
       }),
     },
@@ -57,18 +103,6 @@ const createSchedule = async (schedule: CreateScheduleFormData) => {
   }
 
   return;
-};
-
-const getScheduleDetail = async (scheduleId: string) => {
-  const { error, success, data } = await api<ScheduleDetailResponse>(
-    `/api/schedules/${scheduleId}`,
-  );
-
-  if (!success) {
-    throw new Error(error);
-  }
-
-  return data;
 };
 
 const updateSchedule = async (schedule: CreateScheduleFormData) => {
@@ -87,7 +121,7 @@ const updateSchedule = async (schedule: CreateScheduleFormData) => {
         failure_emails: [schedule.failEmail],
         start_date: schedule.startDate.toISOString().split('.')[0],
         end_date: schedule.endDate?.toISOString().split('.')[0],
-        execution_time: `2025-05-06T${schedule.executionTime}:00`,
+        execution_time: schedule.executionTime,
         frequency: schedule.interval,
       }),
     },
@@ -122,13 +156,6 @@ const oneTimeSchedule = async (scheduleId: string) => {
   }
 
   return;
-};
-
-export const useGetScheduleDetail = (scheduleId: string) => {
-  return useSuspenseQuery({
-    queryKey: ['scheduleDetail', scheduleId],
-    queryFn: () => getScheduleDetail(scheduleId),
-  });
 };
 
 export const useToggleSchedule = () => {

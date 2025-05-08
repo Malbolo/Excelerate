@@ -1,14 +1,20 @@
 import { useParams } from 'react-router-dom';
 
+import { useGetRunDetail } from '@/apis/schedulerMonitoring';
 import SchedulerMonitoringLayout from '@/components/Layout/SchedulerMonitoringLayout';
 
-import { dummySchedules } from '../schedulerManagement/data';
-import DebugMode from './components/DebugMode';
 import JobDisplay from './components/JobDisplay';
 
 const ScheduleDetail = () => {
-  const scheduleData = dummySchedules[0];
-  const { dayId } = useParams();
+  const { runId, scheduleId, dayId } = useParams() as {
+    runId: string;
+    scheduleId: string;
+    dayId: string;
+  };
+
+  const { data: scheduleData } = useGetRunDetail(scheduleId, runId);
+
+  console.log(scheduleData);
 
   return (
     <SchedulerMonitoringLayout
@@ -16,11 +22,11 @@ const ScheduleDetail = () => {
       backPath={`/scheduler-monitoring/day/${dayId}`}
     >
       <div className='mb-8 rounded-lg bg-white p-6 shadow'>
-        <p className='mt-1 text-sm text-gray-500'>{scheduleData.description}</p>
+        <p className='mt-1 text-sm text-gray-500'>{scheduleData.title}</p>
         <div className='mt-2 text-xs text-gray-400'>
-          <span>ID: {scheduleData.scheduleId} | </span>
+          <span>ID: {scheduleData.schedule_id} | </span>
           <span>
-            Created: {new Date(scheduleData.createdAt).toLocaleString()} |{' '}
+            Created: {new Date(scheduleData.start_time).toLocaleString()} |{' '}
           </span>
           <span>
             Status:
@@ -38,8 +44,8 @@ const ScheduleDetail = () => {
           <h2 className='mb-4 border-b pb-2 text-xl font-semibold text-gray-700'>
             Jobs
           </h2>
-          {scheduleData.jobList.map(job => (
-            <JobDisplay key={job.jobId} job={job} />
+          {scheduleData.tasks.map(task => (
+            <JobDisplay key={task.job_id} task={task} />
           ))}
         </div>
 
@@ -47,7 +53,7 @@ const ScheduleDetail = () => {
           <h2 className='mb-4 border-b pb-2 text-xl font-semibold text-gray-700'>
             Details
           </h2>
-          <DebugMode schedule={scheduleData} />
+          {/* <DebugMode schedule={scheduleData} /> */}
         </div>
       </div>
     </SchedulerMonitoringLayout>

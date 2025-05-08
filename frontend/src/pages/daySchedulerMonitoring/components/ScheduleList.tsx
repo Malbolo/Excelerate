@@ -11,8 +11,8 @@ const ScheduleList = ({ items }: ScheduleListProps) => {
   const navigate = useNavigate();
   const { dayId } = useParams<{ dayId: string }>();
 
-  const handleViewDetails = (schedule_id: string) => {
-    const url = `/scheduler-monitoring/detail/${dayId}/${schedule_id}`;
+  const handleViewDetails = (schedule_id: string, run_id: string) => {
+    const url = `/scheduler-monitoring/detail/${dayId}/${schedule_id}/${run_id}`;
     navigate(url);
   };
 
@@ -32,13 +32,15 @@ const ScheduleList = ({ items }: ScheduleListProps) => {
           <h3 className='mb-1 text-base font-semibold'>{item.title}</h3>
           <p className='text-sm text-gray-600'>{item.description}</p>
 
-          <Button
-            className='absolute top-2 right-0 rounded bg-blue-500 px-2 py-1 text-xs text-white opacity-0 shadow-sm transition-opacity group-hover:visible group-hover:opacity-100 hover:bg-blue-600'
-            onClick={() => handleViewDetails(item.run_id)}
-            aria-label={`View details for ${item.title}`}
-          >
-            View Details
-          </Button>
+          {item.status !== 'pending' && (
+            <Button
+              className='absolute top-2 right-0 rounded bg-blue-500 px-2 py-1 text-xs text-white opacity-0 shadow-sm transition-opacity group-hover:visible group-hover:opacity-100 hover:bg-blue-600'
+              onClick={() => handleViewDetails(item.schedule_id, item.run_id)}
+              aria-label={`View details for ${item.title}`}
+            >
+              View Details
+            </Button>
+          )}
         </div>
       ))}
     </div>

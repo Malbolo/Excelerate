@@ -52,6 +52,37 @@ interface GetRunIdResponse {
   ];
 }
 
+export interface Task {
+  task_id: string;
+  job_id: string;
+  status: string;
+  start_time?: string;
+  end_time?: string;
+}
+
+export interface RunDetailResponse {
+  schedule_id: string;
+  title: string;
+  run_id: string;
+  status: string;
+  start_time: string;
+  end_time: string;
+  tasks: Task[];
+  logs_url: string;
+}
+
+const getRunDetail = async (scheduleId: string, runId: string) => {
+  const { error, success, data } = await api<RunDetailResponse>(
+    `/api/schedules/${scheduleId}/runs/${runId}`,
+  );
+
+  if (!success) {
+    throw new Error(error);
+  }
+
+  return data;
+};
+
 const getDaySchedules = async (year: string, month: string, day: string) => {
   const { data } = await api<GetDayScheduleResponse>(
     `/api/schedules/statistics/daily?year=${year}&month=${month}&day=${day}`,
@@ -92,6 +123,13 @@ const getSchedule = async (schedule_id: string, run_id: string) => {
   }
 
   return data;
+};
+
+export const useGetRunDetail = (scheduleId: string, runId: string) => {
+  return useSuspenseQuery({
+    queryKey: ['scheduleDetail', scheduleId, runId],
+    queryFn: () => getRunDetail(scheduleId, runId),
+  });
 };
 
 export const useGetDaySchedules = (
