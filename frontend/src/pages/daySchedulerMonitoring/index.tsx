@@ -31,7 +31,7 @@ const DaySchedulePage = () => {
             <h2 className='text-lg font-semibold text-yellow-800'>Pending</h2>
           </div>
           <div className='flex-grow p-4'>
-            <ScheduleList items={success} />
+            <ScheduleList items={pending} />
           </div>
         </div>
 
@@ -40,7 +40,7 @@ const DaySchedulePage = () => {
             <h2 className='text-lg font-semibold text-green-800'>Success</h2>
           </div>
           <div className='flex-grow p-4'>
-            <ScheduleList items={failed} />
+            <ScheduleList items={success} />
           </div>
         </div>
 
@@ -49,7 +49,7 @@ const DaySchedulePage = () => {
             <h2 className='text-lg font-semibold text-red-800'>Error</h2>
           </div>
           <div className='flex-grow p-4'>
-            <ScheduleList items={pending} />
+            <ScheduleList items={failed} />
           </div>
         </div>
       </div>

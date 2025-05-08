@@ -24,6 +24,7 @@ export interface Job {
 }
 
 export interface Schedule {
+  is_paused: boolean;
   scheduleId: string;
   createdAt: string;
   title: string;

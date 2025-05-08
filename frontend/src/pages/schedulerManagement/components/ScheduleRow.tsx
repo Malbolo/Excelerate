@@ -9,7 +9,6 @@ import JobDisplay from '@/pages/scheduleDetail/components/JobDisplay';
 import { Schedule, Status } from '@/types/scheduler';
 
 import { formatDate, formatInterval } from '../utils/formatInterval';
-import StatusToggle from './ActiveToggle';
 import ScheduleActions from './ScheduleActions';
 
 interface ScheduleRowProps {
@@ -48,10 +47,6 @@ const ScheduleRow = ({ schedule }: ScheduleRowProps) => {
               <ChevronRight className='h-4 w-4' />
             )}
           </Button>
-        </TableCell>
-
-        <TableCell className='w-[80px]'>
-          <StatusToggle schedule={schedule} />
         </TableCell>
 
         <TableCell className='font-medium'>{schedule.title}</TableCell>

@@ -22,13 +22,12 @@ const ScheduleTable = () => {
         <TableHeader>
           <TableRow>
             <TableHead className='w-[50px]'></TableHead>
-            <TableHead className='w-[80px]'>Status</TableHead>
-            <TableHead>Schedule</TableHead>
-            <TableHead>Owner</TableHead>
-            <TableHead className='w-[80px]'>Last Run</TableHead>
-            <TableHead>Interval</TableHead>
-            <TableHead>Last Run Time</TableHead>
-            <TableHead className='w-[150px]'>Actions</TableHead>
+            <TableHead>Schedule Title</TableHead>
+            <TableHead className='w-[250px]'>Owner</TableHead>
+            <TableHead className='w-[100px]'>Interval</TableHead>
+            <TableHead className='w-[200px]'>Last Run</TableHead>
+            <TableHead className='w-[200px]'>Last Run Time</TableHead>
+            <TableHead className='w-[250px]'>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
