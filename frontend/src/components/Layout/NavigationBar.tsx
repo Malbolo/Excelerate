@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { useGetUserInfoAPI } from '@/apis/auth';
+import logo from '@/assets/images/logo.png';
 import { Button } from '@/components/ui/button';
 import useInternalRouter from '@/hooks/useInternalRouter';
 import { cn } from '@/lib/utils';
@@ -48,8 +49,10 @@ const NavigationBar = () => {
   };
 
   return (
-    <nav className='flex h-full min-w-60 shrink-0 flex-col bg-[#F5F5F5] py-6'>
-      <div className='mt-9 mb-15 text-center text-2xl'>Samsung</div>
+    <nav className='flex h-full min-w-60 shrink-0 flex-col border-r bg-[#F5F5F5] pt-6 pb-2'>
+      <div className='mt-9 mb-15 flex justify-center'>
+        <img src={logo} alt='Samsung Logo' width={150} height={23} />
+      </div>
 
       <ul className='flex grow flex-col'>
         {navMenu.map(({ label, to, basePath }) => {
@@ -69,7 +72,7 @@ const NavigationBar = () => {
             <Link key={to} to={to}>
               <li
                 className={cn(
-                  'block w-full p-6 text-[20px] font-bold transition-colors duration-150 ease-in-out hover:bg-gray-200', // 호버 효과 추가 (선택 사항)
+                  'block w-full px-4 py-6 font-["Pretendard-Bold"] text-[20px] transition-colors duration-150 ease-in-out hover:bg-gray-200',
                   isActive
                     ? 'bg-[#034EA2] text-[#ffffff] hover:bg-[#023a81]'
                     : 'text-gray-700',
@@ -82,7 +85,7 @@ const NavigationBar = () => {
         })}
       </ul>
 
-      <div className='mt-auto border-t border-gray-300 p-4'>
+      <div className='mt-auto border-gray-300 p-4'>
         {name ? (
           <div className='flex flex-col items-center gap-3'>
             <span className='text-sm font-medium text-gray-800'>
