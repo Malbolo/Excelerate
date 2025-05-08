@@ -11,15 +11,13 @@ from app.core import auth
 from app.utils.redis_client import generate_log_id, save_logs_to_redis, save_states_to_redis, get_states_from_redis
 from uuid import uuid4
 
-from app.services.code_gen.merge_utils import merge_code_snippets
-
 router = APIRouter()
 docs = CodeGenDocs()
 
 # FastAPI 엔드포인트: 사용자의 질의를 받고 graph를 통해 답변 생성
 @router.post("/generate")
 async def command_code(
-    req = Request,
+    req: Request,
     request: CommandRequest = docs.base["data"],
     code_gen: CodeGenerator = Depends(get_code_gen)
 ):
@@ -28,9 +26,8 @@ async def command_code(
 
         query = make_initial_query(request.url, request.command_list)
 
-        try:
-            user_id = auth.get_user_id_from_header(req)
-        except:
+        user_id = auth.get_user_id_from_header(req) 
+        if user_id is None:
             user_id = "guest"
 
         if request.uid:
@@ -56,7 +53,10 @@ async def command_code(
         # logs는 redis에 따로 저장하는 것을 고려
         # log_id = generate_log_id(user_id)
         log_id = f"logs:{user_id}:{uid}"
-        save_logs_to_redis(log_id, answer["logs"])
+        save_logs_to_redis(log_id, answer["logs"], metadata={
+            "agent_name":  "Code Generetor",
+            "log_detail":  "코드를 생성합니다."
+        })
 
         session_id = f"sessions:{user_id}:{uid}"
         save_states_to_redis(session_id, answer)

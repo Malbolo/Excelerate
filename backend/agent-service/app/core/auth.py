@@ -1,10 +1,12 @@
 from fastapi import Request, HTTPException
 import requests
 
-def get_user_id_from_header(request: Request) -> str:
+def get_user_id_from_header(request: Request) -> str | None:
     user_id = request.headers.get("x-user-id")
     try:
-        return str(user_id)
+        if not user_id:
+            return None
+        return user_id
     except (TypeError, ValueError):
         raise HTTPException(status_code=400, detail="Invalid x-user-id header")
 
