@@ -45,8 +45,8 @@ const JobPagination: React.FC = () => {
       <section className='flex flex-1 flex-col gap-4'>
         {jobs.map(job => (
           <Card
-            key={job.jobId}
-            onClick={() => push(`/agent-monitoring/job/${job.jobId}`)}
+            key={job.id}
+            onClick={() => push(`/agent-monitoring/job/${job.id}`)}
             className='cursor-pointer p-5'
           >
             <CardHeader>
@@ -54,8 +54,8 @@ const JobPagination: React.FC = () => {
               <CardDescription>{job.description}</CardDescription>
             </CardHeader>
             <CardContent className='flex w-full justify-between'>
-              <p>{job.userName}</p>
-              <p>{job.createdAt}</p>
+              {/* <p>{job.userName}</p>
+              <p>{job.createdAt}</p> */}
             </CardContent>
           </Card>
         ))}

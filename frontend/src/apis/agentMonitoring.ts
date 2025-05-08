@@ -2,7 +2,8 @@ import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 
 import { api } from '@/apis/core';
 import { TLog } from '@/types/agent';
-import { Job } from '@/types/scheduler';
+
+import { JobResponse } from './jobManagement';
 
 interface GetJobListRequest {
   name: string;
@@ -13,7 +14,7 @@ interface GetJobListRequest {
 }
 
 interface GetJobListResponse {
-  jobs: Job[];
+  jobs: JobResponse[];
   page: number;
   size: number;
   total: number;
