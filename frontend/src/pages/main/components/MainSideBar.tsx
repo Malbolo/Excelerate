@@ -58,7 +58,7 @@ const DataPanel = memo<{
 
   if (!data)
     return (
-      <div className='border-border flex h-full items-center justify-center border bg-white p-2'>
+      <div className='flex h-full items-center justify-center border bg-white p-2'>
         No data
       </div>
     );
@@ -98,13 +98,13 @@ DataPanel.displayName = 'DataPanel';
 const CodePanel: React.FC<{ code: string }> = ({ code }) => {
   if (!code)
     return (
-      <div className='border-border grow border bg-white py-2'>
+      <div className='grow border bg-white py-2'>
         <div className='flex h-full items-center justify-center'>No code</div>
       </div>
     );
 
   return (
-    <div className='border-border grow border bg-white py-2'>
+    <div className='grow border bg-white py-2'>
       <Editor
         defaultLanguage='python'
         defaultValue={code}
@@ -123,13 +123,13 @@ const TracePanel: React.FC<{ logId: string }> = ({ logId }) => {
 
   if (!logId)
     return (
-      <div className='border-border grow border bg-white py-2'>
+      <div className='grow border bg-white py-2'>
         <div className='flex h-full items-center justify-center'>No Log</div>
       </div>
     );
 
   return (
-    <div className='border-border grow overflow-auto border bg-white p-4'>
+    <div className='grow overflow-auto border bg-white p-4'>
       <LLMGraph jobName='Current Job' logs={logs ?? []} />
     </div>
   );
