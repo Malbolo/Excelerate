@@ -11,36 +11,14 @@ from app.schemas import job_detail_schema, job_list_schema
 from app.schemas.job_create_schema import JobCreateRequest
 from app.schemas.job_detail_schema import JobDetailResponse
 from app.schemas.job_update_schema import JobUpdateRequest
+from app.core import auth
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def get_user_info(user_id: int):
-    url = "http://user-service.user-service.svc.cluster.local:8080/api/users/me/profile"
-    headers = {
-        "x-user-id": str(user_id)
-    }
-
-    response = requests.get(url, headers=headers)
-    logger.info(response.json())
-
-    if response.status_code == 200:
-        user_data = response.json()
-        name = user_data.get("data").get("name")
-        department = user_data.get("data").get("department")
-        role = user_data.get("data").get("role")
-
-        return {
-            "name": name,
-            "department": department,
-            "role": role
-        }
-    else:
-        return None
-
 async def create_job(request: JobCreateRequest, user_id: int, db: Session) -> JSONResponse:
     try:
-        user_info = get_user_info(user_id)
+        user_info = auth.get_user_info(user_id)
 
         await crud.create_job(db, request, user_id, user_info.get("name"), user_info.get("department"))
         return JSONResponse(status_code=200, content={"message": "Job이 생성되었습니다."})
@@ -68,7 +46,7 @@ def get_filtered_query(db: Session, mine: bool, name: Optional[str], dep: Option
     if mine:
         query = query.filter(models.Job.user_id == user_id)
     else:
-        user_info = get_user_info(user_id)
+        user_info = auth.get_user_info(user_id)
         if user_info is None or user_info.get("role") != "ADMIN":
             raise HTTPException(
                 status_code=403,
