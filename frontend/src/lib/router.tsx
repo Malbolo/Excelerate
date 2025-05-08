@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 
 import { createBrowserRouter } from 'react-router-dom';
 
+import ErrorBoundary from '@/components/ErrorBoundary';
 import Layout from '@/components/Layout/Layout';
 import MainPage from '@/pages';
 import AgentMonitoringPage from '@/pages/agentMonitoring';
@@ -25,6 +26,7 @@ const routes = [
         </Suspense>
       </Layout>
     ),
+    errorElement: <ErrorBoundary />,
     name: 'Main',
   },
   {
@@ -36,6 +38,7 @@ const routes = [
         </Suspense>
       </Layout>
     ),
+    errorElement: <ErrorBoundary />,
     name: 'AgentMonitoring',
   },
   {
@@ -47,6 +50,7 @@ const routes = [
         </Suspense>
       </Layout>
     ),
+    errorElement: <ErrorBoundary />,
     name: 'JobManagement',
   },
   {
@@ -58,6 +62,7 @@ const routes = [
         </Suspense>
       </Layout>
     ),
+    errorElement: <ErrorBoundary />,
     name: 'PlayGround',
   },
   {
@@ -72,6 +77,7 @@ const routes = [
             </Suspense>
           </Layout>
         ),
+        errorElement: <ErrorBoundary />,
       },
     ],
   },
@@ -84,6 +90,7 @@ const routes = [
         </Suspense>
       </Layout>
     ),
+    errorElement: <ErrorBoundary />,
     name: 'SchedulerMonitoring',
   },
   {
@@ -95,6 +102,7 @@ const routes = [
         </Suspense>
       </Layout>
     ),
+    errorElement: <ErrorBoundary />,
     name: 'SchedulerMonitoring',
   },
   {
@@ -106,6 +114,7 @@ const routes = [
         </Suspense>
       </Layout>
     ),
+    errorElement: <ErrorBoundary />,
     name: 'CreateScheduler',
   },
   {
@@ -117,6 +126,7 @@ const routes = [
         </Suspense>
       </Layout>
     ),
+    errorElement: <ErrorBoundary />,
     name: 'SchedulerList',
   },
   {
@@ -128,6 +138,7 @@ const routes = [
         </Suspense>
       </Layout>
     ),
+    errorElement: <ErrorBoundary />,
     name: 'CreateScheduler',
   },
   {
@@ -139,6 +150,7 @@ const routes = [
         </Suspense>
       </Layout>
     ),
+    errorElement: <ErrorBoundary />,
     name: 'JobAgentMonitoring',
   },
   {
@@ -150,6 +162,7 @@ const routes = [
         </Suspense>
       </Layout>
     ),
+    errorElement: <ErrorBoundary />,
     name: 'Auth',
   },
 ];
