@@ -54,7 +54,7 @@ def get_filtered_query(db: Session, mine: bool, name: Optional[str], dep: Option
             )
 
         if name:
-            query = query.filter(models.Job.user_name == name)
+            query = query.filter(models.Job.user_name.ilike(f"%{name}%"))
 
         if dep:
             query = query.filter(models.Job.user_department == dep)
