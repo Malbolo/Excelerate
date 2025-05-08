@@ -21,6 +21,8 @@ export interface JobResponse {
   data_load_url: string;
   commands: CommandResponse[];
   code: string;
+  user_name?: string;
+  created_at?: string;
 }
 
 interface JobListResponse {

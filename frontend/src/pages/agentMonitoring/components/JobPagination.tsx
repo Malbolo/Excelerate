@@ -54,8 +54,8 @@ const JobPagination: React.FC = () => {
               <CardDescription>{job.description}</CardDescription>
             </CardHeader>
             <CardContent className='flex w-full justify-between'>
-              {/* <p>{job.userName}</p>
-              <p>{job.createdAt}</p> */}
+              <p>{job.user_name}</p>
+              <p>{job.created_at}</p>
             </CardContent>
           </Card>
         ))}
