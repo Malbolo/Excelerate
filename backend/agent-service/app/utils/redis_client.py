@@ -10,19 +10,11 @@ from app.core.config import settings
 
 redis_client = redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB, decode_responses=True)
 
-def generate_log_id(user_name: str) -> str:
+def generate_log_id(user_name: str, uid: str = None) -> str:
     # timestamp = datetime.now(ZoneInfo("Asia/Seoul")).isoformat(timespec="seconds")
-    return f"logs:{user_name}:{uuid4().hex}"
-
-# def save_logs_to_redis(log_id: str, logs: list[LogDetail], ttl_minutes: int = 60*24*7): # 1주 보관
-#     logs_json = json.dumps([log.model_dump(mode="json") for log in logs])
-#     redis_client.setex(log_id, timedelta(minutes=ttl_minutes), logs_json)
-
-# def get_logs_from_redis(log_id: str) -> list[dict] | None:
-#     data = redis_client.get(log_id)
-#     if data:
-#         return json.loads(data)
-#     return None
+    if uid:
+        return f"logs:{user_name}:{uid}" # uid 명시할 경우 그걸로 저장
+    return f"logs:{user_name}:{uuid4().hex}" # 없으면 생성해주며 저장
 
 def save_logs_to_redis(log_id: str, logs: list[LogDetail], metadata: dict | None = None, ttl_minutes: int = 60*24*7): # 1주 보관
     meta = metadata.copy() if metadata else {}

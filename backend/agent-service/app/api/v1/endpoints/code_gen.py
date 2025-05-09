@@ -62,7 +62,7 @@ async def command_code(
                 user_name = "guest"
         except:
             user_name = "guest"
-        log_id = generate_log_id(user_name)
+        log_id = generate_log_id(user_name, uid)
         
         save_logs_to_redis(log_id, answer["logs"], metadata={
             "agent_name":  "Code Generetor",
