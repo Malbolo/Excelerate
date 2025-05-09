@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel
 
 class JobCreateRequest(BaseModel):
@@ -10,6 +10,10 @@ class JobCreateRequest(BaseModel):
     commands: List[str]
     code: str
 
+class JobCreateResponseData(BaseModel):
+    job_id: str
+    created_at: str
+
 class JobCreateResponse(BaseModel):
     result: str
-    data : dict
+    data : Optional[JobCreateResponseData]

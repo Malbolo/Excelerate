@@ -1,5 +1,25 @@
-from typing import List
+from fastapi import Query
+from typing import List, Optional
 from pydantic import BaseModel
+
+class JobDetailRequest:
+    def __init__(
+        self,
+        mine: bool = Query(...),
+        name: Optional[str] = Query(None),
+        dep: Optional[str] = Query(None),
+        type: Optional[str] = Query(None),
+        page: Optional[int] = Query(None, ge=1),
+        size: Optional[int] = Query(None, ge=1),
+        title: Optional[str] = Query(None),
+    ):
+        self.mine = mine
+        self.name = name
+        self.dep = dep
+        self.type = type
+        self.page = page
+        self.size = size
+        self.title = title
 
 class CommandSchema(BaseModel):
     content: str
@@ -19,7 +39,7 @@ class JobDetailSchema(BaseModel):
 
 class JobDetailResponse(BaseModel):
     result: str
-    data: JobDetailSchema
+    data: Optional[JobDetailSchema]
 
 def create_job_detail_schema(job):
     return JobDetailSchema(
