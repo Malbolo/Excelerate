@@ -49,8 +49,8 @@ class CodeGenerator:
         self.logger = MemoryLogger()
         self.minio_client = MinioClient()
         self.cllm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0, callbacks=[self.logger])
-        self.llm = ChatOpenAI(model_name="gpt-4o", temperature=0, callbacks=[self.logger])
-        self.sllm = ChatOpenAI(model_name="gpt-4.1-nano", temperature=0, callbacks=[self.logger])
+        self.llm = ChatOpenAI(model_name="gpt-4.1-nano", temperature=0, callbacks=[self.logger])
+        self.sllm = ChatOpenAI(model_name="gpt-4.1-mini", temperature=0, callbacks=[self.logger])
 
     def classify_and_group(self, state: AgentState) -> AgentState:
         """
@@ -121,6 +121,11 @@ class CodeGenerator:
         # 로깅 추출
         llm_entry = self.logger.get_logs()[-1] if self.logger.get_logs() else None
         new_logs  = state.get("logs", []) + ([llm_entry] if llm_entry else [])
+
+        # stream_id로 쏘기
+        if llm_entry:
+            q = get_log_queue(state["stream_id"])
+            q.put_nowait(llm_entry)
 
         # State 업데이트
         return {
@@ -226,6 +231,8 @@ class CodeGenerator:
         code_str = state["python_code"]
         df = state["dataframe"][-1]
 
+        commands = state["command_list"]
+
         fence_pattern = re.compile(r"```(?:python)?\n([\s\S]*?)```", re.IGNORECASE)
         m = fence_pattern.search(code_str)
         code_body = m.group(1) if m else code_str
@@ -237,8 +244,7 @@ class CodeGenerator:
             compiled = compile(code_body, "<user_code>", "exec")
             exec(compiled, namespace)
         except Exception as e:
-            # 위치 인자로만 stage를 넘김
-            return extract_error_info(e, code_body, "exec")
+            return extract_error_info(e, code_body, "exec", commands)
 
         # 2) invoke 단계 → 스크립트 실행 직후 intermediate 변수에서 결과 목록 추출
         try:
@@ -247,7 +253,7 @@ class CodeGenerator:
             if not isinstance(dfs, list):
                 raise ValueError("`intermediate` 리스트가 없습니다.")
         except Exception as e:
-            return extract_error_info(e, code_body, "invoke")
+            return extract_error_info(e, code_body, "invoke", commands)
         
         # 3) dataframes와 codes 갱신
         new_dataframes = state.get("dataframe", []) + dfs

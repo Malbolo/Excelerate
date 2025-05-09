@@ -15,20 +15,22 @@ def make_code_template() -> ChatPromptTemplate:
     # 3) 휴먼 메시지: start_date, end_date 변수를 받아 df 필터링 함수 코드를 만들어 달라는 요청
     human_template = HumanMessagePromptTemplate.from_template(
         """
-사용자의 요청에 따라 pandas DataFrame(`df`)을 단계별로 변형하는 **직접 실행 가능한 스크립트**를 작성하세요.
+사용자의 요청 리스트에 따라 pandas DataFrame(`df`)을 변형하는 **직접 실행 가능한 스크립트**를 작성하세요.
 - 시작 시 `intermediate = []` 로 빈 리스트를 만들고,
+- 사용자의 각 요청에 맞게 df를 변형하는 코드를 작성하고, 해당 코드 위에 주석으로 해당 요청을 표시하세요.
 - 각 변형 결과마다 `intermediate.append(…)` 를 호출하세요.
-- 각 변형 결과를 다음 단계의 dataframe으로 사용하세요
-- 전체 코드 마지막에 `df = intermediate[-1]`로 df에 최종 결과를 대입하세요
+- 각 변형 결과를 다음 단계의 dataframe으로 사용하세요.
+- 전체 코드 마지막에 `df = intermediate[-1]`로 df에 최종 결과를 대입하세요.
+- 사용자가 요청하지 않은 작업은 하지 마세요.
 
-함수 정의(`def …`)나 `return` 문은 쓰지 마세요.
+import문이나 함수 정의(`def …`)나 `return` 문은 쓰지 마세요.
 
 주어진 DataFrame의 컬럼 타입 정보:
 {dftypes}
 주어진 DataFrame 상위 5행:
 {df}
 
-설명 없이 오직 코드만 작성해 주세요.
+마크다운과 설명 없이 오직 코드만 작성해 주세요.
 
 사용자 요청:
 {input}
@@ -63,6 +65,7 @@ def make_classify_template() -> ChatPromptTemplate:
 - 연속된 df 명령은 하나의 그룹으로 묶어, JSON 배열 하나의 요소로 'command'에 넣고 'type'을 'df'로 지정하세요.
 - excel 명령은 하나의 커맨드를 'command'에 넣고 'type'을 'excel'로 지정하세요.
 - 각 요소는 반드시 {{'command': '...', 'type': '...'}} 형태의 JSON 객체여야 합니다.
+- 사용자 명령어의 순서를 반드시 유지하세요. ( df, excel, df 순으로 명령어가 들어올 수 있습니다. )
 """
 )
 
@@ -177,46 +180,61 @@ with TemporaryDirectory() as workdir:
             )
     ])
 
-def extract_error_info(exc: Exception, code_body: str, stage: str ) -> dict:
+def extract_error_info(exc: Exception, code_body: str, stage: str, commands: list[str]) -> dict:
     """
     Exception과 원본 코드 문자열, 실패 단계를 받아서
-    해당 번호 블록(# n.)부터 에러 라인까지의 snippet을 반환합니다.
+    빈 줄을 블록 구분자로 사용해, 해당 블록 시작(가장 가까운 빈 줄 이후)부터
+    에러 라인까지의 snippet과, 블록 시작 주석을 command로 추출합니다.
     """
+    # 1) traceback에서 마지막 프레임 정보 추출
     tb_last = traceback.extract_tb(exc.__traceback__)[-1]
     raw_lineno = tb_last.lineno
 
-    # 1) code_body를 줄 단위로 분리
+    # 2) 코드 본문을 줄 단위로 분리
     lines = code_body.splitlines()
     total = len(lines)
 
-    # 2) 실제 접근 가능한 index로 clamp (에러 방지)
-    #    (1-based lineno → 0-based idx)
+    # 3) 1-based lineno → 0-based index로 변환, 범위 clamp
     err_idx = min(raw_lineno - 1, total - 1)
 
-    # 3) 블록 시작 주석 찾기
-    comment_pattern = re.compile(r"\s*#\s*(\d+)\.")
+    # 4) 블록 시작 찾기: err_idx 바로 위부터 검색해 최초의 빈 줄 이후를 블록 시작으로
     block_start = 0
-    for idx in range(err_idx, -1, -1):
-        if comment_pattern.search(lines[idx]):
-            block_start = idx
+    for idx in range(err_idx - 1, -1, -1):
+        if lines[idx].strip() == "":
+            block_start = idx + 1
             break
 
-    # 4) snippet 생성 (block_start 부터 err_idx 까지)
+    # 5) 블록 시작 줄(주석)에서 command 추출
+    #    예: "# defect_rate가 1 이상인 데이터만 필터링 해주세요."
+    raw_comment = lines[block_start].lstrip()
+    if raw_comment.startswith("#"):
+        command = raw_comment[1:].strip()
+    else:
+        command = ""
+    
+    # 6) command_index 찾기
+    try:
+        command_index = commands.index(command)
+    except ValueError:
+        command_index = None  # 리스트에 없으면 None
+
+    # 7) snippet 생성 (block_start 부터 err_idx 까지)
     snippet_lines = []
     for i in range(block_start, err_idx + 1):
         text = lines[i].rstrip()
         prefix = "→" if i == err_idx else "  "
         snippet_lines.append(f"{prefix} {i+1:4d}: {text}")
-
     snippet = "\n".join(snippet_lines)
 
     return {
         "error_msg": {
-            "stage":   stage,
-            "message": str(exc),
-            "file":    tb_last.filename,
-            "line":    raw_lineno,
-            "code":    snippet,
+            "stage":    stage,
+            "message":  str(exc),
+            "file":     tb_last.filename,
+            "line":     raw_lineno,
+            "command":  command,
+            "command_index": command_index,
+            "code":     snippet,
         }
     }
 
