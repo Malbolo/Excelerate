@@ -1,25 +1,14 @@
 from fastapi import HTTPException
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 from datetime import datetime
 from app.models import models
 from app.models.models import JobCommand, Job
-from app.schemas.job_create_schema import JobCreateRequest
-from app.schemas.job_update_schema import JobUpdateRequest
+from app.schemas.job.job_create_schema import JobCreateRequest
+from app.schemas.job.job_update_schema import JobUpdateRequest
 
 
 async def create_job(db: Session, job: JobCreateRequest, user_id: int, user_name: str, department: str):
-    db_job = models.Job(
-        user_id=user_id,
-        user_name=user_name,
-        user_department=department,
-        type=job.type,
-        title=job.title,
-        description=job.description,
-        data_load_command=job.data_load_command,
-        data_load_url=job.data_load_url,
-        code=job.code
-    )
+    db_job = models.Job.create(job, user_id, user_name, department)
     db.add(db_job)
     db.flush()
     for idx, command in enumerate(job.commands):
@@ -29,6 +18,8 @@ async def create_job(db: Session, job: JobCreateRequest, user_id: int, user_name
     db.refresh(db_job)
     return db_job
 
+def get_job_detail_by_id(db: Session, job_id: str):
+    return db.query(models.Job).filter(models.Job.id == job_id).one()
 
 def update_job(db: Session, job_id: int, job_request: JobUpdateRequest, user_id: int):
     job = db.query(Job).filter(Job.id == job_id, Job.user_id == user_id).first()

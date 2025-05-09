@@ -2,6 +2,8 @@ from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, func
 from sqlalchemy.dialects.mysql import LONGTEXT
 from sqlalchemy.orm import relationship
 from app.db.database import Base
+from app.schemas.job.job_create_schema import JobCreateRequest
+
 
 class Job(Base):
     __tablename__ = "jobs"
@@ -10,24 +12,37 @@ class Job(Base):
     user_id = Column(Integer, nullable=False)
     user_name = Column(String, nullable=False)
     user_department = Column(String, nullable=False)
-    type = Column(String(50))
-    title = Column(String(100))
-    description = Column(Text)
-    data_load_command = Column(Text)
-    data_load_url = Column(String(255))
-    code = Column(LONGTEXT)
+    type = Column(String(50), nullable=False)
+    title = Column(String(100), nullable=False)
+    description = Column(Text, nullable=False)
+    data_load_command = Column(Text, nullable=False)
+    data_load_url = Column(String(255), nullable=False)
+    code = Column(LONGTEXT, nullable=False)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     commands = relationship("JobCommand", back_populates="job", cascade="all, delete")
 
+    @classmethod
+    def create(cls, job: JobCreateRequest, user_id: int, user_name: str, department: str):
+        return Job(
+        user_id=user_id,
+        user_name=user_name,
+        user_department=department,
+        type=job.type,
+        title=job.title,
+        description=job.description,
+        data_load_command=job.data_load_command,
+        data_load_url=job.data_load_url,
+        code=job.code
+    )
 
 class JobCommand(Base):
     __tablename__ = "job_commands"
 
     id = Column(Integer, primary_key=True, index=True)
     job_id = Column(Integer, ForeignKey("jobs.id", ondelete="CASCADE"))
-    content = Column(Text)
-    order = Column(Integer)
+    content = Column(Text, nullable=False)
+    order = Column(Integer, nullable=False)
 
     job = relationship("Job", back_populates="commands")
