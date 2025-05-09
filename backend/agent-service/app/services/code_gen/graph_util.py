@@ -19,6 +19,7 @@ def make_code_template() -> ChatPromptTemplate:
 - 시작 시 `intermediate = []` 로 빈 리스트를 만들고,
 - 각 변형 결과마다 `intermediate.append(…)` 를 호출하세요.
 - 각 변형 결과를 다음 단계의 dataframe으로 사용하세요
+- 전체 코드 마지막에 `df = intermediate[-1]`로 df에 최종 결과를 대입하세요
 
 함수 정의(`def …`)나 `return` 문은 쓰지 마세요.
 
@@ -55,10 +56,15 @@ def make_classify_template() -> ChatPromptTemplate:
     """
     # 시스템 메시지: 분류 규칙 정의
     system = SystemMessagePromptTemplate.from_template(
-        "당신은 사용자 명령어를 'df'와 'excel'로 분류하는 전문가입니다. "
-        "연속된 df 명령은 그룹으로 묶고, 엑셀 파일을 직접 조작해야 하는 '템플릿'(또는 'template')이 포함된 명령은 'excel'로 분류하세요. "
-        "각 결과는 'command'(문자열)와 'type'('df' 또는 'excel')을 가진 JSON 객체 배열로 반환해야 합니다."
-    )
+    """
+당신은 사용자 명령어를 'df'와 'excel'로 분류하는 전문가입니다.
+- '템플릿' 또는 'template'이라는 단어가 들어있는 명령만 'excel'로 분류하세요.
+- 그 외 모든 명령은 반드시 'df'로 분류합니다.
+- 연속된 df 명령은 하나의 그룹으로 묶어, JSON 배열 하나의 요소로 'command'에 넣고 'type'을 'df'로 지정하세요.
+- excel 명령은 하나의 커맨드를 'command'에 넣고 'type'을 'excel'로 지정하세요.
+- 각 요소는 반드시 {{'command': '...', 'type': '...'}} 형태의 JSON 객체여야 합니다.
+"""
+)
 
     # 예시 1: 두 개의 df 연속 → 그룹, excel 단일
     example_h1 = HumanMessagePromptTemplate.from_template(
@@ -71,12 +77,10 @@ def make_classify_template() -> ChatPromptTemplate:
 
     # 예시 2: excel 먼저 → 두 개 df 그룹 → excel
     example_h2 = HumanMessagePromptTemplate.from_template(
-        '["Report_template 다운로드", "데이터 정렬", "값 범위 필터링", "결과 저장"]'
+        '["A가 B인 것만 남겨", "B 컬럼 제거해줘", "C가 5 이상인 것만 필터링해"]'
     )
     example_a2 = AIMessagePromptTemplate.from_template(
-        '[{{"command":"Report_template 다운로드","type":"excel"}},'
-        '{{"command":"[\\"데이터 정렬\\",\\"값 범위 필터링\\"]","type":"df"}},'
-        '{{"command":"결과 저장","type":"excel"}}]'
+        '[{{"command":"[\\"A가 B인 것만 남겨\\",\\"B 컬럼 제거해줘\\",\\"C가 5 이상인 것만 필터링해\\"]","type":"df"}}]'
     )
 
     # 사용자 입력 바인딩
@@ -90,11 +94,14 @@ def make_classify_template() -> ChatPromptTemplate:
         user
     ])
 
+## 추 후 다양한 기능을(단순 불러오기, dataframe 치환, 다중 저장 등) 수행시키고 싶다면 해당 템플릿을 사용해 엑셀 코드를 생성하도록 수정해야 할 것
 def make_excel_template() -> ChatPromptTemplate:
     """
     openpyxl을 활용해 기존 .xlsx 파일에 DataFrame을 지정된 위치에 삽입
     - 항상 keep_vba=False
     - few-shot 예시 2개 포함
+    insert_df_to_excel에 해당 코드 포함되어 있음
+    불러와 바로 실행 가능한 코드로 생성성
     """
     return ChatPromptTemplate.from_messages([
         # 시스템 메시지: 역할 명세
@@ -105,29 +112,31 @@ def make_excel_template() -> ChatPromptTemplate:
 
         # 1번째 페어: 기본 B2 삽입 예시
         HumanMessagePromptTemplate.from_template(
-            "템플릿 template.xlsx 의 B2 위치부터 dataframe을 삽입 후 `out1.xlsx` 로 저장:\n"
+            "템플릿 EOE 의 B2 위치부터 dataframe을 삽입 후 out1으로 저장:\n"
             "{'Name':['Alice','Bob'], 'Score':[85,92]}"
         ),
         AIMessagePromptTemplate.from_template(
             """```python
-from openpyxl import load_workbook
+from tempfile import TemporaryDirectory
+import os
+import pandas as pd
+from app.services.code_gen.graph_util import insert_df_to_excel
+from app.utils.minio_client import MinioClient
 
-def excel_insert(df, input_path, output_path, start_row=2, start_col=2):
-    # 1) 워크북 로드 (keep_vba=False)
-    wb = load_workbook(input_path)
-    ws = wb.active
-
-    # 2) 헤더 삽입
-    for j, col in enumerate(df.columns, start=start_col):
-        ws.cell(row=start_row, column=j, value=col)
-
-    # 3) 데이터 삽입
-    for i, row in enumerate(df.itertuples(index=False), start=start_row+1):
-        for j, val in enumerate(row, start=start_col):
-            ws.cell(row=i, column=j, value=val)
-
-    # 4) 저장
-    wb.save(output_path)
+# 테스트 템플릿에 처리된 dataframe 붙여넣기
+minio = MinioClient()
+with TemporaryDirectory() as workdir:
+    tpl = os.path.join(workdir, "report.xlsx")
+    out = os.path.join(workdir, "report_result.xlsx")
+    # 다운로드
+    minio.download_template("EOE", tpl)
+    # 삽입
+    insert_df_to_excel(df, tpl, out,
+                    sheet_name=None,
+                    start_row=2,
+                    start_col=2)
+    # 업로드
+    minio.upload_result("auto", "out1", out)
 ```"""
         ),
 
@@ -137,27 +146,28 @@ def excel_insert(df, input_path, output_path, start_row=2, start_col=2):
             "{'Item':['X','Y','Z'], 'Value':[10,20,30]}"
         ),
         AIMessagePromptTemplate.from_template(
-            """```python
-from openpyxl import load_workbook
+            """
+from tempfile import TemporaryDirectory
+import os
+import pandas as pd
+from app.services.code_gen.graph_util import insert_df_to_excel
+from app.utils.minio_client import MinioClient
 
-def excel_insert(df, input_path, output_path=None, start_row=5, start_col=3):
-    # 1) 워크북 로드 (keep_vba=False)
-    wb = load_workbook(input_path)
-    ws = wb.active
-
-    # 2) 헤더 삽입
-    for j, col in enumerate(df.columns, start=start_col):
-        ws.cell(row=start_row, column=j, value=col)
-
-    # 3) 데이터 삽입
-    for i, row in enumerate(df.itertuples(index=False), start=start_row+1):
-        for j, val in enumerate(row, start=start_col):
-            ws.cell(row=i, column=j, value=val)
-
-    # 4) 동일 파일 덮어쓰기
-    save_path = output_path or input_path
-    wb.save(save_path)
-```"""
+# 테스트 템플릿에 처리된 dataframe 붙여넣기
+minio = MinioClient()
+with TemporaryDirectory() as workdir:
+    tpl = os.path.join(workdir, "report.xlsx")
+    out = os.path.join(workdir, "report_result.xlsx")
+    # 다운로드
+    minio.download_template("report.xlsx", tpl)
+    # 삽입
+    insert_df_to_excel(df, tpl, out,
+                    sheet_name=None,
+                    start_row=5,
+                    start_col=3)
+    # 업로드
+    minio.upload_result("auto", "report.xlsx", out)
+"""
         ),
 
         # 실제 사용자 요청
@@ -212,23 +222,22 @@ def extract_error_info(exc: Exception, code_body: str, stage: str ) -> dict:
 
 def make_extract_excel_params_template() -> ChatPromptTemplate:
     system = SystemMessagePromptTemplate.from_template(
-        "사용자 명령어에서 엑셀 템플릿 이름, 시트 이름(선택), 삽입 시작 위치, 결과 파일명을"
-        " JSON으로 추출해 주세요."
-    )
-    example_h = HumanMessagePromptTemplate.from_template(
-        "\"KPIreport 템플릿을 불러와서 3열 4행부터 데이터를 꽉 차게 삽입한 뒤 KPI_결과.xlsx로 저장해줘\""
-    )
-    example_a = AIMessagePromptTemplate.from_template(
-        "{{\n"
-        "  \"template_name\": \"KPIreport\",\n"
-        "  \"sheet_name\": null,\n"
-        "  \"start_row\": 4,\n"
-        "  \"start_col\": 3,\n"
-        "  \"output_name\": \"KPI_결과.xlsx\"\n"
-        "}}"
-    )
+    """
+사용자 명령어에서 엑셀 템플릿 이름, 시트 이름(선택), 삽입 시작 위치, 결과 파일명을 JSON으로 추출해 주세요.
+
+예시)
+"KPIreport 템플릿을 불러와서 3열 4행부터 데이터를 꽉 차게 삽입한 뒤 KPI_결과.xlsx로 저장해줘"
+{{
+  "template_name": "KPIreport",
+  "sheet_name": null,
+  "start_row": 4,
+  "start_col": 3,
+  "output_name": "KPI_결과.xlsx"
+}}
+"""
+)
     user = HumanMessagePromptTemplate.from_template("{command}")
-    return ChatPromptTemplate.from_messages([system, example_h, example_a, user])
+    return ChatPromptTemplate.from_messages([system, user])
 
 def insert_df_to_excel(df: pd.DataFrame,
                        input_path: str,
