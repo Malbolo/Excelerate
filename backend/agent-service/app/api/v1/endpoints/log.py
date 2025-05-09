@@ -109,11 +109,13 @@ async def list_user_logs(
 
     return JSONResponse({
         "result": "success",
-        "data":   data,
-        "page":  page,
-        "size":  len(data),
-        "total": total,
-        "pages": pages
+        "data":   {
+            "logs": data,
+            "page":  page,
+            "size":  len(data),
+            "total": total,
+            "pages": pages
+        }
     })
 
 @router.get("/stream/{stream_id}")
