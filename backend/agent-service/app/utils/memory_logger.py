@@ -13,6 +13,7 @@ class MemoryLogger(BaseCallbackHandler):
         self.logs: List[LogDetail] = []
         self.current_name: Optional[str] = None
         self._last_prompts: Optional[List[str]] = None
+        self._start_time: Optional[datetime] = None
 
     @staticmethod
     def _parse_role_messages(text: str) -> List[dict]:
@@ -44,21 +45,35 @@ class MemoryLogger(BaseCallbackHandler):
     def on_llm_start(self, serialized, prompts, **kwargs):
         """LLM 호출 전 입력 프롬프트 저장"""
         self._last_prompts = prompts
+        self._start_time = datetime.now(ZoneInfo("Asia/Seoul"))
 
     def on_llm_end(self, response, **kwargs):
-        """LLM 응답 후 로그 저장"""
-        now = datetime.now(ZoneInfo("Asia/Seoul"))
+        """LLM 응답 후, 로그를 생성하고 지연(latency)을 메타데이터에 추가합니다."""
+        end_time = datetime.now(ZoneInfo("Asia/Seoul"))
+        # 시작 시간이 기록되어 있으면 지연 계산
+        latency = None
+        if self._start_time:
+            latency = (end_time - self._start_time).total_seconds()
 
+        # 응답 메시지
         gen = response.generations[0][0].message
-        # raw prompt 문자열 가져와 role별 메시지 리스트로 파싱
+        # 마지막 프롬프트 raw 문자열
         raw = self._last_prompts[-1] if self._last_prompts else ""
         parsed = self._parse_role_messages(raw)
+
+        # 기본 메타데이터 가져오기
+        metadata = gen.response_metadata or {}
+        # 지연 정보와 타임스탬프 추가
+        if latency is not None:
+            metadata['llm_latency'] = latency  # seconds
+
+        # 로그 엔트리 생성
         entry = LogDetail(
             name=self.current_name or "<unknown>",
-            input=parsed, # list[dict] 형태로
-            output=[{"role":"ai", "message": gen.content}],  # list[dict]
-            timestamp=now,
-            metadata=gen.response_metadata or {}
+            input=parsed,
+            output=[{"role": "ai", "message": gen.content}],
+            timestamp=end_time,
+            metadata=metadata
         )
         self.logs.append(entry)
 

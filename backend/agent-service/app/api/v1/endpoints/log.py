@@ -94,7 +94,8 @@ async def list_user_logs(
             "agent_name": meta.get("agent_name"),
             "log_detail": meta.get("log_detail"),
             "created_at": created_iso,
-            "log_id":     log_id
+            "log_id":     log_id,
+            "total_latency": meta.get("total_latency")
         })
 
     # 3) 최신순 정렬

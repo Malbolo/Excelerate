@@ -8,6 +8,9 @@ from app.core.config import settings
 from app.utils.redis_client import generate_log_id, save_logs_to_redis
 from app.core import auth
 
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
 router = APIRouter()
 docs = DataDocs()
 data_loader = FileAPIClient()
@@ -19,6 +22,7 @@ async def command_code(
     request: DataRequest = docs.base["data"]
 ):
     try:
+        api_start = datetime.now(ZoneInfo("Asia/Seoul"))
         # 나중엔 Optional이 아닌 필수로 연결하도록 요청
         if request.stream_id:
             stream_id = request.stream_id
@@ -37,9 +41,14 @@ async def command_code(
         except:
             user_name = "guest"
         log_id = generate_log_id(user_name)
+
+        api_end = datetime.now(ZoneInfo("Asia/Seoul"))
+        api_latency = (api_end - api_start).total_seconds()
+
         save_logs_to_redis(log_id, logs, metadata={
             "agent_name":  "Data Loader",
-            "log_detail":  "데이터를 불러옵니다."
+            "log_detail":  "데이터를 불러옵니다.",
+            "total_latency": api_latency
         })
         
         log_id = log_id.split(':')[-1] # 일관성 있게 uid만 반환
