@@ -8,6 +8,9 @@ from app.utils.api_utils import make_initial_query
 from fastapi.encoders import jsonable_encoder
 from app.core import auth
 
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
 from app.utils.redis_client import generate_log_id, save_logs_to_redis, save_states_to_redis, get_states_from_redis
 from uuid import uuid4
 
@@ -22,6 +25,7 @@ async def command_code(
     code_gen: CodeGenerator = Depends(get_code_gen)
 ):
     try:
+        api_start = datetime.now(ZoneInfo("Asia/Seoul"))
         graph = code_gen.build()
 
         # 나중엔 Optional이 아닌 필수로 연결하도록 요청
@@ -63,10 +67,14 @@ async def command_code(
         except:
             user_name = "guest"
         log_id = generate_log_id(user_name, uid)
+
+        api_end = datetime.now(ZoneInfo("Asia/Seoul"))
+        api_latency = (api_end - api_start).total_seconds()
         
         save_logs_to_redis(log_id, answer["logs"], metadata={
             "agent_name":  "Code Generetor",
-            "log_detail":  "코드를 생성합니다."
+            "log_detail":  "코드를 생성합니다.",
+            "total_latency": api_latency
         })
 
         session_id = f"sessions:{user_id}:{uid}"
