@@ -18,7 +18,8 @@ def make_code_template() -> ChatPromptTemplate:
 사용자의 요청에 따라 pandas DataFrame(`df`)을 단계별로 변형하는 **직접 실행 가능한 스크립트**를 작성하세요.
 - 시작 시 `intermediate = []` 로 빈 리스트를 만들고,
 - 각 변형 결과마다 `intermediate.append(…)` 를 호출하세요.
-- 마지막 줄에 `intermediate` 변수만 출력(반환)하도록 해주세요.
+- 각 변형 결과를 다음 단계의 dataframe으로 사용하세요
+
 함수 정의(`def …`)나 `return` 문은 쓰지 마세요.
 
 주어진 DataFrame의 컬럼 타입 정보:
