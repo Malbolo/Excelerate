@@ -26,6 +26,7 @@ from app.models.log import LogDetail
 from app.core.config import settings
 
 from app.services.code_gen.merge_utils import merge_code_snippets
+from app.utils.api_utils import get_log_queue
 
 load_dotenv()
 
@@ -41,6 +42,7 @@ class AgentState(MessagesState):
     error_msg: dict | None
     logs: List[LogDetail]
     download_token: str
+    stream_id: str
 
 class CodeGenerator:
     def __init__(self):
@@ -193,6 +195,11 @@ class CodeGenerator:
         # state 업데이트
         new_logs = state.get("logs", []) + [llm_entry] if llm_entry else state.get("logs", [])
 
+        # stream_id로 쏘기
+        if llm_entry:
+            q = get_log_queue(state["stream_id"])
+            q.put_nowait(llm_entry)
+
         # 응답 메시지를 포함하는 새로운 state를 반환합니다.
         return {'messages': [response], 'python_code': response.content, 'logs': new_logs}
         
@@ -311,6 +318,11 @@ class CodeGenerator:
         llm_entry = self.logger.get_logs()[-1] if self.logger.get_logs() else None
         # state 업데이트
         new_logs = state.get("logs", []) + [llm_entry] if llm_entry else state.get("logs", [])
+
+        # stream_id로 쏘기
+        if llm_entry:
+            q = get_log_queue(state["stream_id"])
+            q.put_nowait(llm_entry)
 
         return {"download_token": token, "error_msg": None, "logs": new_logs, "python_code":merged_code, "python_codes_list": codes}
 

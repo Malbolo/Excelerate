@@ -107,6 +107,7 @@ shellingham
 six
 sniffio
 SQLAlchemy
+sse-starlette
 stack-data
 starlette
 tenacity

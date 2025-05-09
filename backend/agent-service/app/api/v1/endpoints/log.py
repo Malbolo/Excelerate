@@ -5,6 +5,9 @@ from app.utils.dummy import dummy_log
 from typing import Optional
 from datetime import datetime
 
+from app.utils.api_utils import get_log_queue
+from sse_starlette.sse import EventSourceResponse
+
 router = APIRouter()
 
 
@@ -86,3 +89,20 @@ async def list_user_logs(
     )
 
     return JSONResponse(status_code=200, content={"result": "success", "data": out})
+
+@router.get("/stream/{stream_id}")
+async def stream_logs(request: Request, stream_id: str):
+    queue = get_log_queue(stream_id)
+
+    async def event_generator():
+        while True:
+            if await request.is_disconnected():
+                break
+            entry = await queue.get()
+            data_json = entry.model_dump_json()
+            yield {
+                "event": "log",
+                "data": data_json
+            }
+
+    return EventSourceResponse(event_generator())

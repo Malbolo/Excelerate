@@ -19,6 +19,7 @@ from app.utils.memory_logger import MemoryLogger
 
 from app.core.config import settings
 from app.services.data_load.data_util import make_entity_extraction_prompt, make_date_code_template, is_iso_date
+from app.utils.api_utils import get_log_queue
 
 # 로깅 설정
 logger = logging.getLogger(__name__)
@@ -163,9 +164,11 @@ class FileAPIClient:
             query += f"&product_code={q.product_code}"
         return self.base_url + path + query
 
-    def run(self, user_input: str) -> tuple[str, pd.DataFrame, list[LogDetail]]:
+    def run(self, user_input: str, stream_id: str) -> tuple[str, pd.DataFrame, list[LogDetail]]:
         self.mlogger.set_name("LLM Call: Extract DataCall Params")
         self.mlogger.reset()
+
+        q = get_log_queue(stream_id)
 
         python_code = None
 
@@ -183,6 +186,10 @@ class FileAPIClient:
             })
             entities: FileAPIDetail = result
 
+        entity_logs: list[LogDetail] = self.mlogger.get_logs()
+        # 로그 스트리밍
+        q.put_nowait(entity_logs[-1])
+
         # 2) start_date가 ISO 포맷이 아니면 → LLM으로 코드 생성 후 exec
         if not is_iso_date(entities.start_date):
             self.mlogger.set_name("LLM Call: Transfrom Date Param")
@@ -198,7 +205,9 @@ class FileAPIClient:
             entities.start_date = namespace["startdate"]
             python_code = code_snippet
 
-        entity_logs: list[LogDetail] = self.mlogger.get_logs()
+            entity_logs: list[LogDetail] = self.mlogger.get_logs()
+            # 로그 스트리밍
+            q.put_nowait(entity_logs[-1])
 
         # 2) 검증
         self._validate(entities)

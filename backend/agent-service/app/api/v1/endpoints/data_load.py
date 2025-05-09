@@ -19,7 +19,13 @@ async def command_code(
     request: DataRequest = docs.base["data"]
 ):
     try:
-        url, result, logs, code = data_loader.run(request.command)
+        # 나중엔 Optional이 아닌 필수로 연결하도록 요청
+        if request.stream_id:
+            stream_id = request.stream_id
+        else:
+            stream_id = "check" # 확인용 
+
+        url, result, logs, code = data_loader.run(request.command, stream_id)
         user_id = auth.get_user_id_from_header(req) 
         if user_id is None:
             user_id = "guest"
