@@ -19,6 +19,7 @@ def make_code_template() -> ChatPromptTemplate:
 - 시작 시 `intermediate = []` 로 빈 리스트를 만들고,
 - 각 변형 결과마다 `intermediate.append(…)` 를 호출하세요.
 - 각 변형 결과를 다음 단계의 dataframe으로 사용하세요
+- 전체 코드 마지막에 `df = intermediate[-1]`로 df에 최종 결과를 대입하세요
 
 함수 정의(`def …`)나 `return` 문은 쓰지 마세요.
 
@@ -55,10 +56,15 @@ def make_classify_template() -> ChatPromptTemplate:
     """
     # 시스템 메시지: 분류 규칙 정의
     system = SystemMessagePromptTemplate.from_template(
-        "당신은 사용자 명령어를 'df'와 'excel'로 분류하는 전문가입니다. "
-        "연속된 df 명령은 그룹으로 묶고, 엑셀 파일을 직접 조작해야 하는 '템플릿'(또는 'template')이 포함된 명령은 'excel'로 분류하세요. "
-        "각 결과는 'command'(문자열)와 'type'('df' 또는 'excel')을 가진 JSON 객체 배열로 반환해야 합니다."
-    )
+    """
+당신은 사용자 명령어를 'df'와 'excel'로 분류하는 전문가입니다.
+- '템플릿' 또는 'template'이라는 단어가 들어있는 명령만 'excel'로 분류하세요.
+- 그 외 모든 명령은 반드시 'df'로 분류합니다.
+- 연속된 df 명령은 하나의 그룹으로 묶어, JSON 배열 하나의 요소로 'command'에 넣고 'type'을 'df'로 지정하세요.
+- excel 명령은 하나의 커맨드를 'command'에 넣고 'type'을 'excel'로 지정하세요.
+- 각 요소는 반드시 {{'command': '...', 'type': '...'}} 형태의 JSON 객체여야 합니다.
+"""
+)
 
     # 예시 1: 두 개의 df 연속 → 그룹, excel 단일
     example_h1 = HumanMessagePromptTemplate.from_template(
@@ -71,12 +77,10 @@ def make_classify_template() -> ChatPromptTemplate:
 
     # 예시 2: excel 먼저 → 두 개 df 그룹 → excel
     example_h2 = HumanMessagePromptTemplate.from_template(
-        '["Report_template 다운로드", "데이터 정렬", "값 범위 필터링", "결과 저장"]'
+        '["A가 B인 것만 남겨", "B 컬럼 제거해줘", "C가 5 이상인 것만 필터링해"]'
     )
     example_a2 = AIMessagePromptTemplate.from_template(
-        '[{{"command":"Report_template 다운로드","type":"excel"}},'
-        '{{"command":"[\\"데이터 정렬\\",\\"값 범위 필터링\\"]","type":"df"}},'
-        '{{"command":"결과 저장","type":"excel"}}]'
+        '[{{"command":"[\\"A가 B인 것만 남겨\\",\\"B 컬럼 제거해줘\\",\\"C가 5 이상인 것만 필터링해\\"]","type":"df"}}]'
     )
 
     # 사용자 입력 바인딩
@@ -212,23 +216,22 @@ def extract_error_info(exc: Exception, code_body: str, stage: str ) -> dict:
 
 def make_extract_excel_params_template() -> ChatPromptTemplate:
     system = SystemMessagePromptTemplate.from_template(
-        "사용자 명령어에서 엑셀 템플릿 이름, 시트 이름(선택), 삽입 시작 위치, 결과 파일명을"
-        " JSON으로 추출해 주세요."
-    )
-    example_h = HumanMessagePromptTemplate.from_template(
-        "\"KPIreport 템플릿을 불러와서 3열 4행부터 데이터를 꽉 차게 삽입한 뒤 KPI_결과.xlsx로 저장해줘\""
-    )
-    example_a = AIMessagePromptTemplate.from_template(
-        "{{\n"
-        "  \"template_name\": \"KPIreport\",\n"
-        "  \"sheet_name\": null,\n"
-        "  \"start_row\": 4,\n"
-        "  \"start_col\": 3,\n"
-        "  \"output_name\": \"KPI_결과.xlsx\"\n"
-        "}}"
-    )
+    """
+사용자 명령어에서 엑셀 템플릿 이름, 시트 이름(선택), 삽입 시작 위치, 결과 파일명을 JSON으로 추출해 주세요.
+
+예시)
+"KPIreport 템플릿을 불러와서 3열 4행부터 데이터를 꽉 차게 삽입한 뒤 KPI_결과.xlsx로 저장해줘"
+{{
+  "template_name": "KPIreport",
+  "sheet_name": null,
+  "start_row": 4,
+  "start_col": 3,
+  "output_name": "KPI_결과.xlsx"
+}}
+"""
+)
     user = HumanMessagePromptTemplate.from_template("{command}")
-    return ChatPromptTemplate.from_messages([system, example_h, example_a, user])
+    return ChatPromptTemplate.from_messages([system, user])
 
 def insert_df_to_excel(df: pd.DataFrame,
                        input_path: str,
