@@ -24,7 +24,13 @@ async def command_code(
     try:
         graph = code_gen.build()
 
-        query = make_initial_query(request.url, request.command_list)
+        # 나중엔 Optional이 아닌 필수로 연결하도록 요청
+        if request.stream_id:
+            stream_id = request.stream_id
+        else:
+            stream_id = "check" # 확인용 
+
+        query = make_initial_query(request.url, request.command_list, stream_id)
 
         user_id = auth.get_user_id_from_header(req) 
         if user_id is None:

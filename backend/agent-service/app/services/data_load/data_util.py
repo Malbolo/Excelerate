@@ -12,7 +12,8 @@ def make_entity_extraction_prompt() -> ChatPromptTemplate:
     system_template = SystemMessagePromptTemplate.from_template("""
 오늘은 {today}입니다.
 다음 필드를 추출하세요: factory_name, system_name, metric, factory_id, product_code, start_date.
-start_date의 경우, 지난 달, 어제 등의 상대 표현일 경우 해당 단어 그대로 추출하세요.
+start_date의 경우 MM월 DD일 등 ISO 포맷으로 즉시 변환할 수 있는 숫자가 명시된 경우엔 YYYY-MM-DD 형태로 추출하고
+지난 달, 어제 등의 오늘을 기준으로 하는 상대 표현일 경우 해당 단어 그대로 추출하세요.
 해당하는 값이 없으면 null로 두세요.
 <context>
 {context}
