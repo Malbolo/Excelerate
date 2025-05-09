@@ -122,6 +122,11 @@ class CodeGenerator:
         llm_entry = self.logger.get_logs()[-1] if self.logger.get_logs() else None
         new_logs  = state.get("logs", []) + ([llm_entry] if llm_entry else [])
 
+        # stream_id로 쏘기
+        if llm_entry:
+            q = get_log_queue(state["stream_id"])
+            q.put_nowait(llm_entry)
+
         # State 업데이트
         return {
             "classified_cmds": prev_cls+ classified,
