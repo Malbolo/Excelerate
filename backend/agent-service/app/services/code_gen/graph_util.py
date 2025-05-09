@@ -94,11 +94,14 @@ def make_classify_template() -> ChatPromptTemplate:
         user
     ])
 
+## 추 후 다양한 기능을(단순 불러오기, dataframe 치환, 다중 저장 등) 수행시키고 싶다면 해당 템플릿을 사용해 엑셀 코드를 생성하도록 수정해야 할 것
 def make_excel_template() -> ChatPromptTemplate:
     """
     openpyxl을 활용해 기존 .xlsx 파일에 DataFrame을 지정된 위치에 삽입
     - 항상 keep_vba=False
     - few-shot 예시 2개 포함
+    insert_df_to_excel에 해당 코드 포함되어 있음
+    불러와 바로 실행 가능한 코드로 생성성
     """
     return ChatPromptTemplate.from_messages([
         # 시스템 메시지: 역할 명세
@@ -109,29 +112,31 @@ def make_excel_template() -> ChatPromptTemplate:
 
         # 1번째 페어: 기본 B2 삽입 예시
         HumanMessagePromptTemplate.from_template(
-            "템플릿 template.xlsx 의 B2 위치부터 dataframe을 삽입 후 `out1.xlsx` 로 저장:\n"
+            "템플릿 EOE 의 B2 위치부터 dataframe을 삽입 후 out1으로 저장:\n"
             "{'Name':['Alice','Bob'], 'Score':[85,92]}"
         ),
         AIMessagePromptTemplate.from_template(
             """```python
-from openpyxl import load_workbook
+from tempfile import TemporaryDirectory
+import os
+import pandas as pd
+from app.services.code_gen.graph_util import insert_df_to_excel
+from app.utils.minio_client import MinioClient
 
-def excel_insert(df, input_path, output_path, start_row=2, start_col=2):
-    # 1) 워크북 로드 (keep_vba=False)
-    wb = load_workbook(input_path)
-    ws = wb.active
-
-    # 2) 헤더 삽입
-    for j, col in enumerate(df.columns, start=start_col):
-        ws.cell(row=start_row, column=j, value=col)
-
-    # 3) 데이터 삽입
-    for i, row in enumerate(df.itertuples(index=False), start=start_row+1):
-        for j, val in enumerate(row, start=start_col):
-            ws.cell(row=i, column=j, value=val)
-
-    # 4) 저장
-    wb.save(output_path)
+# 테스트 템플릿에 처리된 dataframe 붙여넣기
+minio = MinioClient()
+with TemporaryDirectory() as workdir:
+    tpl = os.path.join(workdir, "report.xlsx")
+    out = os.path.join(workdir, "report_result.xlsx")
+    # 다운로드
+    minio.download_template("EOE", tpl)
+    # 삽입
+    insert_df_to_excel(df, tpl, out,
+                    sheet_name=None,
+                    start_row=2,
+                    start_col=2)
+    # 업로드
+    minio.upload_result("auto", "out1", out)
 ```"""
         ),
 
@@ -141,27 +146,28 @@ def excel_insert(df, input_path, output_path, start_row=2, start_col=2):
             "{'Item':['X','Y','Z'], 'Value':[10,20,30]}"
         ),
         AIMessagePromptTemplate.from_template(
-            """```python
-from openpyxl import load_workbook
+            """
+from tempfile import TemporaryDirectory
+import os
+import pandas as pd
+from app.services.code_gen.graph_util import insert_df_to_excel
+from app.utils.minio_client import MinioClient
 
-def excel_insert(df, input_path, output_path=None, start_row=5, start_col=3):
-    # 1) 워크북 로드 (keep_vba=False)
-    wb = load_workbook(input_path)
-    ws = wb.active
-
-    # 2) 헤더 삽입
-    for j, col in enumerate(df.columns, start=start_col):
-        ws.cell(row=start_row, column=j, value=col)
-
-    # 3) 데이터 삽입
-    for i, row in enumerate(df.itertuples(index=False), start=start_row+1):
-        for j, val in enumerate(row, start=start_col):
-            ws.cell(row=i, column=j, value=val)
-
-    # 4) 동일 파일 덮어쓰기
-    save_path = output_path or input_path
-    wb.save(save_path)
-```"""
+# 테스트 템플릿에 처리된 dataframe 붙여넣기
+minio = MinioClient()
+with TemporaryDirectory() as workdir:
+    tpl = os.path.join(workdir, "report.xlsx")
+    out = os.path.join(workdir, "report_result.xlsx")
+    # 다운로드
+    minio.download_template("report.xlsx", tpl)
+    # 삽입
+    insert_df_to_excel(df, tpl, out,
+                    sheet_name=None,
+                    start_row=5,
+                    start_col=3)
+    # 업로드
+    minio.upload_result("auto", "report.xlsx", out)
+"""
         ),
 
         # 실제 사용자 요청
