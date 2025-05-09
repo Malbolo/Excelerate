@@ -110,7 +110,7 @@ const SaveJobDialog: React.FC<SaveJobDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger>
+      <DialogTrigger disabled={!canSaveJob || isEditMode}>
         <Button disabled={!canSaveJob || isEditMode}>Save Job</Button>
       </DialogTrigger>
 

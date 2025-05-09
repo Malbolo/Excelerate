@@ -123,17 +123,17 @@ const MainPage: React.FC = () => {
   }, [setCanSaveJob]);
 
   return (
-    <div className='relative mx-auto flex h-full w-full overflow-hidden'>
-      <ResizablePanelGroup direction='horizontal'>
-        <ResizablePanel>
-          <div className='mx-auto flex h-full w-full max-w-[800px] flex-1 flex-col justify-between gap-4 p-8'>
-            <div className='flex flex-col gap-4'>
+    <div className='bg-gradient relative mx-auto flex h-screen w-full'>
+      <ResizablePanelGroup direction='horizontal' className='h-full'>
+        <ResizablePanel className='h-full'>
+          <div className='mx-auto flex h-screen w-full max-w-[800px] flex-1 flex-col justify-between gap-4 overflow-auto p-8'>
+            <div className='flex flex-1 flex-col gap-4'>
               <div className='flex gap-4'>
                 <TemplateList />
                 <SourceData sourceData={sourceData} />
               </div>
 
-              <section className='flex flex-col gap-2'>
+              <section className='flex flex-col gap-2 overflow-y-auto'>
                 <div className='flex items-center justify-between gap-2'>
                   <p className='text-lg font-bold'>Command List</p>
                   <div className='flex gap-2'>
@@ -146,7 +146,7 @@ const MainPage: React.FC = () => {
                       onClick={handleRun}
                     >
                       {isCommandLoading ? (
-                        <ClipLoader size={18} color='#000000' />
+                        <ClipLoader size={18} color='#ffffff' />
                       ) : (
                         'Run'
                       )}
@@ -187,18 +187,19 @@ const MainPage: React.FC = () => {
                       : 'Please enter a command.'
                   }
                   disabled={isSourceDataLoading}
-                  className='min-h-[38px] resize-none'
+                  className='min-h-[42px] resize-none px-4 py-2.5 transition-all'
                 />
                 {isSourceDataLoading && (
                   <div className='absolute top-1/2 right-2 -translate-y-2/5'>
-                    <ClipLoader size={18} color='#000000' />
+                    <ClipLoader size={18} color='#7d9ecd' />
                   </div>
                 )}
               </div>
 
               <Button
                 onClick={handleSubmitCommand}
-                className='h-[38px] cursor-pointer self-end'
+                className='min-h-[42px] self-end'
+                size='lg'
                 disabled={isSourceDataLoading}
               >
                 Enter

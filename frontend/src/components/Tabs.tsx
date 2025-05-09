@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 
 import { cn } from '@/lib/utils';
 
@@ -12,14 +12,14 @@ const Tabs: React.FC<TabsProps> = ({ tabList, tabPanels }) => {
 
   return (
     <div className='flex h-full w-full flex-col'>
-      <div className='flex translate-y-[1px] self-end'>
+      <div className='flex self-end'>
         {tabList.map(tab => (
           <div
             onClick={() => setActiveTab(tab)}
             className={cn(
-              'cursor-pointer rounded-t-md border px-2',
+              'cursor-pointer rounded-t-md border-t border-r border-l px-2',
               activeTab === tab
-                ? 'border-[#034EA2] bg-[#034EA2] text-white'
+                ? 'bg-primary border-primary text-white'
                 : 'bg-white',
             )}
           >
@@ -27,7 +27,18 @@ const Tabs: React.FC<TabsProps> = ({ tabList, tabPanels }) => {
           </div>
         ))}
       </div>
-      {tabPanels[tabList.indexOf(activeTab)]}
+
+      <div className='card-gradient h-full overflow-hidden rounded-l-lg rounded-br-lg border'>
+        <Suspense
+          fallback={
+            <div className='flex h-full items-center justify-center'>
+              Loading...
+            </div>
+          }
+        >
+          {tabPanels[tabList.indexOf(activeTab)]}
+        </Suspense>
+      </div>
     </div>
   );
 };

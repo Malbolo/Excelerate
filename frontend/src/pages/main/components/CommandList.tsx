@@ -17,6 +17,7 @@ import {
 } from '@dnd-kit/sortable';
 
 import Command from '@/components/Command';
+import { useJobStore } from '@/store/useJobStore';
 import { TCommand } from '@/types/job';
 
 interface CommandListProps {
@@ -28,6 +29,8 @@ const CommandList: React.FC<CommandListProps> = ({
   commandList,
   setCommandList,
 }) => {
+  const { setCanSaveJob } = useJobStore();
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -43,6 +46,8 @@ const CommandList: React.FC<CommandListProps> = ({
           : { status: 'pending', title: cmd.title },
       ),
     );
+
+    setCanSaveJob(false);
   };
 
   const handleDeleteCommand = (command: string) => {
@@ -51,6 +56,8 @@ const CommandList: React.FC<CommandListProps> = ({
         .filter(prevCommand => prevCommand.title !== command)
         .map(cmd => ({ ...cmd, status: 'pending' })),
     );
+
+    setCanSaveJob(false);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -67,10 +74,12 @@ const CommandList: React.FC<CommandListProps> = ({
         }));
       });
     }
+
+    setCanSaveJob(false);
   };
 
   return (
-    <div className='flex flex-col gap-2'>
+    <div className='flex flex-col gap-2 overflow-y-auto'>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
