@@ -1178,6 +1178,40 @@ def parse_cron_to_friendly_format(cron_expression: str) -> dict:
     # 기타 복잡한 경우 원본 cron 표현식 반환
     return {"type": "custom", "cronExpression": cron_expression}
 
+
+def get_next_dag_run(dag_id: str) -> Optional[Dict[str, Any]]:
+    """
+    특정 DAG의 다음 실행 예정 정보를 조회합니다.
+
+    Args:
+        dag_id: DAG ID
+
+    Returns:
+        다음 실행 예정 정보 (없으면 None)
+    """
+    try:
+        # DAG 상세 정보 조회
+        dag_detail = get_dag_detail(dag_id)
+
+        # DAG가 비활성화된 경우 다음 실행이 없음
+        if dag_detail.get("is_paused", True):
+            return None
+
+        # 다음 실행 날짜 확인
+        next_dagrun = dag_detail.get("next_dagrun")
+
+        if next_dagrun:
+            return {
+                "execution_date": next_dagrun,
+                "scheduled_time": dag_detail.get("next_dagrun_data_interval_start", next_dagrun),
+                "data_interval_end": dag_detail.get("next_dagrun_data_interval_end")
+            }
+
+        return None
+    except Exception as e:
+        print(f"Error getting next DAG run for {dag_id}: {str(e)}")
+        return None
+
 def get_all_schedules_with_details(
         status: Optional[str] = None,
         search: Optional[str] = None,
@@ -1221,15 +1255,27 @@ def get_all_schedules_with_details(
                 # 상세 정보 조회
                 schedule_data = get_schedule_detail(dag_id)
 
-                # 작업 상태 포함 여부에 따라 최근 실행 정보 조회
-                if include_job_status:
-                    # 최근 실행 정보 조회
-                    recent_runs = get_dag_runs(dag_id, limit=1)
+                # 기본적으로 마지막 실행과 다음 실행 정보를 초기화
+                schedule_data["last_run"] = None
+                schedule_data["next_run"] = None
 
-                    if recent_runs:
-                        recent_run = recent_runs[0]
-                        run_id = recent_run.get("dag_run_id")
+                # 최근 실행 정보 조회 (마지막 실행 정보를 위해)
+                recent_runs = get_dag_runs(dag_id, limit=1)
 
+                if recent_runs:
+                    recent_run = recent_runs[0]
+                    run_id = recent_run.get("dag_run_id")
+
+                    # 마지막 실행 정보 설정
+                    schedule_data["last_run"] = {
+                        "run_id": run_id,
+                        "status": recent_run.get("state"),
+                        "start_time": recent_run.get("start_date"),
+                        "end_time": recent_run.get("end_date")
+                    }
+
+                    # 작업 상태 포함 여부에 따라 작업 상태 정보 추가
+                    if include_job_status:
                         # 작업 실행 상태 조회
                         task_instances = get_task_instances(dag_id, run_id)
 
@@ -1260,13 +1306,10 @@ def get_all_schedules_with_details(
                         # 원래 jobs 배열 교체
                         schedule_data["jobs"] = tasks_with_status
 
-                        # 실행 정보 추가
-                        schedule_data["last_run"] = {
-                            "run_id": run_id,
-                            "status": recent_run.get("state"),
-                            "start_time": recent_run.get("start_date"),
-                            "end_time": recent_run.get("end_date")
-                        }
+                # 다음 실행 예정 정보 조회
+                next_run_info = get_next_dag_run(dag_id)
+                if next_run_info:
+                    schedule_data["next_run"] = next_run_info
 
                 schedule_list.append(schedule_data)
             except Exception as detail_err:
@@ -1278,7 +1321,9 @@ def get_all_schedules_with_details(
                     "description": dag.get("description", ""),
                     "is_paused": dag.get("is_paused", False),
                     "frequency": "unknown",
-                    "jobs": []
+                    "jobs": [],
+                    "last_run": None,
+                    "next_run": None
                 })
     finally:
         db.close()
@@ -1327,8 +1372,7 @@ def get_job_details(job_ids: List[str]) -> Dict[str, Any]:
     finally:
         db.close()
 
-
-def get_task_logs(schedule_id: str, run_id: str, task_id: str) -> str:
+def get_task_logs(schedule_id: str, run_id: str, task_id: str, try_number: Optional[int] = None) -> str:
     """
     Airflow API에서 태스크 로그를 가져옵니다.
 
@@ -1336,22 +1380,49 @@ def get_task_logs(schedule_id: str, run_id: str, task_id: str) -> str:
         schedule_id: DAG ID
         run_id: DAG Run ID
         task_id: Task ID
+        try_number: 태스크 시도 번호 (None인 경우 최신 시도 번호 사용)
 
     Returns:
         태스크 로그 문자열
     """
     try:
-        # Airflow API URL 구성
-        endpoint = f"{settings.AIRFLOW_API_URL}/dags/{schedule_id}/dagRuns/{run_id}/taskInstances/{task_id}/logs"
+        # 시도 번호가 명시되지 않은 경우, 태스크 인스턴스 정보를 조회하여 최신 시도 번호 얻기
+        if try_number is None:
+            # 태스크 인스턴스 정보 조회
+            task_info_endpoint = f"{settings.AIRFLOW_API_URL}/dags/{schedule_id}/dagRuns/{run_id}/taskInstances/{task_id}"
 
-        # API 요청
+            task_info_response = requests.get(
+                task_info_endpoint,
+                auth=(settings.AIRFLOW_USERNAME, settings.AIRFLOW_PASSWORD)
+            )
+
+            if task_info_response.status_code == 200:
+                task_info = task_info_response.json()
+                try_number = task_info.get("try_number", 1)
+            else:
+                print(f"Failed to get task instance info. Status code: {task_info_response.status_code}")
+                try_number = 1  # 기본값으로 1 사용
+
+        # 로그 조회 엔드포인트 구성
+        logs_endpoint = f"{settings.AIRFLOW_API_URL}/dags/{schedule_id}/dagRuns/{run_id}/taskInstances/{task_id}/logs/{try_number}"
+
+        # API 요청 (텍스트 형식으로 요청)
+        headers = {"Accept": "text/plain"}
         response = requests.get(
-            endpoint,
+            logs_endpoint,
+            headers=headers,
             auth=(settings.AIRFLOW_USERNAME, settings.AIRFLOW_PASSWORD)
         )
 
         if response.status_code == 200:
-            return response.text
+            # 응답이 JSON인지 확인
+            content_type = response.headers.get("Content-Type", "")
+            if "application/json" in content_type:
+                log_data = response.json()
+                return log_data.get("content", "")
+            else:
+                # 텍스트 응답
+                return response.text
         else:
             print(f"Failed to get task logs. Status code: {response.status_code}")
             return ""
