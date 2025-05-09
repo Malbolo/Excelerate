@@ -1,5 +1,11 @@
+import os
 from fastapi import Request, HTTPException
 import requests
+from dotenv import load_dotenv
+
+load_dotenv()
+
+USER_SERVICE_URL = os.getenv("USER_SERVICE_URL")
 
 def get_user_id_from_header(request: Request) -> int:
     user_id = request.headers.get("x-user-id")
@@ -9,7 +15,7 @@ def get_user_id_from_header(request: Request) -> int:
         raise HTTPException(status_code=400, detail="Invalid x-user-id header")
 
 def get_user_info(user_id: int):
-    url = "http://user-service.user-service.svc.cluster.local:8080/api/users/me/profile"
+    url = USER_SERVICE_URL
     headers = {
         "x-user-id": str(user_id)
     }
