@@ -15,20 +15,22 @@ def make_code_template() -> ChatPromptTemplate:
     # 3) 휴먼 메시지: start_date, end_date 변수를 받아 df 필터링 함수 코드를 만들어 달라는 요청
     human_template = HumanMessagePromptTemplate.from_template(
         """
-사용자의 요청에 따라 pandas DataFrame(`df`)을 단계별로 변형하는 **직접 실행 가능한 스크립트**를 작성하세요.
+사용자의 요청 리스트에 따라 pandas DataFrame(`df`)을 변형하는 **직접 실행 가능한 스크립트**를 작성하세요.
 - 시작 시 `intermediate = []` 로 빈 리스트를 만들고,
+- 사용자의 각 요청에 맞게 df를 변형하는 코드를 작성하고, 해당 코드 위에 주석으로 해당 요청을 표시하세요.
 - 각 변형 결과마다 `intermediate.append(…)` 를 호출하세요.
-- 각 변형 결과를 다음 단계의 dataframe으로 사용하세요
-- 전체 코드 마지막에 `df = intermediate[-1]`로 df에 최종 결과를 대입하세요
+- 각 변형 결과를 다음 단계의 dataframe으로 사용하세요.
+- 전체 코드 마지막에 `df = intermediate[-1]`로 df에 최종 결과를 대입하세요.
+- 사용자가 요청하지 않은 작업은 하지 마세요.
 
-함수 정의(`def …`)나 `return` 문은 쓰지 마세요.
+import문이나 함수 정의(`def …`)나 `return` 문은 쓰지 마세요.
 
 주어진 DataFrame의 컬럼 타입 정보:
 {dftypes}
 주어진 DataFrame 상위 5행:
 {df}
 
-설명 없이 오직 코드만 작성해 주세요.
+마크다운과 설명 없이 오직 코드만 작성해 주세요.
 
 사용자 요청:
 {input}
@@ -63,6 +65,7 @@ def make_classify_template() -> ChatPromptTemplate:
 - 연속된 df 명령은 하나의 그룹으로 묶어, JSON 배열 하나의 요소로 'command'에 넣고 'type'을 'df'로 지정하세요.
 - excel 명령은 하나의 커맨드를 'command'에 넣고 'type'을 'excel'로 지정하세요.
 - 각 요소는 반드시 {{'command': '...', 'type': '...'}} 형태의 JSON 객체여야 합니다.
+- 사용자 명령어의 순서를 반드시 유지하세요. ( df, excel, df 순으로 명령어가 들어올 수 있습니다. )
 """
 )
 
