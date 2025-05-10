@@ -8,40 +8,34 @@ import { useGetJobLogs } from '@/apis/agentMonitoring';
 import DataTable from '@/components/DataTable';
 import LLMGraph from '@/components/Graph/LLMGraph';
 import Tabs from '@/components/Tabs';
+import { useJobResultStore } from '@/store/useJobResultStore';
 import { DataFrame, DataFrameRow } from '@/types/dataframe';
 
 import DataFrameModal from './DataFrameModal';
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
-interface MainSideBarProps {
-  data: DataFrame | null;
-  columns: ColumnDef<DataFrameRow>[];
-  code: string;
-  logId: string;
-  downloadToken: string;
-}
+const MainSideBar = memo(() => {
+  const { dataframe, columns, code, logId, downloadToken } =
+    useJobResultStore();
 
-const MainSideBar = memo<MainSideBarProps>(
-  ({ data, columns, code, logId, downloadToken }) => {
-    const tabPanels = [
-      <DataPanel
-        key='data'
-        data={data}
-        columns={columns}
-        downloadToken={downloadToken}
-      />,
-      <CodePanel key='code' code={code} />,
-      <TracePanel key='trace' logId={logId} />,
-    ];
+  const tabPanels = [
+    <DataPanel
+      key='data'
+      data={dataframe}
+      columns={columns}
+      downloadToken={downloadToken}
+    />,
+    <CodePanel key='code' code={code} />,
+    <TracePanel key='trace' logId={logId} />,
+  ];
 
-    return (
-      <div className='relative flex h-full w-full border-l bg-[#FAFCFF] px-2 py-6'>
-        <Tabs tabList={['Data', 'Code', 'Trace']} tabPanels={tabPanels} />
-      </div>
-    );
-  },
-);
+  return (
+    <div className='relative flex h-full w-full border-l bg-[#FAFCFF] px-2 py-6'>
+      <Tabs tabList={['Data', 'Code', 'Trace']} tabPanels={tabPanels} />
+    </div>
+  );
+});
 
 MainSideBar.displayName = 'MainSideBar';
 
@@ -82,8 +76,6 @@ const DataPanel = memo<{
       <DataFrameModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        data={data}
-        columns={columns}
       />
     </div>
   );

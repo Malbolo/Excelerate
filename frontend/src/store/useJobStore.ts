@@ -5,6 +5,7 @@ interface JobState {
   canSaveJob: boolean;
   setIsEditMode: (isEditMode: boolean) => void;
   setCanSaveJob: (canSaveJob: boolean) => void;
+  resetJob: () => void;
 }
 
 export const useJobStore = create<JobState>(set => ({
@@ -12,4 +13,5 @@ export const useJobStore = create<JobState>(set => ({
   canSaveJob: false,
   setIsEditMode: isEditMode => set({ isEditMode }),
   setCanSaveJob: canSaveJob => set({ canSaveJob }),
+  resetJob: () => set({ isEditMode: false, canSaveJob: false }),
 }));

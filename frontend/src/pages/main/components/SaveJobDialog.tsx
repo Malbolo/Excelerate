@@ -37,8 +37,10 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { JOB_TYPES_CONFIG } from '@/constant/job';
 import useInternalRouter from '@/hooks/useInternalRouter';
+import { useCommandStore } from '@/store/useCommandStore';
+import { useJobResultStore } from '@/store/useJobResultStore';
 import { useJobStore } from '@/store/useJobStore';
-import { TCommand } from '@/types/job';
+import { useSourceStore } from '@/store/useSourceStore';
 
 const formSchema = z.object({
   jobType: z.string(),
@@ -61,21 +63,14 @@ const formSchema = z.object({
   sendEmail: z.boolean().default(false).optional(),
 });
 
-interface SaveJobDialogProps {
-  sourceData: string;
-  sourceDataCommand: string;
-  commandList: TCommand[];
-  code: string;
-}
-
-const SaveJobDialog: React.FC<SaveJobDialogProps> = ({
-  sourceData,
-  sourceDataCommand,
-  commandList,
-  code,
-}) => {
+const SaveJobDialog: React.FC = () => {
   const [open, setOpen] = useState(false);
+
+  const { sourceDataCommand, sourceDataUrl } = useSourceStore();
+  const { commandList } = useCommandStore();
+  const { code } = useJobResultStore();
   const { isEditMode, canSaveJob } = useJobStore();
+
   const { mutateAsync: jobMutation, isPending: isJobSaving } = useSaveJob();
 
   const { push } = useInternalRouter();
@@ -97,7 +92,7 @@ const SaveJobDialog: React.FC<SaveJobDialogProps> = ({
       title: jobName,
       description: jobDescription,
       data_load_command: sourceDataCommand,
-      data_load_url: sourceData,
+      data_load_url: sourceDataUrl,
       commands: commandList.map(command => command.title),
       code,
     };

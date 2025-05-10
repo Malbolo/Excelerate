@@ -1,5 +1,3 @@
-import { Dispatch, SetStateAction } from 'react';
-
 import {
   DndContext,
   DragEndEvent,
@@ -11,25 +9,42 @@ import {
 } from '@dnd-kit/core';
 import {
   SortableContext,
-  arrayMove,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
+import { ColumnDef } from '@tanstack/react-table';
+import ClipLoader from 'react-spinners/ClipLoader';
 
+import { useSendCommandList } from '@/apis/job';
 import Command from '@/components/Command';
+import { Button } from '@/components/ui/button';
+import { useCommandStore } from '@/store/useCommandStore';
+import { useJobResultStore } from '@/store/useJobResultStore';
 import { useJobStore } from '@/store/useJobStore';
-import { TCommand } from '@/types/job';
+import { useSourceStore } from '@/store/useSourceStore';
+import { DataFrameRow } from '@/types/dataframe';
+import { createSortableColumns } from '@/utils/dataframe';
 
-interface CommandListProps {
-  commandList: TCommand[];
-  setCommandList: Dispatch<SetStateAction<TCommand[]>>;
-}
+import SaveJobDialog from './SaveJobDialog';
 
-const CommandList: React.FC<CommandListProps> = ({
-  commandList,
-  setCommandList,
-}) => {
-  const { setCanSaveJob } = useJobStore();
+const CommandList: React.FC = () => {
+  const { sourceDataUrl } = useSourceStore();
+
+  const { commandList, reorderCommands, updateCommandStatus } =
+    useCommandStore();
+
+  const {
+    setDataframe: setData,
+    setCode,
+    setColumns,
+    setDownloadToken,
+    setLogId,
+  } = useJobResultStore();
+
+  const { isEditMode, setCanSaveJob } = useJobStore();
+
+  const { mutateAsync: commandMutation, isPending: isCommandLoading } =
+    useSendCommandList();
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -38,72 +53,96 @@ const CommandList: React.FC<CommandListProps> = ({
     }),
   );
 
-  const handleEditCommand = (command: string, newCommand: string) => {
-    setCommandList(prev =>
-      prev.map(cmd =>
-        cmd.title === command
-          ? { status: 'pending', title: newCommand }
-          : { status: 'pending', title: cmd.title },
-      ),
-    );
-
-    setCanSaveJob(false);
-  };
-
-  const handleDeleteCommand = (command: string) => {
-    setCommandList(prev =>
-      prev
-        .filter(prevCommand => prevCommand.title !== command)
-        .map(cmd => ({ ...cmd, status: 'pending' })),
-    );
-
-    setCanSaveJob(false);
-  };
-
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      setCommandList(items => {
-        const oldIndex = parseInt(active.id.toString().split('-').pop() || '0');
-        const newIndex = parseInt(over.id.toString().split('-').pop() || '0');
+      const oldIndex = parseInt(active.id.toString().split('-').pop() || '0');
+      const newIndex = parseInt(over.id.toString().split('-').pop() || '0');
 
-        return arrayMove(items, oldIndex, newIndex).map(item => ({
-          ...item,
-          status: 'pending',
-        }));
-      });
+      reorderCommands(oldIndex, newIndex);
     }
-
     setCanSaveJob(false);
   };
 
+  const handleSendCommandList = async () => {
+    const commands = commandList.map(cmd => cmd.title);
+    const response = await commandMutation({
+      command_list: commands,
+      url: sourceDataUrl,
+    });
+
+    const columns: ColumnDef<DataFrameRow>[] = response.dataframe[0][0]
+      ? createSortableColumns(response.dataframe[0][0])
+      : [];
+
+    setData(response.dataframe[response.dataframe.length - 1]);
+    setCode(response.codes[response.codes.length - 1]);
+    setColumns(columns);
+    setDownloadToken(response.download_token);
+    setLogId(response.log_id);
+  };
+
+  const handleRun = async () => {
+    setCanSaveJob(false);
+
+    try {
+      await handleSendCommandList();
+
+      commandList.forEach((_, index) => {
+        updateCommandStatus(index, 'success');
+      });
+
+      setCanSaveJob(true);
+    } catch (error) {
+      commandList.forEach((_, index) => {
+        updateCommandStatus(index, 'fail');
+      });
+    }
+  };
+
   return (
-    <div className='flex flex-1 flex-col gap-2 overflow-x-hidden overflow-y-auto'>
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext
-          items={commandList.map(
-            cmd => `${cmd.title}-${commandList.indexOf(cmd)}`,
-          )}
-          strategy={verticalListSortingStrategy}
+    <section className='flex flex-1 flex-col gap-2 overflow-hidden'>
+      <div className='flex items-center justify-between gap-2'>
+        <p className='text-lg font-bold'>Command List</p>
+        <div className='flex gap-2'>
+          <Button
+            disabled={
+              commandList.length === 0 || isEditMode || isCommandLoading
+            }
+            onClick={handleRun}
+          >
+            {isCommandLoading ? (
+              <ClipLoader size={18} color='#ffffff' />
+            ) : (
+              'Run'
+            )}
+          </Button>
+          <SaveJobDialog />
+        </div>
+      </div>
+      <div className='flex flex-1 flex-col gap-2 overflow-x-hidden overflow-y-auto'>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
         >
-          {commandList.map((command, index) => (
-            <Command
-              key={`${command.title}-${index}`}
-              id={`${command.title}-${index}`}
-              command={command.title}
-              status={command.status}
-              onDelete={handleDeleteCommand}
-              onEdit={handleEditCommand}
-            />
-          ))}
-        </SortableContext>
-      </DndContext>
-    </div>
+          <SortableContext
+            items={commandList.map((cmd, idx) => `${cmd.title}-${idx}`)}
+            strategy={verticalListSortingStrategy}
+          >
+            {commandList.map((command, index) => (
+              <Command
+                key={`${command.title}-${index}`}
+                id={`${command.title}-${index}`}
+                command={command.title}
+                status={command.status}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
+      </div>
+    </section>
   );
 };
 
