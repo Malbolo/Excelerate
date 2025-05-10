@@ -133,7 +133,7 @@ const MainPage: React.FC = () => {
                 <SourceData sourceData={sourceData} />
               </div>
 
-              <section className='flex flex-col gap-2 overflow-y-auto'>
+              <section className='flex flex-col gap-2'>
                 <div className='flex items-center justify-between gap-2'>
                   <p className='text-lg font-bold'>Command List</p>
                   <div className='flex gap-2'>

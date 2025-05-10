@@ -65,8 +65,8 @@ const CommandList: React.FC<CommandListProps> = ({
 
     if (over && active.id !== over.id) {
       setCommandList(items => {
-        const oldIndex = items.findIndex(item => item.title === active.id);
-        const newIndex = items.findIndex(item => item.title === over.id);
+        const oldIndex = parseInt(active.id.toString().split('-').pop() || '0');
+        const newIndex = parseInt(over.id.toString().split('-').pop() || '0');
 
         return arrayMove(items, oldIndex, newIndex).map(item => ({
           ...item,
@@ -79,14 +79,16 @@ const CommandList: React.FC<CommandListProps> = ({
   };
 
   return (
-    <div className='flex flex-col gap-2 overflow-y-auto'>
+    <div className='flex flex-col gap-2'>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
       >
         <SortableContext
-          items={commandList.map(cmd => cmd.title)}
+          items={commandList.map(
+            cmd => `${cmd.title}-${commandList.indexOf(cmd)}`,
+          )}
           strategy={verticalListSortingStrategy}
         >
           {commandList.map((command, index) => (

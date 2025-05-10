@@ -118,16 +118,16 @@ const Command: React.FC<CommandProps> = ({
             </div>
           </PopoverTrigger>
           <PopoverContent className='overflow-hidden'>
-            <ul className='flex w-full flex-col divide-y'>
+            <ul className='divide-primary/70 flex w-full flex-col divide-y'>
               <li
                 onClick={handleEditBtnClick}
-                className='w-full cursor-pointer px-3 py-1 text-center hover:bg-black/10'
+                className='w-full cursor-pointer px-3 py-1 text-center hover:bg-[#F0F7FF]'
               >
                 edit
               </li>
               <li
                 onClick={() => onDelete(command)}
-                className='w-full cursor-pointer px-3 py-1 text-center hover:bg-black/10'
+                className='w-full cursor-pointer px-3 py-1 text-center hover:bg-[#F0F7FF]'
               >
                 delete
               </li>
