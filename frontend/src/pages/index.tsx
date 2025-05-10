@@ -126,7 +126,7 @@ const MainPage: React.FC = () => {
     <div className='bg-gradient relative mx-auto flex h-screen w-full'>
       <ResizablePanelGroup direction='horizontal' className='h-full'>
         <ResizablePanel className='h-full'>
-          <div className='mx-auto flex h-screen w-full max-w-[800px] flex-1 flex-col justify-between gap-4 overflow-auto p-8'>
+          <div className='mx-auto flex w-full max-w-[800px] flex-1 flex-col justify-between gap-4 p-8'>
             <div className='flex flex-1 flex-col gap-4'>
               <div className='flex gap-4'>
                 <TemplateList />
