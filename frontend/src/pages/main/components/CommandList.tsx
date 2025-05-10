@@ -79,7 +79,7 @@ const CommandList: React.FC<CommandListProps> = ({
   };
 
   return (
-    <div className='flex h-[calc(100vh-360px)] flex-col gap-2 overflow-y-auto'>
+    <div className='flex flex-1 flex-col gap-2 overflow-x-hidden overflow-y-auto'>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}

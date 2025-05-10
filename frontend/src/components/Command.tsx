@@ -90,7 +90,7 @@ const Command: React.FC<CommandProps> = ({
         <div
           className={cn(
             statusColor[status],
-            'h-1.5 w-1.5 rounded-full transition-all group-hover:scale-125',
+            'h-1.5 w-1.5 shrink-0 rounded-full transition-all group-hover:scale-125',
           )}
         />
         {isEditing ? (

@@ -124,16 +124,16 @@ const MainPage: React.FC = () => {
 
   return (
     <div className='bg-gradient relative mx-auto flex h-screen w-full'>
-      <ResizablePanelGroup direction='horizontal' className='h-full'>
-        <ResizablePanel className='h-full'>
-          <div className='mx-auto flex w-full max-w-[800px] flex-1 flex-col justify-between gap-4 p-8'>
-            <div className='flex flex-1 flex-col gap-4'>
+      <ResizablePanelGroup direction='horizontal'>
+        <ResizablePanel>
+          <div className='mx-auto flex h-screen w-full max-w-[800px] grow-0 flex-col justify-between gap-4 p-8'>
+            <div className='flex flex-1 flex-col gap-4 overflow-hidden'>
               <div className='flex gap-4'>
                 <TemplateList />
                 <SourceData sourceData={sourceData} />
               </div>
 
-              <section className='flex flex-col gap-2'>
+              <section className='flex flex-1 flex-col gap-2 overflow-hidden'>
                 <div className='flex items-center justify-between gap-2'>
                   <p className='text-lg font-bold'>Command List</p>
                   <div className='flex gap-2'>
