@@ -41,9 +41,9 @@ function DataTable<TData, TValue>({
   });
 
   return (
-    <div className='relative h-full border'>
-      <div className='absolute inset-0 overflow-y-auto'>
-        <div className='min-w-full bg-white'>
+    <div className='relative h-full'>
+      <div className='card-gradient absolute inset-0 overflow-y-auto'>
+        <div className='min-w-full'>
           <Table>
             <TableHeader className='sticky top-0 z-10 bg-white'>
               {table.getHeaderGroups().map(headerGroup => (

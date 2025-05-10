@@ -1,4 +1,4 @@
-import { Suspense, memo, useState } from 'react';
+import { memo, useState } from 'react';
 
 import Editor from '@monaco-editor/react';
 import { ColumnDef } from '@tanstack/react-table';
@@ -36,10 +36,8 @@ const MainSideBar = memo<MainSideBarProps>(
     ];
 
     return (
-      <div className='relative flex h-full w-full bg-[#F0F0F0] px-2 py-6'>
-        <Suspense fallback={<div>Loading...</div>}>
-          <Tabs tabList={['Data', 'Code', 'Trace']} tabPanels={tabPanels} />
-        </Suspense>
+      <div className='relative flex h-full w-full border-l bg-[#FAFCFF] px-2 py-6'>
+        <Tabs tabList={['Data', 'Code', 'Trace']} tabPanels={tabPanels} />
       </div>
     );
   },
@@ -58,9 +56,7 @@ const DataPanel = memo<{
 
   if (!data)
     return (
-      <div className='flex h-full items-center justify-center border bg-white p-2'>
-        No data
-      </div>
+      <div className='flex h-full items-center justify-center'>No data</div>
     );
 
   return (
@@ -69,14 +65,14 @@ const DataPanel = memo<{
       {downloadToken && (
         <a
           href={`${BASE_URL}/api/agent/download?token=${downloadToken}`}
-          className='absolute right-1 bottom-2 z-10 cursor-pointer rounded-full bg-black p-3'
+          className='bg-primary border-primary absolute right-1 bottom-2 z-10 cursor-pointer rounded-full border p-3'
         >
           <DownloadIcon color='white' size={18} />
         </a>
       )}
       <div className='absolute bottom-2 left-1 z-10 cursor-pointer rounded-full border bg-white p-3'>
         <Expand
-          color='black'
+          color='#374151'
           size={18}
           onClick={() => {
             setIsModalOpen(true);
@@ -98,13 +94,11 @@ DataPanel.displayName = 'DataPanel';
 const CodePanel: React.FC<{ code: string }> = ({ code }) => {
   if (!code)
     return (
-      <div className='grow border bg-white py-2'>
-        <div className='flex h-full items-center justify-center'>No code</div>
-      </div>
+      <div className='flex h-full items-center justify-center'>No code</div>
     );
 
   return (
-    <div className='grow border bg-white py-2'>
+    <div className='h-full py-2'>
       <Editor
         defaultLanguage='python'
         defaultValue={code}
@@ -123,13 +117,11 @@ const TracePanel: React.FC<{ logId: string }> = ({ logId }) => {
 
   if (!logId)
     return (
-      <div className='grow border bg-white py-2'>
-        <div className='flex h-full items-center justify-center'>No Log</div>
-      </div>
+      <div className='flex h-full items-center justify-center'>No Log</div>
     );
 
   return (
-    <div className='grow overflow-auto border bg-white p-4'>
+    <div className='h-full grow overflow-auto p-4'>
       <LLMGraph jobName='Current Job' logs={logs ?? []} />
     </div>
   );

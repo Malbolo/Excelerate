@@ -49,12 +49,12 @@ const NavigationBar = () => {
   };
 
   return (
-    <nav className='flex h-full min-w-66 shrink-0 flex-col border-r bg-[#F5F5F5] pt-6 pb-2'>
+    <nav className='flex h-full min-w-66 shrink-0 flex-col border-r bg-[#FAFCFF] pt-6 pb-2'>
       <div className='mt-9 mb-15 flex justify-center'>
         <img src={logo} alt='Samsung Logo' width={150} height={23} />
       </div>
 
-      <ul className='flex grow flex-col'>
+      <ul className='flex grow flex-col gap-2 p-4'>
         {navMenu.map(({ label, to, basePath }) => {
           let isActive;
           if (label === 'Scheduler Monitoring') {
@@ -72,10 +72,9 @@ const NavigationBar = () => {
             <Link key={to} to={to}>
               <li
                 className={cn(
-                  'block w-full px-4 py-6 text-[20px] font-bold transition-colors duration-150 ease-in-out hover:bg-gray-200',
-                  isActive
-                    ? 'bg-[#034EA2] text-[#ffffff] hover:bg-[#023a81]'
-                    : 'text-gray-700',
+                  'hover:text-accent-foreground flex items-center rounded-lg px-4 py-4 font-bold transition-all hover:bg-[#F0F7FF]',
+                  isActive &&
+                    'box-shadow border-primary/70 text-accent-foreground border bg-[#F0F7FF]',
                 )}
               >
                 {label}
@@ -85,7 +84,7 @@ const NavigationBar = () => {
         })}
       </ul>
 
-      <div className='mt-auto border-gray-300 p-4'>
+      <div className='mt-auto border-t p-4'>
         {name ? (
           <div className='flex flex-col items-center gap-3'>
             <span className='text-sm text-gray-800'>Hello, {name}!</span>
@@ -100,7 +99,7 @@ const NavigationBar = () => {
           </div>
         ) : (
           <Link to='/auth' className='w-full'>
-            <Button variant='default' className='w-full'>
+            <Button variant='default' size='sm' className='w-full'>
               Login
             </Button>
           </Link>

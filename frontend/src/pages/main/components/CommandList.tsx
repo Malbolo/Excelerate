@@ -17,6 +17,7 @@ import {
 } from '@dnd-kit/sortable';
 
 import Command from '@/components/Command';
+import { useJobStore } from '@/store/useJobStore';
 import { TCommand } from '@/types/job';
 
 interface CommandListProps {
@@ -28,6 +29,8 @@ const CommandList: React.FC<CommandListProps> = ({
   commandList,
   setCommandList,
 }) => {
+  const { setCanSaveJob } = useJobStore();
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -43,6 +46,8 @@ const CommandList: React.FC<CommandListProps> = ({
           : { status: 'pending', title: cmd.title },
       ),
     );
+
+    setCanSaveJob(false);
   };
 
   const handleDeleteCommand = (command: string) => {
@@ -51,6 +56,8 @@ const CommandList: React.FC<CommandListProps> = ({
         .filter(prevCommand => prevCommand.title !== command)
         .map(cmd => ({ ...cmd, status: 'pending' })),
     );
+
+    setCanSaveJob(false);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -58,8 +65,8 @@ const CommandList: React.FC<CommandListProps> = ({
 
     if (over && active.id !== over.id) {
       setCommandList(items => {
-        const oldIndex = items.findIndex(item => item.title === active.id);
-        const newIndex = items.findIndex(item => item.title === over.id);
+        const oldIndex = parseInt(active.id.toString().split('-').pop() || '0');
+        const newIndex = parseInt(over.id.toString().split('-').pop() || '0');
 
         return arrayMove(items, oldIndex, newIndex).map(item => ({
           ...item,
@@ -67,17 +74,21 @@ const CommandList: React.FC<CommandListProps> = ({
         }));
       });
     }
+
+    setCanSaveJob(false);
   };
 
   return (
-    <div className='flex flex-col gap-2'>
+    <div className='flex flex-1 flex-col gap-2 overflow-x-hidden overflow-y-auto'>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
       >
         <SortableContext
-          items={commandList.map(cmd => cmd.title)}
+          items={commandList.map(
+            cmd => `${cmd.title}-${commandList.indexOf(cmd)}`,
+          )}
           strategy={verticalListSortingStrategy}
         >
           {commandList.map((command, index) => (

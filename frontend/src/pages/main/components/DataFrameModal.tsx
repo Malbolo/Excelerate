@@ -20,7 +20,7 @@ const DataFrameModal: React.FC<DataFrameModalProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className='h-screen min-w-full'>
-        <div className='h-full w-full overflow-auto pt-5'>
+        <div className='my-4 h-full w-full overflow-auto rounded-lg border'>
           <DataTable columns={columns} data={data} />
         </div>
       </DialogContent>

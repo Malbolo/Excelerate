@@ -110,13 +110,13 @@ const SaveJobDialog: React.FC<SaveJobDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger>
+      <DialogTrigger disabled={!canSaveJob || isEditMode}>
         <Button disabled={!canSaveJob || isEditMode}>Save Job</Button>
       </DialogTrigger>
 
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className='pt-2 pb-4 text-center text-xl'>
+          <DialogTitle className='pt-2 pb-4 text-center text-xl font-bold'>
             Save Job
           </DialogTitle>
           <DialogDescription className='flex flex-col'>
@@ -218,7 +218,7 @@ const SaveJobDialog: React.FC<SaveJobDialogProps> = ({
                     disabled={isJobSaving}
                   >
                     {isJobSaving ? (
-                      <ClipLoader size={18} color='#000000' />
+                      <ClipLoader size={18} color='white' />
                     ) : (
                       'Save'
                     )}

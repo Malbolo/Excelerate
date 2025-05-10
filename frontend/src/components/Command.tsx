@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { CSSProperties, useState } from 'react';
 
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -22,10 +22,10 @@ interface CommandProps {
 }
 
 const statusColor = {
-  pending: 'bg-disabled',
-  processing: 'bg-processing',
-  success: 'bg-success',
-  fail: 'bg-fail',
+  pending: 'bg-primary/80',
+  processing: 'bg-primary/80',
+  success: 'bg-success/80',
+  fail: 'bg-destructive/80',
 };
 
 const Command: React.FC<CommandProps> = ({
@@ -50,6 +50,8 @@ const Command: React.FC<CommandProps> = ({
       : {
           transform: CSS.Transform.toString(transform),
           transition,
+          width: '100%',
+          position: 'relative',
         },
     attributes: isEditMode ? {} : attributes,
     listeners: isEditMode ? {} : listeners,
@@ -77,16 +79,19 @@ const Command: React.FC<CommandProps> = ({
     <div className='flex items-center justify-between'>
       <div
         ref={sortableProps.ref}
-        style={sortableProps.style}
+        style={sortableProps.style as CSSProperties}
         {...sortableProps.attributes}
         {...sortableProps.listeners}
         className={cn(
-          'flex grow items-center gap-2 pr-2',
+          'group hover:text-accent-foreground flex grow items-center gap-3 rounded-lg px-2 py-1',
           !isEditMode && 'cursor-move',
         )}
       >
         <div
-          className={cn(statusColor[status], 'h-4 w-4 shrink-0 rounded-full')}
+          className={cn(
+            statusColor[status],
+            'h-1.5 w-1.5 shrink-0 rounded-full transition-all group-hover:scale-125',
+          )}
         />
         {isEditing ? (
           <Input
@@ -106,9 +111,9 @@ const Command: React.FC<CommandProps> = ({
       {isEditing ? (
         <div
           onClick={handleEdit}
-          className='bg-success flex h-6 w-6 cursor-pointer items-center justify-center rounded-full'
+          className='bg-primary/80 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full'
         >
-          <Check className='h-4 w-4' />
+          <Check className='h-4 w-4' color='white' />
         </div>
       ) : (
         <Popover>
@@ -118,16 +123,16 @@ const Command: React.FC<CommandProps> = ({
             </div>
           </PopoverTrigger>
           <PopoverContent className='overflow-hidden'>
-            <ul className='flex w-full flex-col divide-y'>
+            <ul className='divide-primary/70 flex w-full flex-col divide-y'>
               <li
                 onClick={handleEditBtnClick}
-                className='w-full cursor-pointer px-3 py-1 text-center hover:bg-black/10'
+                className='w-full cursor-pointer px-3 py-1 text-center hover:bg-[#F0F7FF]'
               >
                 edit
               </li>
               <li
                 onClick={() => onDelete(command)}
-                className='w-full cursor-pointer px-3 py-1 text-center hover:bg-black/10'
+                className='w-full cursor-pointer px-3 py-1 text-center hover:bg-[#F0F7FF]'
               >
                 delete
               </li>
