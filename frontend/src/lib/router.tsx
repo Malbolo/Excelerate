@@ -12,6 +12,7 @@ import LoginPage from '@/pages/auth';
 import CreateSchedulerPage from '@/pages/createScheduler';
 import DaySchedulePage from '@/pages/daySchedulerMonitoring';
 import JobManagementPage from '@/pages/jobManagement';
+import JobEditPage from '@/pages/jobManagement/edit';
 import MonthSchedulePage from '@/pages/monthSchedulerMonitoring';
 import PlayGroundPage from '@/pages/playGround';
 import ScheduleDetail from '@/pages/scheduleDetail';
@@ -81,6 +82,18 @@ const routes = [
         errorElement: <ErrorBoundary />,
       },
     ],
+  },
+  {
+    path: '/job-management/job/:jobId',
+    element: (
+      <Layout>
+        <Suspense fallback={<div>로딩중...</div>}>
+          <JobEditPage />
+        </Suspense>
+      </Layout>
+    ),
+    errorElement: <ErrorBoundary />,
+    name: 'JobEdit',
   },
   {
     path: '/scheduler-monitoring/month/:monthId',
