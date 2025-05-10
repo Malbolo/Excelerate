@@ -31,7 +31,7 @@ const JobEditPage = () => {
   const getJobDetail = useGetJobDetail();
 
   const [inputCommand, setInputCommand] = useState<string>('');
-  const [step, setStep] = useState<'source' | 'command'>('source');
+  const [step, setStep] = useState<'source' | 'command'>('command');
   const [title, setTitle] = useState<string>('');
 
   const { setSourceDataCommand, setSourceDataUrl, resetSource } =
