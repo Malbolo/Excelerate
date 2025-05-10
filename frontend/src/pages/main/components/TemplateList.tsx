@@ -15,7 +15,7 @@ const TemplateList: React.FC = () => {
               key={template}
               className='group hover:text-accent-foreground flex items-center gap-3 rounded-lg p-1'
             >
-              <div className='bg-primary/80 group-hover:bg-primary h-1.5 w-1.5 rounded-full transition-all group-hover:scale-125' />
+              <div className='bg-primary/80 h-1.5 w-1.5 rounded-full transition-all group-hover:scale-125' />
               {template}
             </li>
           ))}
