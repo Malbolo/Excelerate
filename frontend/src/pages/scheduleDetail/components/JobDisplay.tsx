@@ -2,12 +2,25 @@ import { useState } from 'react';
 
 import { ChevronDown } from 'lucide-react';
 
-import { Collapsible, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { JobResponse } from '@/apis/jobManagement';
+import { Job } from '@/apis/schedulerMonitoring';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 
 import StatusIcon from '../../../components/StatusIcon';
+import CommandItem from './CommandItem';
 
-const JobDisplay = ({ status, title }: { status?: string; title: string }) => {
+interface JobDisplayProps {
+  status?: string;
+  title: string;
+  job: JobResponse | Job;
+}
+
+const JobDisplay = ({ status, title, job }: JobDisplayProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -21,13 +34,13 @@ const JobDisplay = ({ status, title }: { status?: string; title: string }) => {
           className={cn('h-5 w-5 transition-transform', isOpen && 'rotate-180')}
         />
       </CollapsibleTrigger>
-      {/* <CollapsibleContent className='mt-1 rounded-md border border-gray-200 bg-white p-2 shadow'>
+      <CollapsibleContent className='mt-1 rounded-md border border-gray-200 bg-white p-2 shadow'>
         <div className='space-y-1'>
-          {task.commandList.map(command => (
-            <CommandItem key={command.commandId} command={command} />
+          {job.commands.map(command => (
+            <CommandItem key={`${job.id}-${command.order}`} command={command} />
           ))}
         </div>
-      </CollapsibleContent> */}
+      </CollapsibleContent>
     </Collapsible>
   );
 };

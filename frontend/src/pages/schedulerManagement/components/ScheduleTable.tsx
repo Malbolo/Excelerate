@@ -14,8 +14,6 @@ const ScheduleTable = () => {
 
   const { schedules } = data;
 
-  console.log(schedules);
-
   return (
     <div className='rounded-md border'>
       <Table>

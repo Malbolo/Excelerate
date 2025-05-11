@@ -5,7 +5,6 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Schedule } from '@/apis/schedulerManagement';
 import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from '@/components/ui/table';
-import JobDisplay from '@/pages/scheduleDetail/components/JobDisplay';
 
 import {
   formatDate,
@@ -17,10 +16,6 @@ import ScheduleActions from './ScheduleActions';
 interface ScheduleRowProps {
   schedule: Schedule;
 }
-
-// export const getScheduleStatus = (schedule: Schedule): Status => {
-//   return schedule.status;
-// };
 
 const ScheduleRow = ({ schedule }: ScheduleRowProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -79,7 +74,8 @@ const ScheduleRow = ({ schedule }: ScheduleRowProps) => {
               </h4>
               {schedule.jobs.length > 0 ? (
                 schedule.jobs.map(job => (
-                  <JobDisplay key={job.id} title={job.title} />
+                  // <JobDisplay key={job.id} title={job.title} job={job} />
+                  <div key={job.id} />
                 ))
               ) : (
                 <p className='px-2 py-1 text-sm text-gray-500'>

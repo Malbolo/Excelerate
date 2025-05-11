@@ -16,7 +16,6 @@ import {
 const JobSearchInput = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const initialDep = searchParams.get('dep') || '';
   const initialType = searchParams.get('type') || '';
 
   let determinedInitialSearchField = 'title';
@@ -30,7 +29,6 @@ const JobSearchInput = () => {
     determinedInitialSearchQuery = searchParams.get('name') || '';
   }
 
-  const [dep, setDep] = useState<string>(initialDep);
   const [type, setType] = useState<string>(initialType);
   const [searchField, setSearchField] = useState<string>(
     determinedInitialSearchField,
@@ -40,7 +38,6 @@ const JobSearchInput = () => {
   );
 
   useEffect(() => {
-    const currentDep = searchParams.get('dep') || '';
     const currentType = searchParams.get('type') || '';
 
     let currentInferredSearchField = 'title';
@@ -54,7 +51,6 @@ const JobSearchInput = () => {
       currentInferredSearchValue = searchParams.get('name') || '';
     }
 
-    if (dep !== currentDep) setDep(currentDep);
     if (type !== currentType) setType(currentType);
     if (searchField !== currentInferredSearchField)
       setSearchField(currentInferredSearchField);
@@ -81,12 +77,6 @@ const JobSearchInput = () => {
           }
         }
 
-        if (dep) {
-          newParams.set('dep', dep);
-        } else {
-          newParams.delete('dep');
-        }
-
         if (type) {
           newParams.set('type', type);
         } else {
@@ -98,10 +88,6 @@ const JobSearchInput = () => {
       },
       { replace: true },
     );
-  };
-
-  const handleDepChange = (value: string) => {
-    setDep(value);
   };
 
   const handleTypeChange = (value: string) => {
@@ -129,26 +115,6 @@ const JobSearchInput = () => {
 
   return (
     <div className='bg-background flex flex-wrap items-center gap-2 p-2.5'>
-      <Select value={dep} onValueChange={handleDepChange}>
-        <SelectTrigger className='h-9 w-auto min-w-[130px] text-xs focus:ring-0 focus:ring-offset-0 sm:text-sm'>
-          <SelectValue placeholder='Department' />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value='developer' className='text-xs sm:text-sm'>
-            Developer
-          </SelectItem>
-          <SelectItem value='manager' className='text-xs sm:text-sm'>
-            Manager
-          </SelectItem>
-          <SelectItem value='super' className='text-xs sm:text-sm'>
-            Super
-          </SelectItem>
-          <SelectItem value='all' className='text-xs sm:text-sm'>
-            All Departments
-          </SelectItem>
-        </SelectContent>
-      </Select>
-
       <Select value={type} onValueChange={handleTypeChange}>
         <SelectTrigger className='h-9 w-auto min-w-[120px] text-xs focus:ring-0 focus:ring-offset-0 sm:text-sm'>
           <SelectValue placeholder='Job Type' />
