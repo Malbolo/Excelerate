@@ -3,17 +3,19 @@ import { useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 
 import { Schedule } from '@/apis/schedulerManagement';
-import StatusIcon from '@/components/StatusIcon';
 import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from '@/components/ui/table';
 import JobDisplay from '@/pages/scheduleDetail/components/JobDisplay';
-import { Status } from '@/types/scheduler';
 
-import { formatDate, formatInterval } from '../utils/formatInterval';
+import {
+  formatDate,
+  formatDateTime,
+  formatInterval,
+} from '../utils/formatInterval';
 import ScheduleActions from './ScheduleActions';
 
 interface ScheduleRowProps {
-  schedule: Schedule & { status: Status };
+  schedule: Schedule;
 }
 
 // export const getScheduleStatus = (schedule: Schedule): Status => {
@@ -22,7 +24,6 @@ interface ScheduleRowProps {
 
 const ScheduleRow = ({ schedule }: ScheduleRowProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  // const scheduleStatus = getScheduleStatus(schedule);
 
   const toggleExpansion = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -56,13 +57,10 @@ const ScheduleRow = ({ schedule }: ScheduleRowProps) => {
 
         <TableCell>{formatInterval(schedule.frequency_display)}</TableCell>
 
-        <TableCell className='w-[80px]'>
-          {/* 더미데이터 */}
-          <StatusIcon status={schedule.status} />
+        <TableCell>{formatDateTime(schedule.last_run.end_time)}</TableCell>
+        <TableCell>
+          {formatDateTime(schedule.next_run.data_interval_end)}
         </TableCell>
-
-        <TableCell>{formatDate(schedule.execution_time)}</TableCell>
-        <TableCell>{formatDate(schedule.execution_time)}</TableCell>
 
         <TableCell>{formatDate(schedule.end_date)}</TableCell>
 

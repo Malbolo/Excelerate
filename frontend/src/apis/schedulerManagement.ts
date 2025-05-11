@@ -33,6 +33,12 @@ export interface Schedule {
   success_emails: string[];
   failure_emails: string[];
   jobs: JobResponse[];
+  last_run: {
+    end_time: string;
+  };
+  next_run: {
+    data_interval_end: string;
+  };
 }
 
 interface ScheduleListResponse {

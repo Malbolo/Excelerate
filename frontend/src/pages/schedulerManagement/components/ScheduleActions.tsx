@@ -1,7 +1,20 @@
-import { Pause, Play, PlayCircle } from 'lucide-react';
+import { useState } from 'react';
+
+import { Pause, Pencil, Play, PlayCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 import { Schedule, useOneTimeSchedule } from '@/apis/schedulerManagement';
 import { useToggleSchedule } from '@/apis/schedulerManagement';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -15,17 +28,18 @@ interface ScheduleActionsProps {
 }
 
 const ScheduleActions = ({ schedule }: ScheduleActionsProps) => {
+  const navigate = useNavigate();
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const toggleSchedule = useToggleSchedule();
   const oneTimeSchedule = useOneTimeSchedule();
+  console.log(schedule.is_paused);
 
   const handleRun = (e: React.MouseEvent) => {
-    // e.stopPropagation();사용한 이유는, 테이블 시 클릭 시 행 전체가 선택되는 것을 방지하기 위함
     e.stopPropagation();
     toggleSchedule(schedule.schedule_id);
   };
 
   const handlePause = (e: React.MouseEvent) => {
-    // e.stopPropagation();사용한 이유는, 테이블 시 클릭 시 행 전체가 선택되는 것을 방지하기 위함
     e.stopPropagation();
     toggleSchedule(schedule.schedule_id);
   };
@@ -33,6 +47,15 @@ const ScheduleActions = ({ schedule }: ScheduleActionsProps) => {
   const handleTrigger = (e: React.MouseEvent) => {
     e.stopPropagation();
     oneTimeSchedule(schedule.schedule_id);
+  };
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowEditDialog(true);
+  };
+
+  const handleConfirmEdit = () => {
+    navigate(`/scheduler-management/edit/${schedule.schedule_id}`);
   };
 
   return (
@@ -50,14 +73,14 @@ const ScheduleActions = ({ schedule }: ScheduleActionsProps) => {
               }
             >
               {schedule.is_paused ? (
-                <Pause className='h-4 w-4' />
-              ) : (
                 <Play className='h-4 w-4' />
+              ) : (
+                <Pause className='h-4 w-4' />
               )}
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>{schedule.is_paused ? 'Pause Schedule' : 'Resume Schedule'}</p>
+            <p>{schedule.is_paused ? 'Resume Schedule' : 'Pause Schedule'}</p>
           </TooltipContent>
         </Tooltip>
 
@@ -69,7 +92,6 @@ const ScheduleActions = ({ schedule }: ScheduleActionsProps) => {
               onClick={handleTrigger}
               className='h-7 w-7'
               aria-label='Trigger Schedule Once'
-              // disabled={schedule.status === 'success'}
             >
               <PlayCircle className='h-4 w-4' />
             </Button>
@@ -78,7 +100,41 @@ const ScheduleActions = ({ schedule }: ScheduleActionsProps) => {
             <p>Trigger Schedule Once</p>
           </TooltipContent>
         </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant='ghost'
+              size='icon'
+              onClick={handleEdit}
+              className='h-7 w-7'
+              aria-label='Edit Schedule'
+            >
+              <Pencil className='h-4 w-4' />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Edit Schedule</p>
+          </TooltipContent>
+        </Tooltip>
       </div>
+
+      <AlertDialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Edit Schedule</AlertDialogTitle>
+            <AlertDialogDescription>
+              Would you like to edit this schedule?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmEdit}>
+              Edit
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </TooltipProvider>
   );
 };

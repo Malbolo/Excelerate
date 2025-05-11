@@ -26,7 +26,6 @@ const ScheduleTable = () => {
             <TableHead>Owner</TableHead>
             <TableHead>Interval</TableHead>
 
-            <TableHead>Status</TableHead>
             <TableHead>Last Run Time</TableHead>
             <TableHead>Next Run Time</TableHead>
             <TableHead>End Date</TableHead>
@@ -37,7 +36,7 @@ const ScheduleTable = () => {
           {schedules.map((schedule, index) => (
             <ScheduleRow
               key={`${schedule.schedule_id}-${index}`}
-              schedule={{ ...schedule, status: 'success' }}
+              schedule={schedule}
             />
           ))}
         </TableBody>
