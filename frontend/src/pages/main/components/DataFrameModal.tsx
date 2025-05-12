@@ -1,27 +1,20 @@
-import { ColumnDef } from '@tanstack/react-table';
-
 import DataTable from '@/components/DataTable';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { DataFrame, DataFrameRow } from '@/types/dataframe';
+import { useJobResultStore } from '@/store/useJobResultStore';
 
 interface DataFrameModalProps {
   isOpen: boolean;
   onClose: () => void;
-  data: DataFrame;
-  columns: ColumnDef<DataFrameRow>[];
 }
 
-const DataFrameModal: React.FC<DataFrameModalProps> = ({
-  isOpen,
-  onClose,
-  data,
-  columns,
-}) => {
+const DataFrameModal: React.FC<DataFrameModalProps> = ({ isOpen, onClose }) => {
+  const { dataframe, columns } = useJobResultStore();
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className='h-screen min-w-full'>
         <div className='my-4 h-full w-full overflow-auto rounded-lg border'>
-          <DataTable columns={columns} data={data} />
+          <DataTable columns={columns} data={dataframe!} />
         </div>
       </DialogContent>
     </Dialog>

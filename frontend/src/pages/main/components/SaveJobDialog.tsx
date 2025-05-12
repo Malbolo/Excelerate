@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
+import { useParams } from 'react-router-dom';
 import ClipLoader from 'react-spinners/ClipLoader';
 import { z } from 'zod';
 
-import { SaveJobRequest, useSaveJob } from '@/apis/job';
+import { SaveJobRequest, useEditJob, useSaveJob } from '@/apis/job';
+import { useGetJobDetail } from '@/apis/jobManagement';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -37,11 +39,14 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { JOB_TYPES_CONFIG } from '@/constant/job';
 import useInternalRouter from '@/hooks/useInternalRouter';
+import { useCommandStore } from '@/store/useCommandStore';
+import { useJobResultStore } from '@/store/useJobResultStore';
 import { useJobStore } from '@/store/useJobStore';
-import { TCommand } from '@/types/job';
+import { useSourceStore } from '@/store/useSourceStore';
+import { TJobType } from '@/types/agent';
 
 const formSchema = z.object({
-  jobType: z.string(),
+  jobType: z.custom<TJobType>(),
   jobName: z
     .string()
     .min(2, {
@@ -61,22 +66,21 @@ const formSchema = z.object({
   sendEmail: z.boolean().default(false).optional(),
 });
 
-interface SaveJobDialogProps {
-  sourceData: string;
-  sourceDataCommand: string;
-  commandList: TCommand[];
-  code: string;
-}
+const SaveJobDialog: React.FC = () => {
+  const { jobId } = useParams();
 
-const SaveJobDialog: React.FC<SaveJobDialogProps> = ({
-  sourceData,
-  sourceDataCommand,
-  commandList,
-  code,
-}) => {
   const [open, setOpen] = useState(false);
+
+  const { sourceDataCommand, sourceDataUrl } = useSourceStore();
+  const { commandList } = useCommandStore();
+  const { code } = useJobResultStore();
   const { isEditMode, canSaveJob } = useJobStore();
-  const { mutateAsync: jobMutation, isPending: isJobSaving } = useSaveJob();
+
+  const { mutateAsync: saveJobMutation, isPending: isJobSaving } = useSaveJob();
+  const { mutateAsync: editJobMutation, isPending: isJobEditing } =
+    useEditJob();
+
+  const getJobDetail = useGetJobDetail();
 
   const { push } = useInternalRouter();
 
@@ -90,6 +94,23 @@ const SaveJobDialog: React.FC<SaveJobDialogProps> = ({
     },
   });
 
+  useEffect(() => {
+    const fetchJobDetail = async () => {
+      if (!jobId) return;
+
+      const data = await getJobDetail(jobId);
+
+      form.reset({
+        jobType: data.type,
+        jobName: data.title,
+        jobDescription: data.description,
+        sendEmail: false,
+      });
+    };
+
+    fetchJobDetail();
+  }, []);
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     const { jobType, jobName, jobDescription } = values;
     const request: SaveJobRequest = {
@@ -97,12 +118,14 @@ const SaveJobDialog: React.FC<SaveJobDialogProps> = ({
       title: jobName,
       description: jobDescription,
       data_load_command: sourceDataCommand,
-      data_load_url: sourceData,
+      data_load_url: sourceDataUrl,
       commands: commandList.map(command => command.title),
       code,
     };
 
-    await jobMutation(request);
+    if (jobId) await editJobMutation({ request, jobId });
+    else await saveJobMutation(request);
+
     setOpen(false);
     form.reset();
     push('/job-management');
@@ -131,7 +154,11 @@ const SaveJobDialog: React.FC<SaveJobDialogProps> = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormControl>
-                        <Select onValueChange={field.onChange} required>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                          required
+                        >
                           <SelectTrigger className='w-full'>
                             <SelectValue placeholder='Job Type' />
                           </SelectTrigger>
@@ -218,9 +245,9 @@ const SaveJobDialog: React.FC<SaveJobDialogProps> = ({
                   <Button
                     type='submit'
                     className='flex-1'
-                    disabled={isJobSaving}
+                    disabled={isJobSaving || isJobEditing}
                   >
-                    {isJobSaving ? (
+                    {isJobSaving || isJobEditing ? (
                       <ClipLoader size={18} color='white' />
                     ) : (
                       'Save'

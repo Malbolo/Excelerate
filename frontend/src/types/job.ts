@@ -2,10 +2,10 @@ import { DataFrameRow } from '@/types/dataframe';
 
 export interface TCommand {
   title: string;
-  status: TStatus;
+  status: TCommandStatus;
 }
 
-export type TStatus = 'pending' | 'processing' | 'success' | 'fail';
+export type TCommandStatus = 'pending' | 'processing' | 'success' | 'fail';
 
 export interface TMachine extends DataFrameRow {
   machineId: string;

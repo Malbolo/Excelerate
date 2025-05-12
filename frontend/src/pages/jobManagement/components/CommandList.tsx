@@ -17,6 +17,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import useInternalRouter from '@/hooks/useInternalRouter';
 
 const CommandList = ({ selectedJob }: { selectedJob: JobResponse | null }) => {
   const [searchParams] = useSearchParams();
@@ -25,6 +26,8 @@ const CommandList = ({ selectedJob }: { selectedJob: JobResponse | null }) => {
 
   const deleteJobMutation = useDeleteJob();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  const { push } = useInternalRouter();
 
   const handleOpenDeleteDialog = () => {
     if (!selectedJob) return;
@@ -39,7 +42,7 @@ const CommandList = ({ selectedJob }: { selectedJob: JobResponse | null }) => {
 
   const handleJobEdit = () => {
     if (!selectedJob) return;
-    console.log('Edit job:', selectedJob.id);
+    push(`/job-management/edit/${selectedJob.id}`);
   };
 
   if (!selectedJob) {

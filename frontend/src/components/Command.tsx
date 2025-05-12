@@ -3,6 +3,7 @@ import { CSSProperties, useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Check, MoreVertical } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Input } from '@/components/ui/input';
 import {
@@ -11,14 +12,14 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { useCommandStore } from '@/store/useCommandStore';
 import { useJobStore } from '@/store/useJobStore';
+import { TCommandStatus } from '@/types/job';
 
 interface CommandProps {
   id: string;
   command: string;
-  status?: 'pending' | 'processing' | 'success' | 'fail';
-  onDelete: (command: string) => void;
-  onEdit: (command: string, newCommand: string) => void;
+  status?: TCommandStatus;
 }
 
 const statusColor = {
@@ -32,13 +33,14 @@ const Command: React.FC<CommandProps> = ({
   id,
   command,
   status = 'pending',
-  onDelete,
-  onEdit,
 }) => {
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editingCommand, setEdtingCommand] = useState<string>(command);
 
-  const { isEditMode, setIsEditMode } = useJobStore();
+  const { updateCommand, deleteCommand } = useCommandStore();
+  const { isEditMode, setIsEditMode, setCanSaveJob } = useJobStore();
+
+  const commandIndex = Number(id.split('-').pop());
 
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id });
@@ -59,7 +61,7 @@ const Command: React.FC<CommandProps> = ({
 
   const handleEditBtnClick = () => {
     if (isEditMode) {
-      alert('Edit mode is already on');
+      toast.error('Edit mode is already on');
       return;
     }
     setIsEditMode(true);
@@ -69,10 +71,19 @@ const Command: React.FC<CommandProps> = ({
   const handleEdit = () => {
     if (!editingCommand.trim()) return;
 
-    onEdit(command, editingCommand);
+    updateCommand(commandIndex, editingCommand);
 
     setIsEditMode(false);
     setIsEditing(false);
+    setCanSaveJob(false);
+  };
+
+  const handleDelete = () => {
+    deleteCommand(commandIndex);
+
+    setIsEditMode(false);
+    setIsEditing(false);
+    setCanSaveJob(false);
   };
 
   return (
@@ -131,7 +142,7 @@ const Command: React.FC<CommandProps> = ({
                 edit
               </li>
               <li
-                onClick={() => onDelete(command)}
+                onClick={handleDelete}
                 className='w-full cursor-pointer px-3 py-1 text-center hover:bg-[#F0F7FF]'
               >
                 delete
