@@ -48,10 +48,10 @@ async def get_job_detail(job_id: str, db: Session) -> JSONResponse:
         return JSONResponse(content=response.dict())
 
 async def update_job(db: Session, job_id: int, job_request: JobUpdateRequest, user_id: int):
-    return crud.update_job(db, job_id, job_request, user_id)
+    return JSONResponse(content=crud.update_job(db, job_id, job_request, user_id).dict())
 
 def delete_job(db: Session, job_id: int, user_id: int):
-    return crud.delete_job(db, job_id, user_id)
+    return JSONResponse(content=crud.delete_job(db, job_id, user_id).dict())
 
 def filter_query(request: JobDetailRequest, query):
     if request.name:

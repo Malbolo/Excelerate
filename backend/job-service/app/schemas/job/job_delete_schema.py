@@ -1,5 +1,5 @@
 from pydantic import BaseModel
 
-class JobDeleteSchema(BaseModel):
+class JobDeleteResponse(BaseModel):
     result: str
     data: None
