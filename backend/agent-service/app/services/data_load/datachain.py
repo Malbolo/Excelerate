@@ -190,6 +190,9 @@ class FileAPIClient:
         # 로그 스트리밍
         q.put_nowait(entity_logs[-1])
 
+        if entities.start_date is None:
+            raise HTTPException(status_code=400, detail=f"Start date is required")
+
         # 2) start_date가 ISO 포맷이 아니면 → LLM으로 코드 생성 후 exec
         if not is_iso_date(entities.start_date):
             self.mlogger.set_name("LLM Call: Transfrom Date Param")
