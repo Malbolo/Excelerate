@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/pagination';
 import useInternalRouter from '@/hooks/useInternalRouter';
 import usePagination from '@/hooks/usePagination';
+import { formatDateTime } from '@/pages/schedulerManagement/utils/formatInterval';
 
 const JobPagination: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -55,7 +56,7 @@ const JobPagination: React.FC = () => {
             </CardHeader>
             <CardContent className='flex w-full justify-between'>
               <p>{log.user_name}</p>
-              <p>{log.created_at}</p>
+              <p>{formatDateTime(log.created_at)}</p>
             </CardContent>
           </Card>
         ))}
