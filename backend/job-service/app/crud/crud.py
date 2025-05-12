@@ -22,12 +22,12 @@ def get_job_detail_by_id(db: Session, job_id: str):
     return db.query(models.Job).filter(models.Job.id == job_id).one()
 
 def update_job(db: Session, job_id: int, job_request: JobUpdateRequest, user_id: int):
-    job = db.query(Job).filter(Job.id == job_id, Job.user_id == user_id).first()
+    job = db.query(Job).filter(Job.id == job_id, Job.user_id == user_id).one()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found or access denied")
 
     job.type = job_request.type
-    job.name = job_request.name
+    job.title = job_request.title
     job.description = job_request.description
     job.data_load_command = job_request.data_load_command
     job.data_load_url = job_request.data_load_url
@@ -45,13 +45,15 @@ def update_job(db: Session, job_id: int, job_request: JobUpdateRequest, user_id:
     db.commit()
     db.refresh(job)
 
-    return {
-        "result": "success",
-        "data": {
-            "job_id": job.id,
-            "updated_at": job.updated_at.isoformat()
-        }
-    }
+    data = JobUpdateResponseData(
+        job_id=str(job.id),
+        updated_at=str(job.updated_at)
+    )
+
+    return JobUpdateResponse(
+        result="success",
+        data=data
+    )
 
 
 def delete_job(db: Session, job_id: int, user_id: int):
@@ -63,7 +65,9 @@ def delete_job(db: Session, job_id: int, user_id: int):
     db.delete(job)
     db.commit()
 
-    return {"result": "success", "data": None}
+    response = JobDeleteResponse(result="success", data=None)
+
+    return response
 
 
 def get_job_by_id(db: Session, job_id: str):
