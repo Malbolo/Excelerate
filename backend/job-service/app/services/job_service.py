@@ -1,4 +1,5 @@
 import math
+from sqlalchemy import or_
 from sqlalchemy.orm.exc import NoResultFound
 from fastapi import HTTPException
 from sqlalchemy.orm import Session, joinedload
@@ -54,8 +55,9 @@ def filter_query(request: JobDetailRequest, query):
         query = query.filter(models.Job.user_name.ilike(f"%{request.name}%"))
     if request.dep:
         query = query.filter(models.Job.user_department == request.dep)
-    if request.type:
-        query = query.filter(models.Job.type == request.type)
+    if request.types:
+        types = [t.strip() for t in request.types.split(',')]
+        query = query.filter(or_(*[models.Job.type == t for t in types]))
     if request.title:
         query = query.filter(models.Job.title.ilike(f"%{request.title}%"))
     return query
