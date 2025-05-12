@@ -1,4 +1,9 @@
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { CreateScheduleFormData } from '@/pages/createScheduler/components/CreateScheduleModal';
@@ -33,6 +38,12 @@ export interface Schedule {
   success_emails: string[];
   failure_emails: string[];
   jobs: JobResponse[];
+  last_run: null | {
+    end_time: string;
+  };
+  next_run: {
+    data_interval_end: string;
+  };
 }
 
 interface ScheduleListResponse {
@@ -88,8 +99,8 @@ const createSchedule = async (schedule: CreateScheduleFormData) => {
           id: String(job.id),
           order: index + 1,
         })),
-        success_emails: [schedule.successEmail],
-        failure_emails: [schedule.failEmail],
+        success_emails: schedule.successEmail,
+        failure_emails: schedule.failEmail,
         start_date: schedule.startDate.toISOString().split('.')[0],
         end_date: schedule.endDate?.toISOString().split('.')[0],
         execution_time: schedule.executionTime,
@@ -105,11 +116,14 @@ const createSchedule = async (schedule: CreateScheduleFormData) => {
   return;
 };
 
-const updateSchedule = async (schedule: CreateScheduleFormData) => {
+const updateSchedule = async (
+  scheduleId: string,
+  schedule: CreateScheduleFormData,
+) => {
   const { error, success } = await api<CreateScheduleResponse>(
-    '/api/schedules',
+    `/api/schedules/${scheduleId}`,
     {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify({
         title: schedule.scheduleTitle,
         description: schedule.scheduleDescription,
@@ -117,8 +131,8 @@ const updateSchedule = async (schedule: CreateScheduleFormData) => {
           id: String(job.id),
           order: index + 1,
         })),
-        success_emails: [schedule.successEmail],
-        failure_emails: [schedule.failEmail],
+        success_emails: schedule.successEmail,
+        failure_emails: schedule.failEmail,
         start_date: schedule.startDate.toISOString().split('.')[0],
         end_date: schedule.endDate?.toISOString().split('.')[0],
         execution_time: schedule.executionTime,
@@ -158,6 +172,18 @@ const oneTimeSchedule = async (scheduleId: string) => {
   return;
 };
 
+const deleteSchedule = async (scheduleId: string) => {
+  const { error, success } = await api(`/api/schedules/${scheduleId}`, {
+    method: 'DELETE',
+  });
+
+  if (!success) {
+    throw new Error(error);
+  }
+
+  return;
+};
+
 export const useToggleSchedule = () => {
   const { mutate } = useMutation({
     mutationFn: (scheduleId: string) => toggleSchedule(scheduleId),
@@ -175,10 +201,31 @@ export const useOneTimeSchedule = () => {
 };
 
 export const useCreateSchedule = () => {
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
   const { mutate } = useMutation({
     mutationFn: (schedule: CreateScheduleFormData) => createSchedule(schedule),
     onSuccess: () => {
-      toast.success('스케쥴이 생성되었습니다.');
+      toast.success('Schedule created successfully');
+      queryClient.invalidateQueries({ queryKey: ['scheduleList'] });
+      navigate('/scheduler-management');
+    },
+    onError: error => {
+      toast.error(error.message);
+    },
+  });
+
+  return mutate;
+};
+
+export const useDeleteSchedule = () => {
+  const queryClient = useQueryClient();
+  const { mutate } = useMutation({
+    mutationFn: (scheduleId: string) => deleteSchedule(scheduleId),
+    onSuccess: () => {
+      toast.success('Schedule deleted successfully');
+      queryClient.invalidateQueries({ queryKey: ['scheduleList'] });
     },
     onError: error => {
       toast.error(error.message);
@@ -189,10 +236,20 @@ export const useCreateSchedule = () => {
 };
 
 export const useUpdateSchedule = () => {
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const { mutate } = useMutation({
-    mutationFn: (schedule: CreateScheduleFormData) => updateSchedule(schedule),
+    mutationFn: ({
+      scheduleId,
+      schedule,
+    }: {
+      scheduleId: string;
+      schedule: CreateScheduleFormData;
+    }) => updateSchedule(scheduleId, schedule),
     onSuccess: () => {
-      toast.success('스케쥴이 수정되었습니다.');
+      toast.success('Schedule updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['scheduleList'] });
+      navigate('/scheduler-management');
     },
     onError: error => {
       toast.error(error.message);

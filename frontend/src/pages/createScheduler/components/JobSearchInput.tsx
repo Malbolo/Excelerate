@@ -1,9 +1,17 @@
 import { ChangeEvent, KeyboardEvent, useEffect, useState } from 'react';
 
-import { SearchIcon } from 'lucide-react';
+import { ChevronsUpDown, SearchIcon } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -12,12 +20,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { JOB_TYPES_CONFIG } from '@/constant/job';
+
+const ALL_TYPES_OPTION = { id: 'all', label: 'All Types' };
 
 const JobSearchInput = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const initialDep = searchParams.get('dep') || '';
-  const initialType = searchParams.get('type') || '';
+  const initialTypesString = searchParams.get('types') || '';
+  const initialSelectedTypes = initialTypesString
+    ? initialTypesString.split(',')
+    : [];
 
   let determinedInitialSearchField = 'title';
   let determinedInitialSearchQuery = '';
@@ -30,8 +43,8 @@ const JobSearchInput = () => {
     determinedInitialSearchQuery = searchParams.get('name') || '';
   }
 
-  const [dep, setDep] = useState<string>(initialDep);
-  const [type, setType] = useState<string>(initialType);
+  const [selectedTypes, setSelectedTypes] =
+    useState<string[]>(initialSelectedTypes);
   const [searchField, setSearchField] = useState<string>(
     determinedInitialSearchField,
   );
@@ -40,8 +53,10 @@ const JobSearchInput = () => {
   );
 
   useEffect(() => {
-    const currentDep = searchParams.get('dep') || '';
-    const currentType = searchParams.get('type') || '';
+    const currentTypesString = searchParams.get('types') || '';
+    const currentSelectedTypesFromParams = currentTypesString
+      ? currentTypesString.split(',')
+      : [];
 
     let currentInferredSearchField = 'title';
     let currentInferredSearchValue = '';
@@ -54,23 +69,26 @@ const JobSearchInput = () => {
       currentInferredSearchValue = searchParams.get('name') || '';
     }
 
-    if (dep !== currentDep) setDep(currentDep);
-    if (type !== currentType) setType(currentType);
-    if (searchField !== currentInferredSearchField)
+    if (
+      JSON.stringify(selectedTypes.sort()) !==
+      JSON.stringify(currentSelectedTypesFromParams.sort())
+    ) {
+      setSelectedTypes(currentSelectedTypesFromParams);
+    }
+    if (searchField !== currentInferredSearchField) {
       setSearchField(currentInferredSearchField);
-    if (searchValue !== currentInferredSearchValue)
+    }
+    if (searchValue !== currentInferredSearchValue) {
       setSearchValue(currentInferredSearchValue);
+    }
   }, [searchParams]);
 
-  const handleSearch = () => {
+  const updateSearchParams = (updatedTypes: string[]) => {
     setSearchParams(
       prev => {
         const newParams = new URLSearchParams(prev.toString());
         newParams.delete('title');
         newParams.delete('name');
-        newParams.delete('keyword');
-
-        newParams.delete('searchField');
 
         const trimmedSearchValue = searchValue.trim();
         if (trimmedSearchValue) {
@@ -79,18 +97,15 @@ const JobSearchInput = () => {
           } else {
             newParams.set('title', trimmedSearchValue);
           }
+        } else {
+          newParams.delete('name');
+          newParams.delete('title');
         }
 
-        if (dep) {
-          newParams.set('dep', dep);
+        if (updatedTypes.length > 0) {
+          newParams.set('types', updatedTypes.join(','));
         } else {
-          newParams.delete('dep');
-        }
-
-        if (type) {
-          newParams.set('type', type);
-        } else {
-          newParams.delete('type');
+          newParams.delete('types');
         }
 
         newParams.set('page', '1');
@@ -100,17 +115,61 @@ const JobSearchInput = () => {
     );
   };
 
-  const handleDepChange = (value: string) => {
-    setDep(value);
-  };
+  const handleSelectedTypesChange = (typeId: string, checked: boolean) => {
+    let newSelectedTypes: string[];
 
-  const handleTypeChange = (value: string) => {
-    setType(value);
+    if (typeId === ALL_TYPES_OPTION.id) {
+      newSelectedTypes = checked
+        ? [...JOB_TYPES_CONFIG.map(t => t.id), ALL_TYPES_OPTION.id]
+        : [];
+    } else {
+      const otherSelectedTypes = selectedTypes.filter(
+        id => id !== ALL_TYPES_OPTION.id,
+      );
+      let currentIndividualSelections = checked
+        ? [...otherSelectedTypes, typeId]
+        : otherSelectedTypes.filter(id => id !== typeId);
+
+      currentIndividualSelections = Array.from(
+        new Set(currentIndividualSelections),
+      );
+
+      const allOtherTypesSelected = JOB_TYPES_CONFIG.every(t =>
+        currentIndividualSelections.includes(t.id),
+      );
+
+      if (allOtherTypesSelected) {
+        newSelectedTypes = [
+          ...currentIndividualSelections,
+          ALL_TYPES_OPTION.id,
+        ];
+      } else {
+        newSelectedTypes = currentIndividualSelections;
+      }
+    }
+
+    const finalSelectedTypes = Array.from(new Set(newSelectedTypes));
+    setSelectedTypes(finalSelectedTypes);
+    updateSearchParams(finalSelectedTypes);
   };
 
   const handleSearchFieldChange = (value: string) => {
     setSearchField(value);
     setSearchValue('');
+    setSearchParams(
+      prev => {
+        const newParams = new URLSearchParams(prev.toString());
+        newParams.delete('title');
+        newParams.delete('name');
+        if (value === 'user' && searchValue.trim())
+          newParams.set('name', searchValue.trim());
+        else if (value === 'title' && searchValue.trim())
+          newParams.set('title', searchValue.trim());
+        newParams.set('page', '1');
+        return newParams;
+      },
+      { replace: true },
+    );
   };
 
   const handleSearchValueChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -118,7 +177,7 @@ const JobSearchInput = () => {
   };
 
   const executeSearch = () => {
-    handleSearch();
+    updateSearchParams(selectedTypes);
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -127,86 +186,95 @@ const JobSearchInput = () => {
     }
   };
 
+  const getSelectedTypesLabel = () => {
+    if (selectedTypes.includes(ALL_TYPES_OPTION.id))
+      return ALL_TYPES_OPTION.label;
+    if (selectedTypes.length === 0) return 'Job Type';
+    if (selectedTypes.length === 1) {
+      const foundType = JOB_TYPES_CONFIG.find(t => t.id === selectedTypes[0]);
+      return foundType ? foundType.label : 'Job Type';
+    }
+    return `${selectedTypes.length} types selected`;
+  };
+
   return (
-    <div className='bg-background flex flex-wrap items-center gap-2 p-2.5'>
-      <Select value={dep} onValueChange={handleDepChange}>
-        <SelectTrigger className='h-9 w-auto min-w-[130px] text-xs focus:ring-0 focus:ring-offset-0 sm:text-sm'>
-          <SelectValue placeholder='Department' />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value='developer' className='text-xs sm:text-sm'>
-            Developer
-          </SelectItem>
-          <SelectItem value='manager' className='text-xs sm:text-sm'>
-            Manager
-          </SelectItem>
-          <SelectItem value='super' className='text-xs sm:text-sm'>
-            Super
-          </SelectItem>
-          <SelectItem value='all' className='text-xs sm:text-sm'>
-            All Departments
-          </SelectItem>
-        </SelectContent>
-      </Select>
+    <div className='flex flex-col gap-4 rounded-md border p-4 md:flex-row md:items-start'>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant='outline'
+            className='data-[state=open]:bg-accent h-9 w-full justify-between text-xs focus:ring-0 focus:ring-offset-0 sm:text-sm md:w-auto md:min-w-[200px]'
+          >
+            {getSelectedTypesLabel()}
+            <ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className='w-[--radix-dropdown-menu-trigger-width]'>
+          <DropdownMenuLabel>Select Job Types</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuCheckboxItem
+            key={ALL_TYPES_OPTION.id}
+            checked={selectedTypes.includes(ALL_TYPES_OPTION.id)}
+            onCheckedChange={checked =>
+              handleSelectedTypesChange(ALL_TYPES_OPTION.id, !!checked)
+            }
+            onSelect={e => e.preventDefault()}
+          >
+            {ALL_TYPES_OPTION.label}
+          </DropdownMenuCheckboxItem>
+          <DropdownMenuSeparator />
+          {JOB_TYPES_CONFIG.map(jobType => (
+            <DropdownMenuCheckboxItem
+              key={jobType.id}
+              checked={selectedTypes.includes(jobType.id)}
+              onCheckedChange={checked =>
+                handleSelectedTypesChange(jobType.id, !!checked)
+              }
+              disabled={selectedTypes.includes(ALL_TYPES_OPTION.id)}
+              onSelect={e => e.preventDefault()}
+            >
+              {jobType.label}
+            </DropdownMenuCheckboxItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-      <Select value={type} onValueChange={handleTypeChange}>
-        <SelectTrigger className='h-9 w-auto min-w-[120px] text-xs focus:ring-0 focus:ring-offset-0 sm:text-sm'>
-          <SelectValue placeholder='Job Type' />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value='create' className='text-xs sm:text-sm'>
-            Create
-          </SelectItem>
-          <SelectItem value='delete' className='text-xs sm:text-sm'>
-            Delete
-          </SelectItem>
-          <SelectItem value='update' className='text-xs sm:text-sm'>
-            Update
-          </SelectItem>
-          <SelectItem value='read' className='text-xs sm:text-sm'>
-            Read
-          </SelectItem>
-          <SelectItem value='all' className='text-xs sm:text-sm'>
-            All Types
-          </SelectItem>
-        </SelectContent>
-      </Select>
-
-      <Select value={searchField} onValueChange={handleSearchFieldChange}>
-        <SelectTrigger className='h-9 w-auto min-w-[110px] text-xs focus:ring-0 focus:ring-offset-0 sm:text-sm'>
-          <SelectValue placeholder='Search By' />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value='title' className='text-xs sm:text-sm'>
-            Title
-          </SelectItem>
-          <SelectItem value='user' className='text-xs sm:text-sm'>
-            User
-          </SelectItem>
-        </SelectContent>
-      </Select>
-
-      <div className='flex min-w-[200px] flex-grow items-center'>
-        <Input
-          type='text'
-          placeholder={
-            searchField === 'title'
-              ? 'Search by title...'
-              : 'Search by user name...'
-          }
-          value={searchValue}
-          onChange={handleSearchValueChange}
-          onKeyDown={handleKeyDown}
-          className='h-9 flex-grow rounded-r-none border-r-0 text-xs focus:ring-0 focus:ring-offset-0 sm:text-sm'
-        />
-        <Button
-          onClick={executeSearch}
-          size='sm'
-          className='h-9 rounded-l-none px-3 text-xs sm:text-sm'
-          aria-label='Search'
-        >
-          <SearchIcon className='h-4 w-4' />
-        </Button>
+      <div className='flex flex-grow flex-col gap-2 md:flex-row md:items-center'>
+        <Select value={searchField} onValueChange={handleSearchFieldChange}>
+          <SelectTrigger className='h-9 w-auto min-w-[110px] text-xs focus:ring-0 focus:ring-offset-0 sm:text-sm'>
+            <SelectValue placeholder='Search By' />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value='title' className='text-xs sm:text-sm'>
+              Title
+            </SelectItem>
+            <SelectItem value='user' className='text-xs sm:text-sm'>
+              User
+            </SelectItem>
+          </SelectContent>
+        </Select>
+        <div className='flex min-w-[200px] flex-grow items-center'>
+          <Input
+            type='text'
+            placeholder={
+              searchField === 'title'
+                ? 'Search by title...'
+                : 'Search by user name...'
+            }
+            value={searchValue}
+            onChange={handleSearchValueChange}
+            onKeyDown={handleKeyDown}
+            className='h-9 flex-grow rounded-r-none border-r-0 text-xs focus:ring-0 focus:ring-offset-0 sm:text-sm'
+          />
+          <Button
+            onClick={executeSearch}
+            size='sm'
+            className='h-9 rounded-l-none px-3 text-xs sm:text-sm'
+            aria-label='Search'
+          >
+            <SearchIcon className='h-4 w-4' />
+          </Button>
+        </div>
       </div>
     </div>
   );

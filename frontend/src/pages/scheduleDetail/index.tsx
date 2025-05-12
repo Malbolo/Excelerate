@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useGetRunDetail } from '@/apis/schedulerMonitoring';
 import SchedulerMonitoringLayout from '@/components/Layout/SchedulerMonitoringLayout';
 
+import DebugMode from './components/DebugMode';
 import JobDisplay from './components/JobDisplay';
 
 const ScheduleDetail = () => {
@@ -13,8 +14,6 @@ const ScheduleDetail = () => {
   };
 
   const { data: scheduleData } = useGetRunDetail(scheduleId, runId);
-
-  console.log(scheduleData);
 
   return (
     <SchedulerMonitoringLayout
@@ -44,8 +43,13 @@ const ScheduleDetail = () => {
           <h2 className='mb-4 border-b pb-2 text-xl font-semibold text-gray-700'>
             Jobs
           </h2>
-          {scheduleData.tasks.map(task => (
-            <JobDisplay key={task.job_id} task={task} />
+          {scheduleData.jobs.map(job => (
+            <JobDisplay
+              key={job.id}
+              status={job.status}
+              title={job.title}
+              job={job}
+            />
           ))}
         </div>
 
@@ -53,7 +57,10 @@ const ScheduleDetail = () => {
           <h2 className='mb-4 border-b pb-2 text-xl font-semibold text-gray-700'>
             Details
           </h2>
-          {/* <DebugMode schedule={scheduleData} /> */}
+          {scheduleData.jobs.map(
+            job =>
+              job.error_log && <DebugMode key={job.id} error={job.error_log} />,
+          )}
         </div>
       </div>
     </SchedulerMonitoringLayout>

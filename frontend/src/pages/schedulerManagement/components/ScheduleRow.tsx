@@ -3,26 +3,22 @@ import { useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 
 import { Schedule } from '@/apis/schedulerManagement';
-import StatusIcon from '@/components/StatusIcon';
 import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from '@/components/ui/table';
-import JobDisplay from '@/pages/scheduleDetail/components/JobDisplay';
-import { Status } from '@/types/scheduler';
 
-import { formatDate, formatInterval } from '../utils/formatInterval';
+import {
+  formatDate,
+  formatDateTime,
+  formatInterval,
+} from '../utils/formatInterval';
 import ScheduleActions from './ScheduleActions';
 
 interface ScheduleRowProps {
-  schedule: Schedule & { status: Status };
+  schedule: Schedule;
 }
-
-// export const getScheduleStatus = (schedule: Schedule): Status => {
-//   return schedule.status;
-// };
 
 const ScheduleRow = ({ schedule }: ScheduleRowProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  // const scheduleStatus = getScheduleStatus(schedule);
 
   const toggleExpansion = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -56,15 +52,14 @@ const ScheduleRow = ({ schedule }: ScheduleRowProps) => {
 
         <TableCell>{formatInterval(schedule.frequency_display)}</TableCell>
 
-        <TableCell className='w-[80px]'>
-          {/* 더미데이터 */}
-          <StatusIcon status={schedule.status} />
+        <TableCell>
+          {schedule.last_run ? formatDateTime(schedule.last_run.end_time) : '-'}
+        </TableCell>
+        <TableCell>
+          {formatDateTime(schedule.next_run.data_interval_end)}
         </TableCell>
 
-        {/* Last run , Next run, End Date */}
-        <TableCell>{formatDate(schedule.execution_time)}</TableCell>
-        <TableCell>{formatDate(schedule.execution_time)}</TableCell>
-        <TableCell>{formatDate(schedule.execution_time)}</TableCell>
+        <TableCell>{formatDate(schedule.end_date)}</TableCell>
 
         <TableCell className='w-[150px]'>
           <ScheduleActions schedule={schedule} />
@@ -81,14 +76,8 @@ const ScheduleRow = ({ schedule }: ScheduleRowProps) => {
               </h4>
               {schedule.jobs.length > 0 ? (
                 schedule.jobs.map(job => (
-                  <JobDisplay
-                    key={job.id}
-                    task={{
-                      task_id: job.id,
-                      job_id: job.id,
-                      status: 'failed',
-                    }}
-                  />
+                  // <JobDisplay key={job.id} title={job.title} job={job} />
+                  <div key={job.id} />
                 ))
               ) : (
                 <p className='px-2 py-1 text-sm text-gray-500'>

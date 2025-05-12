@@ -52,12 +52,21 @@ interface GetRunIdResponse {
   ];
 }
 
-export interface Task {
-  task_id: string;
-  job_id: string;
-  status: string;
-  start_time?: string;
-  end_time?: string;
+export interface Command {
+  content: string;
+  order: number;
+}
+
+export interface Job {
+  commands: Command[];
+  description: string;
+  end_time: string;
+  id: string;
+  logs_url: string;
+  start_time: string;
+  status: 'failed' | 'success' | 'pending';
+  title: string;
+  error_log: JobError | null;
 }
 
 export interface RunDetailResponse {
@@ -67,8 +76,14 @@ export interface RunDetailResponse {
   status: string;
   start_time: string;
   end_time: string;
-  tasks: Task[];
+  jobs: Job[];
   logs_url: string;
+}
+
+export interface JobError {
+  error_message: string;
+  error_trace: string;
+  error_time: string;
 }
 
 const getRunDetail = async (scheduleId: string, runId: string) => {

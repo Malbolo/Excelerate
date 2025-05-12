@@ -9,12 +9,6 @@ export interface FrequencyDisplay {
   dayOfMonth?: number;
 }
 
-export interface Command {
-  commandId: string;
-  commandTitle: string;
-  commandStatus: Status;
-}
-
 export interface Job {
   id: string;
   order: number;

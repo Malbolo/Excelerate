@@ -35,13 +35,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { JOB_TYPE } from '@/constant/job';
+import { JOB_TYPES_CONFIG } from '@/constant/job';
 import useInternalRouter from '@/hooks/useInternalRouter';
 import { useJobStore } from '@/store/useJobStore';
 import { TCommand } from '@/types/job';
 
 const formSchema = z.object({
-  jobType: z.nativeEnum(JOB_TYPE),
+  jobType: z.string(),
   jobName: z
     .string()
     .min(2, {
@@ -136,9 +136,12 @@ const SaveJobDialog: React.FC<SaveJobDialogProps> = ({
                             <SelectValue placeholder='Job Type' />
                           </SelectTrigger>
                           <SelectContent>
-                            {Object.values(JOB_TYPE).map((job, index) => (
-                              <SelectItem key={`${job}-${index}`} value={job}>
-                                {job}
+                            {JOB_TYPES_CONFIG.map((job, index) => (
+                              <SelectItem
+                                key={`${job.id}-${index}`}
+                                value={job.id}
+                              >
+                                {job.label}
                               </SelectItem>
                             ))}
                           </SelectContent>

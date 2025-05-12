@@ -26,7 +26,7 @@ const CreateSchedulerPage = () => {
 
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
   const dep = searchParams.get('dep') || '';
-  const type = searchParams.get('type') || '';
+  const types = searchParams.get('types') || '';
   const title = searchParams.get('title') || '';
   const name = searchParams.get('name') || '';
 
@@ -34,7 +34,7 @@ const CreateSchedulerPage = () => {
     page: currentPage,
     title,
     dep,
-    type,
+    types,
     name,
     mine: false,
   });
@@ -64,10 +64,8 @@ const CreateSchedulerPage = () => {
     [selectedJobs],
   );
 
-  const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().getMonth() + 1;
-  const layoutTitle = `Create Schedule`;
-  const backPath = `/scheduler-monitoring/month/${currentYear}-${String(currentMonth).padStart(2, '0')}`;
+  const layoutTitle = `Edit Schedule`;
+  const backPath = '/scheduler-management';
 
   return (
     <SchedulerMonitoringLayout title={layoutTitle} backPath={backPath}>

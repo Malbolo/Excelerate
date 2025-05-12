@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { JOB_TYPE } from '@/constant/job';
+import { JOB_TYPES_CONFIG } from '@/constant/job';
 import { DEPARTMENT } from '@/constant/user';
 import useClickOutsideRef from '@/hooks/useClickOutsideRef';
 import useInternalRouter from '@/hooks/useInternalRouter';
@@ -62,9 +62,9 @@ const AgentMonitoringPage: React.FC = () => {
               <SelectValue placeholder='Job Type' />
             </SelectTrigger>
             <SelectContent>
-              {Object.values(JOB_TYPE).map((job, index) => (
-                <SelectItem key={`${job}-${index}`} value={job}>
-                  {job}
+              {JOB_TYPES_CONFIG.map((job, index) => (
+                <SelectItem key={`${job.id}-${index}`} value={job.id}>
+                  {job.label}
                 </SelectItem>
               ))}
             </SelectContent>

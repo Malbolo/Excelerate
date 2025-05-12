@@ -23,14 +23,14 @@ const JobManagementPage = () => {
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
   const title = searchParams.get('title') || '';
   const dep = searchParams.get('dep') || '';
-  const type = searchParams.get('type') || '';
+  const types = searchParams.get('types') || '';
   const name = searchParams.get('name') || '';
 
   const { data: jobList } = useGetJobList({
     page: currentPage,
     title,
     dep,
-    type,
+    types,
     name,
     mine: true,
   });

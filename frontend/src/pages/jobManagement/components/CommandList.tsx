@@ -53,7 +53,7 @@ const CommandList = ({ selectedJob }: { selectedJob: JobResponse | null }) => {
   return (
     <>
       <div className='flex h-full w-[40%] flex-col overflow-hidden border-l border-neutral-200 bg-white'>
-        <ScrollArea className='flex-grow'>
+        <ScrollArea className='h-full flex-grow'>
           <div className='p-6'>
             <section className='space-y-6'>
               <div>
@@ -148,24 +148,23 @@ const CommandList = ({ selectedJob }: { selectedJob: JobResponse | null }) => {
               </div>
             </section>
           </div>
+          <div className='flex shrink-0 items-center justify-center gap-3 border-t border-neutral-200 p-4'>
+            <Button
+              variant='destructive'
+              className='h-10 w-full sm:w-auto sm:flex-grow'
+              onClick={handleOpenDeleteDialog}
+            >
+              Delete
+            </Button>
+            <Button
+              variant='outline'
+              className='h-10 w-full border-neutral-300 text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 sm:w-auto sm:flex-grow'
+              onClick={handleJobEdit}
+            >
+              Edit
+            </Button>
+          </div>
         </ScrollArea>
-
-        <div className='flex shrink-0 items-center justify-center gap-3 border-t border-neutral-200 p-4'>
-          <Button
-            variant='destructive'
-            className='h-10 w-full sm:w-auto sm:flex-grow'
-            onClick={handleOpenDeleteDialog}
-          >
-            Delete
-          </Button>
-          <Button
-            variant='outline'
-            className='h-10 w-full border-neutral-300 text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 sm:w-auto sm:flex-grow'
-            onClick={handleJobEdit}
-          >
-            Edit
-          </Button>
-        </div>
       </div>
 
       <AlertDialog

@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import { DataFrame } from '@/types/dataframe';
@@ -33,6 +33,11 @@ interface GetSourceDataResponse {
   dataframe: DataFrame;
 }
 
+interface SendCommandListRequest {
+  command_list: string[];
+  url: string;
+}
+
 const saveJob = async (request: SaveJobRequest) => {
   const { data, error, success } = await api<SaveJobResponse>('/api/jobs', {
     method: 'POST',
@@ -49,10 +54,7 @@ const saveJob = async (request: SaveJobRequest) => {
 const sendCommandList = async ({
   command_list,
   url,
-}: {
-  command_list: string[];
-  url: string;
-}) => {
+}: SendCommandListRequest) => {
   const { data, error, success } = await api<SendCommandListResponse>(
     '/api/agent/code/generate',
     {
@@ -85,10 +87,12 @@ const getSourceData = async (command: string) => {
 };
 
 export const useSaveJob = () => {
+  const queryClient = useQueryClient();
   const { mutateAsync, isPending } = useMutation({
     mutationFn: (request: SaveJobRequest) => saveJob(request),
     onSuccess: () => {
       toast.success('Job saved successfully');
+      queryClient.invalidateQueries({ queryKey: ['jobList'] });
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -100,13 +104,7 @@ export const useSaveJob = () => {
 
 export const useSendCommandList = () => {
   const { mutateAsync, isPending } = useMutation({
-    mutationFn: ({
-      command_list,
-      url,
-    }: {
-      command_list: string[];
-      url: string;
-    }) => sendCommandList({ command_list, url }),
+    mutationFn: (request: SendCommandListRequest) => sendCommandList(request),
     onError: (error: Error) => {
       toast.error(error.message);
     },
