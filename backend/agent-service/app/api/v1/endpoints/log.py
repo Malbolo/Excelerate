@@ -48,8 +48,8 @@ async def get_logs_data(
 @router.get("", summary="유저의 전체 로그 조회 (페이지네이션 + 날짜 필터)")
 async def list_user_logs(
     user_name: Optional[str]      = Query(None, description="조회할 사용자 이름 (부분검색)"),
-    start_date: Optional[date]    = Query(None, description="조회 시작일 (YYYY-MM-DD)"),
-    end_date:   Optional[date]    = Query(None, description="조회 종료일 (YYYY-MM-DD)"),
+    start_date: Optional[str]    = Query(None, description="조회 시작일 (YYYY-MM-DD)"),
+    end_date:   Optional[str]    = Query(None, description="조회 종료일 (YYYY-MM-DD)"),
     page:       int               = Query(1, ge=1, description="페이지 번호, 1부터"),
     size:       int               = Query(10, ge=1, le=100, description="한 페이지당 항목 수")
 ):
@@ -59,6 +59,19 @@ async def list_user_logs(
     start_date ≤ created_at.date() ≤ end_date 인 것만 남겨서
     page/size 단위로 반환합니다.
     """
+    # 0) start/end 날짜 파싱 (빈 문자열 무시)
+    if start_date and start_date.strip():
+        try:
+            start_date = date.fromisoformat(start_date)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="start_date must be YYYY-MM-DD")
+
+    if end_date and end_date.strip():
+        try:
+            end_date = date.fromisoformat(end_date)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="end_date must be YYYY-MM-DD")
+
     # 1) 키 스캔
     pattern = f"logs:*{user_name}*:*" if user_name else "logs:*:*"
     keys = list(redis_client.scan_iter(match=pattern, count=1000))
