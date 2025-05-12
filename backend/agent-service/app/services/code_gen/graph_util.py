@@ -316,24 +316,23 @@ def make_excel_code_snippet(template_name: str,
     """
     sheet_repr = repr(sheet_name) if sheet_name is not None else 'None'
     return f"""
-from tempfile import TemporaryDirectory
-import os
-import pandas as pd
-from app.services.code_gen.graph_util import insert_df_to_excel
-from app.utils.minio_client import MinioClient
-
 # {template_name} 템플릿에 처리된 dataframe 붙여넣기
+workdir = mkdtemp()
+tpl    = os.path.join(workdir, "{template_name}.xlsx")
+out    = os.path.join(workdir, "{output_name}.xlsx")
+
+# 다운로드
 minio = MinioClient()
-with TemporaryDirectory() as workdir:
-    tpl = os.path.join(workdir, "{template_name}.xlsx")
-    out = os.path.join(workdir, "{output_name}")
-    # 다운로드
-    minio.download_template("{template_name}", tpl)
-    # 삽입
-    insert_df_to_excel(df, tpl, out,
-                    sheet_name={sheet_repr},
-                    start_row={start_row},
-                    start_col={start_col})
-    # 업로드
-    minio.upload_result("{user_id}", "{template_name}", out)
+minio.download_template("{template_name}", tpl)
+
+# 삽입
+insert_df_to_excel(
+    df, tpl, out,
+    sheet_name={sheet_repr},
+    start_row={start_row},
+    start_col={start_col},
+)
+
+# 업로드
+minio.upload_result("{user_id}", "{template_name}", out)
 """

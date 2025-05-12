@@ -40,7 +40,8 @@ def create_dag(
             job_details.append({
                 "id": job.id,
                 "name": job.title,
-                "code": job.code
+                "code": job.code,
+                "data_load_url": job.data_load_url
             })
 
         # 시작일과 종료일 문자열로 변환
@@ -170,7 +171,8 @@ def update_dag(
                     job_details.append({
                         "id": job.id,
                         "name": job.title,
-                        "code": job.code
+                        "code": job.code,
+                        "data_load_url": job.data_load_url
                     })
             finally:
                 db.close()
@@ -189,7 +191,8 @@ def update_dag(
                                 job_details.append({
                                     "id": job.id,
                                     "name": job.title,
-                                    "code": job.code
+                                    "code": job.code,
+                                    "data_load_url": job.data_load_url
                                 })
                     finally:
                         db.close()
@@ -316,7 +319,20 @@ def _generate_dag_code(
     dag_code = f"""
 from airflow import DAG
 from airflow.operators.python import PythonOperator
+from airflow.operators.email import EmailOperator
+from airflow.operators.python import BranchPythonOperator
+from airflow.operators.dummy import DummyOperator
+
 from datetime import datetime, timedelta
+
+import requests
+from io import BytesIO
+from tempfile import mkdtemp
+import pandas as pd
+import os
+
+from utils.minio_client import MinioClient
+from utils.code_util import insert_df_to_excel
 
 # START_DATE: {start_date.strftime("%Y-%m-%d")}
 # END_DATE: {end_date.strftime("%Y-%m-%d") if end_date else "None"}
@@ -348,6 +364,9 @@ dag = DAG(
     for idx, job in enumerate(job_details):
         function_name = f"execute_job_{job['id']}"
         task_id = f"job_{job['id']}"
+        branch_id = f"check_email_{job['id']}"
+        skip_id   = f"skip_email_{job['id']}"
+        email_id = f"email_job_{job['id']}"
 
         # 코드에 들여쓰기 적용
         job_code = job['code'].rstrip()
@@ -358,20 +377,87 @@ dag = DAG(
         dag_code += f"""
 def {function_name}(**kwargs):
     # Job {job['id']} - {job['name']}
+    # 1) 데이터 로드
+    resp = requests.get("{job['data_load_url']}")
+    resp.raise_for_status()
+    df = pd.read_json(BytesIO(resp.content), orient="records")
+
+    out = None
+
+    # 2) 사용자 코드 실행 (df 조작)
 {indented_code}
 
+    # 3) 엑셀 파일 경로 리턴 (임시 파일) 
+    return out
+
+# 4) PythonOperator: 데이터 처리 
 task_{idx} = PythonOperator(
     task_id='{task_id}',
     python_callable={function_name},
     dag=dag,
 )
+
+# 5) 브랜치 태스크
+def branch_email_{job['id']}(**kwargs):
+    path = kwargs['ti'].xcom_pull(task_ids='{task_id}')
+    # out 이 None 이거나 빈 문자열이면 스킵
+    if path:
+        return '{email_id}'
+    else:
+        return '{skip_id}'
+
+task_{idx}_branch = BranchPythonOperator(
+    task_id='{branch_id}',
+    python_callable=branch_email_{job['id']},
+    dag=dag,
+)
+
+# 6) EmailOperator: 결과 전송 
+task_{idx}_email = EmailOperator( 
+    task_id="{email_id}", 
+    to={success_emails!r}, 
+    subject="Job {job['id']} 결과", 
+    html_content=f"Job {job['id']} 실행 결과를 첨부합니다.", 
+    files=["{{{{ ti.xcom_pull(task_ids='{task_id}') }}}}"], 
+    dag=dag, 
+)
+
+# 7) 건너뛰기용 더미 태스크
+task_{idx}_skip = DummyOperator(
+    task_id='{skip_id}',
+    dag=dag,
+)
+ 
+# 8) 의존성 설정 
+task_{idx} >> task_{idx}_branch
+task_{idx}_branch >> task_{idx}_email
+task_{idx}_branch >> task_{idx}_skip
+
+# 9) Cleanup 태스크 정의 (run→branch→email 후 실행)
+def cleanup_file_{job['id']}(**kwargs):
+    # run_job 태스크에서 반환한 out 경로
+    path = kwargs['ti'].xcom_pull(task_ids='{task_id}')
+    if path and os.path.exists(path):
+        os.remove(path)
+
+task_{idx}_cleanup = PythonOperator(
+    task_id='cleanup_job_{job['id']}',
+    python_callable=cleanup_file_{job['id']},
+    # email 또는 skip 이후에 무조건 실행되도록
+    trigger_rule='all_done',
+    dag=dag,
+)
+
+# 10) 의존성 연결
+task_{idx}_email   >> task_{idx}_cleanup
+task_{idx}_skip    >> task_{idx}_cleanup
 """
 
     # 태스크 의존성 설정 (순차 실행)
     if len(job_details) > 1:
         dag_code += "\n"
         for i in range(len(job_details) - 1):
-            dag_code += f"task_{i} >> task_{i + 1}\n"
+            dag_code += f"task_{i}_cleanup >> task_{i+1}\n"
 
     return dag_code
 
