@@ -20,19 +20,19 @@ import useInternalRouter from '@/hooks/useInternalRouter';
 import usePagination from '@/hooks/usePagination';
 
 const JobPagination: React.FC = () => {
-  // TODO: 백엔드 서버 API 연동 시 사용
   const [searchParams] = useSearchParams();
   const name = searchParams.get('name') || '';
-  const department = searchParams.get('dep') || '';
-  const jobType = searchParams.get('type') || '';
+  const startDate = searchParams.get('startDate') || '';
+  const endDate = searchParams.get('endDate') || '';
+  const page = searchParams.get('page') || '1';
 
   const {
     data: { jobs, total },
   } = useGetJobList({
-    name: name,
-    dep: department,
-    type: jobType,
-    page: '1',
+    name,
+    startdate: startDate,
+    enddate: endDate,
+    page: page,
     size: '4',
   });
 
@@ -47,7 +47,7 @@ const JobPagination: React.FC = () => {
           <Card
             key={job.id}
             onClick={() => push(`/agent-monitoring/job/${job.id}`)}
-            className='cursor-pointer p-5'
+            className='flex-1 cursor-pointer p-5'
           >
             <CardHeader>
               <CardTitle>{job.title}</CardTitle>

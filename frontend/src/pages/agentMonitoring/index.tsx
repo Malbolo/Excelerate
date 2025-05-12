@@ -1,50 +1,34 @@
 import { useState } from 'react';
 
+import { format } from 'date-fns';
+import { CalendarIcon } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { JOB_TYPES_CONFIG } from '@/constant/job';
-import { DEPARTMENT } from '@/constant/user';
-import useClickOutsideRef from '@/hooks/useClickOutsideRef';
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import useInternalRouter from '@/hooks/useInternalRouter';
-import { MUserNameList } from '@/mocks/datas/user';
+import { cn } from '@/lib/utils';
 import JobPagination from '@/pages/agentMonitoring/components/JobPagination';
-import { TDepartment, TJobType } from '@/types/agent';
 
 const AgentMonitoringPage: React.FC = () => {
-  const [jobType, setJobType] = useState<TJobType>();
-  const [department, setDepartment] = useState<TDepartment>();
+  const [startDate, setStartDate] = useState<Date>();
+  const [endDate, setEndDate] = useState<Date>();
   const [name, setName] = useState<string>('');
 
-  const [searchNameList] = useState<string[]>(MUserNameList);
-  const [isOpenScrollArea, setIsOpenScrollArea] = useState<boolean>(false);
-
   const { push } = useInternalRouter();
-
-  const scrollAreaRef = useClickOutsideRef<HTMLDivElement>(() =>
-    setIsOpenScrollArea(false),
-  );
-
-  // TODO: 이름 검색 기능 추가 시 사용
-  // const handleSearchName = () => {
-  //   if (name.trim() === '') return;
-
-  //   setIsOpenScrollArea(true);
-  // };
 
   const handleSearchJobList = () => {
     const searchParams = new URLSearchParams();
 
     if (name) searchParams.set('name', name);
-    if (department) searchParams.set('dep', department);
-    if (jobType) searchParams.set('type', jobType);
+    if (startDate)
+      searchParams.set('startDate', format(startDate, 'yyyy-MM-dd'));
+    if (endDate) searchParams.set('endDate', format(endDate, 'yyyy-MM-dd'));
     searchParams.set('page', '1');
 
     push(`/agent-monitoring?${searchParams.toString()}`);
@@ -53,63 +37,75 @@ const AgentMonitoringPage: React.FC = () => {
   return (
     <div className='flex h-screen w-full flex-col justify-between gap-5 p-8'>
       <div className='flex items-center gap-4'>
-        <div className='flex-1'>
-          <Select
-            value={jobType || ''}
-            onValueChange={(value: string) => setJobType(value as TJobType)}
-          >
-            <SelectTrigger className='w-full'>
-              <SelectValue placeholder='Job Type' />
-            </SelectTrigger>
-            <SelectContent>
-              {JOB_TYPES_CONFIG.map((job, index) => (
-                <SelectItem key={`${job.id}-${index}`} value={job.id}>
-                  {job.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant={'outline'}
+              className={cn(
+                'w-[280px] justify-start text-left font-normal',
+                !startDate && 'text-muted-foreground',
+              )}
+            >
+              <CalendarIcon className='mr-2 h-4 w-4' />
+              {startDate ? (
+                format(startDate, 'PPP')
+              ) : (
+                <span>Pick a start date</span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className='w-auto p-0'>
+            <Calendar
+              mode='single'
+              selected={startDate}
+              onSelect={setStartDate}
+              initialFocus
+              disabled={date => {
+                const today = new Date(new Date().setHours(0, 0, 0, 0));
+                if (endDate && date > endDate) return true;
+                if (date > today) return true;
+                return false;
+              }}
+            />
+          </PopoverContent>
+        </Popover>
 
-        <div className='flex-1'>
-          <Select value={department} onValueChange={setDepartment}>
-            <SelectTrigger className='w-full'>
-              <SelectValue placeholder='Department' />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.values(DEPARTMENT).map((department, index) => (
-                <SelectItem key={`${department}-${index}`} value={department}>
-                  {department}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant={'outline'}
+              className={cn(
+                'w-[280px] justify-start text-left font-normal',
+                !endDate && 'text-muted-foreground',
+              )}
+            >
+              <CalendarIcon className='mr-2 h-4 w-4' />
+              {endDate ? format(endDate, 'PPP') : <span>Pick a end date</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className='w-auto p-0'>
+            <Calendar
+              mode='single'
+              selected={endDate}
+              onSelect={setEndDate}
+              initialFocus
+              disabled={date => {
+                const today = new Date(new Date().setHours(0, 0, 0, 0));
+                if (startDate && date < startDate) return true;
+                if (date > today) return true;
+                return false;
+              }}
+            />
+          </PopoverContent>
+        </Popover>
 
-        <div ref={scrollAreaRef} className='relative h-full flex-2'>
+        <div className='relative h-full flex-2'>
           <Input
             value={name}
             onChange={e => setName(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSearchJobList()}
             placeholder='Search employee name'
           />
-
-          {isOpenScrollArea && (
-            <div className='absolute top-full left-0 z-10 w-full translate-y-1'>
-              <ScrollArea className='h-[166px] rounded-md border bg-white'>
-                <ul className='divide flex flex-col divide-y-1 divide-gray-400'>
-                  {searchNameList.map((name, index) => (
-                    <li
-                      key={`${name}-${index}`}
-                      className='cursor-pointer px-2 py-1 hover:bg-black/2'
-                    >
-                      {name}
-                    </li>
-                  ))}
-                </ul>
-              </ScrollArea>
-            </div>
-          )}
         </div>
         <Button onClick={handleSearchJobList} className='cursor-pointer'>
           Search

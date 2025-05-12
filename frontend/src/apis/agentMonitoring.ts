@@ -7,8 +7,8 @@ import { JobResponse } from './jobManagement';
 
 interface GetJobListRequest {
   name: string;
-  dep: string;
-  type: string;
+  startdate: string;
+  enddate: string;
   page: string;
   size: string;
 }
@@ -22,7 +22,7 @@ interface GetJobListResponse {
 
 const getJobList = async (request: GetJobListRequest) => {
   const { data, error, success } = await api<GetJobListResponse>(
-    `/api/jobs?mine=False&name=${request.name}&dep=${request.dep}&type=${request.type}&page=${request.page}&size=${request.size}`,
+    `/api/jobs?mine=False&name=${request.name}&startdate=${request.startdate}&enddate=${request.enddate}&page=${request.page}&size=${request.size}`,
   );
 
   if (!success) {
@@ -49,8 +49,8 @@ export const useGetJobList = (request: GetJobListRequest) => {
     queryKey: [
       'jobList',
       request.name,
-      request.dep,
-      request.type,
+      request.startdate,
+      request.enddate,
       request.page,
       request.size,
     ],
