@@ -26,7 +26,7 @@ const CreateSchedulerPage = () => {
 
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
   const dep = searchParams.get('dep') || '';
-  const type = searchParams.get('type') || '';
+  const types = searchParams.get('types') || '';
   const title = searchParams.get('title') || '';
   const name = searchParams.get('name') || '';
 
@@ -34,7 +34,7 @@ const CreateSchedulerPage = () => {
     page: currentPage,
     title,
     dep,
-    type,
+    types,
     name,
     mine: false,
   });
