@@ -497,15 +497,33 @@ def get_dag_runs_by_date(dags: List[Dict[str, Any]], target_date: str) -> Dict[s
 
     return result
 
-def _extract_date_from_dag_id(dag_id: str) -> Optional[datetime]:
-    """DAG ID에서 날짜 부분 추출"""
+def _extract_date_from_dag_id(dag_id: str) -> datetime:
+    """DAG ID에서 날짜 추출 - userid_time 형식에 맞게 수정"""
     try:
-        date_part = dag_id.split('_')[-1]
-        if len(date_part) >= 8 and date_part.isdigit():
-            year = int(date_part[:4])
-            month = int(date_part[4:6])
-            day = int(date_part[6:8])
-            return datetime(year, month, day, tzinfo=timezone.utc)
+        # DAG ID 형식: 'owner_YYYYMMDDHHMMSS' 또는 'owner_YYYYMMDDHHMMSS[f]'
+        parts = dag_id.split('_')
+        if len(parts) >= 2:
+            # 두 번째 부분이 날짜 형식인지 확인
+            date_part = parts[1]
+
+            # 날짜 부분이 숫자로 시작하는지 확인 (밀리초 부분 처리)
+            if date_part and date_part[:8].isdigit():
+                year_part = int(date_part[:4])
+                month_part = int(date_part[4:6])
+                day_part = int(date_part[6:8])
+
+                # 유효한 날짜인지 확인
+                if 2000 <= year_part <= 2100 and 1 <= month_part <= 12 and 1 <= day_part <= 31:
+                    # 시간 부분이 있으면 시간도 설정 (선택적)
+                    if len(date_part) >= 14 and date_part[8:14].isdigit():
+                        hour_part = int(date_part[8:10])
+                        minute_part = int(date_part[10:12])
+                        second_part = int(date_part[12:14])
+                        return datetime(year_part, month_part, day_part,
+                                        hour_part, minute_part, second_part,
+                                        tzinfo=timezone.utc)
+                    else:
+                        return datetime(year_part, month_part, day_part, tzinfo=timezone.utc)
     except (ValueError, IndexError) as e:
         logger.debug(f"Error extracting date from DAG ID {dag_id}: {str(e)}")
     return None
