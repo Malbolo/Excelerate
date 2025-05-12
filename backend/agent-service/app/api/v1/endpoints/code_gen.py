@@ -36,9 +36,13 @@ async def command_code(
 
         query = make_initial_query(request.url, request.command_list, stream_id)
 
-        user_id = auth.get_user_id_from_header(req) 
-        if user_id is None:
-            user_id = "guest"
+        user_id = auth.get_user_id_from_header(req) or "guest"
+
+        profile = auth.get_user_info(user_id)
+        if profile and isinstance(profile, dict):
+            user_name = profile.get("name") or "guest"
+        else:
+            user_name = "guest"
 
         if request.uid:
             uid = request.uid
@@ -60,12 +64,6 @@ async def command_code(
             for single_df in df_list
         ]
 
-        try:
-            user_name = auth.get_user_info(user_id).name
-            if user_name == "None":
-                user_name = "guest"
-        except:
-            user_name = "guest"
         log_id = generate_log_id(user_name, uid)
 
         api_end = datetime.now(ZoneInfo("Asia/Seoul"))
