@@ -87,10 +87,12 @@ const getSourceData = async (command: string) => {
 };
 
 export const useSaveJob = () => {
+  const queryClient = useQueryClient();
   const { mutateAsync, isPending } = useMutation({
     mutationFn: (request: SaveJobRequest) => saveJob(request),
     onSuccess: () => {
       toast.success('Job saved successfully');
+      queryClient.invalidateQueries({ queryKey: ['jobList'] });
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -101,15 +103,10 @@ export const useSaveJob = () => {
 };
 
 export const useSendCommandList = () => {
-  const queryClient = useQueryClient();
   const { mutateAsync, isPending } = useMutation({
     mutationFn: (request: SendCommandListRequest) => sendCommandList(request),
     onError: (error: Error) => {
       toast.error(error.message);
-    },
-    onSuccess: () => {
-      toast.success('Command list sent successfully');
-      queryClient.invalidateQueries({ queryKey: ['jobList'] });
     },
   });
 

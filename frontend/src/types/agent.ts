@@ -1,4 +1,4 @@
-import { JOB_TYPE } from '@/constant/job';
+import { JOB_TYPES_CONFIG } from '@/constant/job';
 import { DEPARTMENT } from '@/constant/user';
 
 export interface TLog {
@@ -19,6 +19,6 @@ export interface TLogMessage {
   message: string;
 }
 
-export type TJobType = (typeof JOB_TYPE)[keyof typeof JOB_TYPE];
+export type TJobType = (typeof JOB_TYPES_CONFIG)[number]['id'];
 
 export type TDepartment = (typeof DEPARTMENT)[keyof typeof DEPARTMENT];
