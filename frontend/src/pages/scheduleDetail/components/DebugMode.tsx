@@ -7,6 +7,8 @@ interface DebugModeProps {
 }
 
 const DebugMode = ({ error }: DebugModeProps) => {
+  if (!error) return null;
+
   const { error_message, error_time } = error;
 
   return (

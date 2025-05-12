@@ -57,9 +57,10 @@ const ScheduleDetail = () => {
           <h2 className='mb-4 border-b pb-2 text-xl font-semibold text-gray-700'>
             Details
           </h2>
-          {scheduleData.jobs.map(job => (
-            <DebugMode key={job.id} error={job.error_log} />
-          ))}
+          {scheduleData.jobs.map(
+            job =>
+              job.error_log && <DebugMode key={job.id} error={job.error_log} />,
+          )}
         </div>
       </div>
     </SchedulerMonitoringLayout>
