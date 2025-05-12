@@ -46,7 +46,7 @@ export interface CreateScheduleFormData {
   failEmail: string;
   interval: 'daily' | 'weekly' | 'monthly';
   startDate: Date;
-  endDate: Date | undefined;
+  endDate?: Date;
   executionTime: string;
   selectedJobs: JobResponse[];
 }
@@ -107,9 +107,9 @@ const CreateScheduleModal = ({
       scheduleDescription: '',
       successEmail: '',
       failEmail: '',
-      interval: undefined,
-      startDate: undefined,
-      endDate: undefined,
+      interval: 'daily',
+      startDate: new Date(),
+      endDate: new Date(2099, 11, 31),
       executionTime: '09:00',
     },
   });
@@ -117,18 +117,12 @@ const CreateScheduleModal = ({
   const createSchedule = useCreateSchedule();
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const finalEndDate =
-      values.endDate instanceof Date ? values.endDate : new Date(2099, 11, 31);
-
     const submissionData = {
       ...values,
-      endDate: finalEndDate,
       selectedJobs,
     };
 
-    // 스케쥴 생성
     createSchedule(submissionData);
-
     onOpenChange(false);
     form.reset();
   }
@@ -142,7 +136,7 @@ const CreateScheduleModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className='flex max-h-[85vh] flex-col sm:max-w-3xl'>
+      <DialogContent className='flex max-h-[100vh] flex-col sm:max-w-4xl'>
         <DialogHeader>
           <DialogTitle>Create New Schedule</DialogTitle>
           <DialogDescription>
@@ -419,22 +413,21 @@ const CreateScheduleModal = ({
               </div>
             </form>
           </Form>
-        </ScrollArea>
-
-        <DialogFooter className='mt-4 border-t pt-4'>
-          <DialogClose asChild>
-            <Button variant='outline' type='button'>
-              Cancel
+          <DialogFooter className='mt-4 border-t pt-4'>
+            <DialogClose asChild>
+              <Button variant='outline' type='button'>
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button
+              type='button'
+              onClick={form.handleSubmit(onSubmit)}
+              disabled={form.formState.isSubmitting}
+            >
+              {form.formState.isSubmitting ? 'Creating...' : 'Create'}
             </Button>
-          </DialogClose>
-          <Button
-            type='button'
-            onClick={form.handleSubmit(onSubmit)}
-            disabled={form.formState.isSubmitting}
-          >
-            {form.formState.isSubmitting ? 'Creating...' : 'Create'}
-          </Button>
-        </DialogFooter>
+          </DialogFooter>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

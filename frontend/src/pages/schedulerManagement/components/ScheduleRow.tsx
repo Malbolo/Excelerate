@@ -52,7 +52,9 @@ const ScheduleRow = ({ schedule }: ScheduleRowProps) => {
 
         <TableCell>{formatInterval(schedule.frequency_display)}</TableCell>
 
-        <TableCell>{formatDateTime(schedule.last_run.end_time)}</TableCell>
+        <TableCell>
+          {schedule.last_run ? formatDateTime(schedule.last_run.end_time) : '-'}
+        </TableCell>
         <TableCell>
           {formatDateTime(schedule.next_run.data_interval_end)}
         </TableCell>

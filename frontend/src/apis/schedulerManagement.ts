@@ -33,7 +33,7 @@ export interface Schedule {
   success_emails: string[];
   failure_emails: string[];
   jobs: JobResponse[];
-  last_run: {
+  last_run: null | {
     end_time: string;
   };
   next_run: {
@@ -184,7 +184,7 @@ export const useCreateSchedule = () => {
   const { mutate } = useMutation({
     mutationFn: (schedule: CreateScheduleFormData) => createSchedule(schedule),
     onSuccess: () => {
-      toast.success('스케쥴이 생성되었습니다.');
+      toast.success('Schedule created successfully');
     },
     onError: error => {
       toast.error(error.message);
@@ -198,7 +198,7 @@ export const useUpdateSchedule = () => {
   const { mutate } = useMutation({
     mutationFn: (schedule: CreateScheduleFormData) => updateSchedule(schedule),
     onSuccess: () => {
-      toast.success('스케쥴이 수정되었습니다.');
+      toast.success('Schedule updated successfully');
     },
     onError: error => {
       toast.error(error.message);
