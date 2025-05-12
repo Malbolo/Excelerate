@@ -227,6 +227,10 @@ def _process_dag_runs_for_calendar(dag_id, cron_expr, effective_start, effective
             day_start = date_dt.replace(hour=0, minute=0, second=0)
             day_end = date_dt.replace(hour=23, minute=59, second=59)
 
+            # 실행 결과가 있는지 확인
+            state = executed_map.get(date_str)
+            has_execution = state is not None
+
             try:
                 # 해당 날짜에 실행되는 시간 찾기
                 cron_iter = croniter(cron_expr, day_start)
@@ -234,12 +238,11 @@ def _process_dag_runs_for_calendar(dag_id, cron_expr, effective_start, effective
 
                 # 같은 날짜 내에 실행 시간이 있는지 확인
                 if execution_time <= day_end:
-                    # total에 추가할지 결정 (이미 지난 시간은 total에 포함되지 않음)
-                    if execution_time > now:
+                    # 실행 결과가 있거나 미래 실행 시간이 있으면 total 증가
+                    if has_execution or execution_time > now:
                         all_days[idx]["total"] += 1
 
                     # 실행 상태 확인
-                    state = executed_map.get(date_str)
                     if state == "success":
                         all_days[idx]["success"] += 1
                     elif state in ("failed", "error"):
