@@ -1,4 +1,9 @@
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { CreateScheduleFormData } from '@/pages/createScheduler/components/CreateScheduleModal';
@@ -164,6 +169,18 @@ const oneTimeSchedule = async (scheduleId: string) => {
   return;
 };
 
+const deleteSchedule = async (scheduleId: string) => {
+  const { error, success } = await api(`/api/schedules/${scheduleId}`, {
+    method: 'DELETE',
+  });
+
+  if (!success) {
+    throw new Error(error);
+  }
+
+  return;
+};
+
 export const useToggleSchedule = () => {
   const { mutate } = useMutation({
     mutationFn: (scheduleId: string) => toggleSchedule(scheduleId),
@@ -181,10 +198,31 @@ export const useOneTimeSchedule = () => {
 };
 
 export const useCreateSchedule = () => {
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
   const { mutate } = useMutation({
     mutationFn: (schedule: CreateScheduleFormData) => createSchedule(schedule),
     onSuccess: () => {
       toast.success('Schedule created successfully');
+      queryClient.invalidateQueries({ queryKey: ['scheduleList'] });
+      navigate('/scheduler-management');
+    },
+    onError: error => {
+      toast.error(error.message);
+    },
+  });
+
+  return mutate;
+};
+
+export const useDeleteSchedule = () => {
+  const queryClient = useQueryClient();
+  const { mutate } = useMutation({
+    mutationFn: (scheduleId: string) => deleteSchedule(scheduleId),
+    onSuccess: () => {
+      toast.success('Schedule deleted successfully');
+      queryClient.invalidateQueries({ queryKey: ['scheduleList'] });
     },
     onError: error => {
       toast.error(error.message);
@@ -195,10 +233,14 @@ export const useCreateSchedule = () => {
 };
 
 export const useUpdateSchedule = () => {
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const { mutate } = useMutation({
     mutationFn: (schedule: CreateScheduleFormData) => updateSchedule(schedule),
     onSuccess: () => {
       toast.success('Schedule updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['scheduleList'] });
+      navigate('/scheduler-management');
     },
     onError: error => {
       toast.error(error.message);

@@ -66,7 +66,7 @@ export interface Job {
   start_time: string;
   status: 'failed' | 'success' | 'pending';
   title: string;
-  error_log: JobError;
+  error_log: JobError | null;
 }
 
 export interface RunDetailResponse {

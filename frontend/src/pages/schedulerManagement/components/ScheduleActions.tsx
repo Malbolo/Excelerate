@@ -1,9 +1,13 @@
 import { useState } from 'react';
 
-import { Pause, Pencil, Play, PlayCircle } from 'lucide-react';
+import { Pause, Pencil, Play, PlayCircle, Trash } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-import { Schedule, useOneTimeSchedule } from '@/apis/schedulerManagement';
+import {
+  Schedule,
+  useDeleteSchedule,
+  useOneTimeSchedule,
+} from '@/apis/schedulerManagement';
 import { useToggleSchedule } from '@/apis/schedulerManagement';
 import {
   AlertDialog,
@@ -30,9 +34,10 @@ interface ScheduleActionsProps {
 const ScheduleActions = ({ schedule }: ScheduleActionsProps) => {
   const navigate = useNavigate();
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const toggleSchedule = useToggleSchedule();
   const oneTimeSchedule = useOneTimeSchedule();
-  console.log(schedule.is_paused);
+  const deleteSchedule = useDeleteSchedule();
 
   const handleRun = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -56,6 +61,16 @@ const ScheduleActions = ({ schedule }: ScheduleActionsProps) => {
 
   const handleConfirmEdit = () => {
     navigate(`/scheduler-management/edit/${schedule.schedule_id}`);
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = () => {
+    deleteSchedule(schedule.schedule_id);
+    setShowDeleteDialog(false);
   };
 
   return (
@@ -117,6 +132,22 @@ const ScheduleActions = ({ schedule }: ScheduleActionsProps) => {
             <p>Edit Schedule</p>
           </TooltipContent>
         </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant='ghost'
+              size='icon'
+              onClick={handleDelete}
+              className='h-7 w-7'
+            >
+              <Trash className='h-4 w-4' />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Delete Schedule</p>
+          </TooltipContent>
+        </Tooltip>
       </div>
 
       <AlertDialog open={showEditDialog} onOpenChange={setShowEditDialog}>
@@ -131,6 +162,23 @@ const ScheduleActions = ({ schedule }: ScheduleActionsProps) => {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmEdit}>
               Edit
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Schedule</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this schedule?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete}>
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
