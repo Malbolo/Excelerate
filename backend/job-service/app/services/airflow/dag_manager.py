@@ -54,9 +54,7 @@ def create_dag(
             tags_str += f", 'end_date:{end_date_str}'"
         tags_str += "]"
 
-        enhanced_description = f"{description} (Start: {start_date_str})"
-        if end_date:
-            enhanced_description += f", End: {end_date_str}"
+        enhanced_description = f"{description}"
 
         # DAG 코드 생성
         dag_code = _generate_dag_code(

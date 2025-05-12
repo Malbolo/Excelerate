@@ -7,17 +7,9 @@ from app.core.log_config import logger
 from app.db.database import get_db
 from app.crud import crud
 from app.models.models import Job, JobCommand
-from app.services.airflow.dag_query import (
-    get_dag_detail, get_dag_runs, get_dag_run_detail,
-    get_task_instances, get_task_logs, get_next_dag_run, get_all_dags
-)
+from app.services.airflow import dag_query, dag_manager
 from app.services.airflow.metadata import get_dag_metadata
-from app.services.airflow.utils.cron import (
-    convert_cron_to_frequency, parse_cron_to_friendly_format,
-    extract_execution_time_from_cron
-)
-from app.services.airflow.utils.log_utils import extract_error_message, extract_error_trace
-from app.services.airflow.utils.time import calculate_duration_seconds
+from app.services.airflow.utils import cron, time, log_utils
 
 
 def get_schedule_detail(schedule_id: str) -> Dict[str, Any]:
@@ -26,7 +18,7 @@ def get_schedule_detail(schedule_id: str) -> Dict[str, Any]:
 
     try:
         # DAG 상세 정보 조회
-        dag_detail = get_dag_detail(schedule_id)
+        dag_detail = dag_query.get_dag_detail(schedule_id)
 
         title = extract_title_from_tags(dag_detail.get("tags", []))
 
@@ -62,12 +54,12 @@ def get_schedule_detail(schedule_id: str) -> Dict[str, Any]:
                 frequency_cron = schedule_interval
 
         # 주기 문자열로 변환 (역변환)
-        frequency = convert_cron_to_frequency(frequency_cron)
-        frequency_display = parse_cron_to_friendly_format(frequency_cron)
+        frequency = cron.convert_cron_to_frequency(frequency_cron)
+        frequency_display = cron.parse_cron_to_friendly_format(frequency_cron)
         # execution_time이 메타데이터에 없으면 cron에서 추출
         execution_time = metadata.get("execution_time")
         if not execution_time:
-            execution_time = extract_execution_time_from_cron(dag_detail.get("schedule_interval"))
+            execution_time = cron.extract_execution_time_from_cron(dag_detail.get("schedule_interval"))
 
         # 응답 데이터 구성
         schedule_data = {
@@ -99,6 +91,14 @@ def extract_title_from_tags(tags: List[dict]) -> Optional[str]:
         tag_name = tag.get("name") if isinstance(tag, dict) else tag
         if tag_name and tag_name.startswith("title:"):
             return tag_name[6:]  # "title:" 부분을 제외한 실제 제목 반환
+    return None
+
+def extract_date_from_tags(tags: List[dict], prefix: str) -> Optional[str]:
+    """태그 목록에서 특정 접두사를 가진 날짜 태그를 찾아 반환합니다."""
+    for tag in tags:
+        tag_name = tag.get("name") if isinstance(tag, dict) else tag
+        if tag_name and tag_name.startswith(f"{prefix}:"):
+            return tag_name[len(prefix) + 1:]  # 접두사를 제외한 실제 날짜 반환
     return None
 
 def get_job_details(job_ids: List[str]) -> Dict[str, Any]:
@@ -138,13 +138,18 @@ def get_schedule_run_detail_with_logs(schedule_id: str, run_id: str) -> Dict[str
     """스케줄 실행 상세 정보와 작업별 에러 로그를 함께 조회"""
     try:
         # DAG 상세 정보 조회
-        dag_detail = get_dag_detail(schedule_id)
+        dag_detail = dag_query.get_dag_detail(schedule_id)
+
+        # 태그에서 title 추출
+        title = extract_title_from_tags(dag_detail.get("tags", []))
+        if not title:
+            title = dag_detail.get("name", schedule_id)
 
         # DAG 실행 상세 정보 조회
-        run_detail = get_dag_run_detail(schedule_id, run_id)
+        run_detail = dag_query.get_dag_run_detail(schedule_id, run_id)
 
         # 태스크 인스턴스 목록 조회
-        task_instances = get_task_instances(schedule_id, run_id)
+        task_instances = dag_query.get_task_instances(schedule_id, run_id)
 
         # job_id 목록 추출
         job_ids = []
@@ -190,12 +195,12 @@ def get_schedule_run_detail_with_logs(schedule_id: str, run_id: str) -> Dict[str
                     error_log = None
                     if status in ["failed", "upstream_failed"]:
                         # Airflow API에서 로그 가져오기
-                        task_logs = get_task_logs(schedule_id, run_id, task_id)
+                        task_logs = dag_query.get_task_logs(schedule_id, run_id, task_id)
 
                         if task_logs:
                             # 에러 메시지 및 스택 트레이스 추출
-                            error_message = extract_error_message(task_logs)
-                            error_trace = extract_error_trace(task_logs)
+                            error_message = log_utils.extract_error_message(task_logs)
+                            error_trace = log_utils.extract_error_trace(task_logs)
 
                             error_log = {
                                 "error_message": error_message,
@@ -236,13 +241,13 @@ def get_schedule_run_detail_with_logs(schedule_id: str, run_id: str) -> Dict[str
         # 응답 데이터 구성
         run_data = {
             "schedule_id": schedule_id,
-            "title": schedule_data.get("title", dag_detail.get("name", schedule_id)),
+            "title": title,  # 태그에서 추출한 title 사용
             "description": schedule_data.get("description", ""),
             "run_id": run_id,
             "status": run_detail.get("state"),
             "start_time": run_detail.get("start_date"),
             "end_time": run_detail.get("end_date"),
-            "duration": calculate_duration_seconds(run_detail.get("start_date"), run_detail.get("end_date")),
+            "duration": time.calculate_duration_seconds(run_detail.get("start_date"), run_detail.get("end_date")),
             "jobs": list(jobs_data.values()),  # 딕셔너리를 리스트로 변환
             "summary": summary
         }
@@ -259,7 +264,7 @@ def get_all_schedules_with_details(
 ) -> List[Dict[str, Any]]:
     """모든 스케줄(DAG) 목록을 상세 정보와 함께 반환"""
     # 모든 DAG 기본 정보 조회
-    dags = get_all_dags(limit=1000)
+    dags = dag_query.get_all_dags(limit=1000)
 
     # 상태별 필터링
     if status:
@@ -271,8 +276,19 @@ def get_all_schedules_with_details(
     # 제목 검색
     if search:
         search = search.lower()
-        dags = [dag for dag in dags if search in dag.get("dag_id", "").lower() or
-                search in dag.get("description", "").lower()]
+        filtered_dags = []
+        for dag in dags:
+            # 태그에서 title 추출
+            dag_title = extract_title_from_tags(dag.get("tags", []))
+            if not dag_title:
+                dag_title = dag.get("name", dag.get("dag_id", ""))
+
+            # 검색어가 dag_id, title, description에 포함되어 있는지 확인
+            if (search in dag.get("dag_id", "").lower() or
+                    search in dag_title.lower() or
+                    search in dag.get("description", "").lower()):
+                filtered_dags.append(dag)
+        dags = filtered_dags
 
     # 각 DAG의 상세 정보 조회
     schedule_list = []
@@ -281,16 +297,60 @@ def get_all_schedules_with_details(
         for dag in dags:
             dag_id = dag.get("dag_id", "")
 
-            try:
-                # 상세 정보 조회
-                schedule_data = get_schedule_detail(dag_id)
+            # 태그에서 title 추출
+            title = extract_title_from_tags(dag.get("tags", []))
+            if not title:
+                title = dag.get("name", dag_id)
 
-                # 기본적으로 마지막 실행과 다음 실행 정보를 초기화
-                schedule_data["last_run"] = None
-                schedule_data["next_run"] = None
+            try:
+                # 메타데이터 조회 (jobs, email 등)
+                metadata = get_dag_metadata(dag_id)
+
+                # 스케줄 빈도 및 표시 형식 결정
+                schedule_interval = dag.get("schedule_interval", {})
+                if isinstance(schedule_interval, dict) and "value" in schedule_interval:
+                    schedule_interval = schedule_interval["value"]
+
+                frequency, frequency_display = cron.convert_cron_to_frequency(schedule_interval)
+
+                # 기본 스케줄 정보 구성
+                schedule_data = {
+                    "schedule_id": dag_id,
+                    "title": title,  # 태그에서 추출한 title 사용
+                    "description": dag.get("description", ""),
+                    "is_paused": dag.get("is_paused", False),
+                    "frequency": frequency,
+                    "frequency_cron": schedule_interval,
+                    "frequency_display": frequency_display,
+                    "start_date": extract_date_from_tags(dag.get("tags", []), "start_date"),
+                    "end_date": extract_date_from_tags(dag.get("tags", []), "end_date"),
+                    "success_emails": metadata.get("success_emails", []),
+                    "failure_emails": metadata.get("failure_emails", []),
+                    "jobs": [],  # 기본값으로 빈 배열 설정
+                    "last_run": None,
+                    "next_run": None
+                }
+
+                # job 정보 조회 및 설정
+                job_ids = metadata.get("job_ids", [])
+                job_details = get_job_details(job_ids)
+
+                jobs = []
+                for idx, job_id in enumerate(job_ids):
+                    job_info = job_details.get(job_id, {})
+                    job = {
+                        "id": job_id,
+                        "title": job_info.get("title", f"Job {job_id}"),
+                        "description": job_info.get("description", ""),
+                        "order": idx + 1,
+                        "commands": job_info.get("commands", [])  # commands 정보 추가
+                    }
+                    jobs.append(job)
+
+                schedule_data["jobs"] = jobs
 
                 # 최근 실행 정보 조회 (마지막 실행 정보를 위해)
-                recent_runs = get_dag_runs(dag_id, limit=1)
+                recent_runs = dag_query.get_dag_runs(dag_id, limit=1)
 
                 if recent_runs:
                     recent_run = recent_runs[0]
@@ -307,7 +367,7 @@ def get_all_schedules_with_details(
                     # 작업 상태 포함 여부에 따라 작업 상태 정보 추가
                     if include_job_status:
                         # 작업 실행 상태 조회
-                        task_instances = get_task_instances(dag_id, run_id)
+                        task_instances = dag_query.get_task_instances(dag_id, run_id)
 
                         # 작업 정보에 상태 추가
                         tasks_with_status = []
@@ -337,7 +397,7 @@ def get_all_schedules_with_details(
                         schedule_data["jobs"] = tasks_with_status
 
                 # 다음 실행 예정 정보 조회
-                next_run_info = get_next_dag_run(dag_id)
+                next_run_info = dag_query.get_next_dag_run(dag_id)
                 if next_run_info:
                     schedule_data["next_run"] = next_run_info
 
@@ -347,7 +407,7 @@ def get_all_schedules_with_details(
                 # 오류 시 기본 정보만 추가
                 schedule_list.append({
                     "schedule_id": dag_id,
-                    "title": dag.get("description", "").split(" (Start:")[0] or dag_id,
+                    "title": title,  # 태그에서 추출한 title 사용
                     "description": dag.get("description", ""),
                     "is_paused": dag.get("is_paused", False),
                     "frequency": "unknown",
@@ -386,7 +446,12 @@ def get_dag_runs_by_date(dags: List[Dict[str, Any]], target_date: str) -> Dict[s
     for dag in dags:
         dag_id = dag.get("dag_id")
         owner = dag.get("owners", ["unknown"])[0]
-        title = dag.get("name", dag_id)
+
+        # 태그에서 title 추출
+        title = extract_title_from_tags(dag.get("tags", []))
+        if not title:
+            title = dag.get("name", dag_id)  # 태그에 없으면 name이나 dag_id 사용
+
         description = dag.get("description", "")
         is_paused = dag.get("is_paused", False)
 
@@ -396,7 +461,7 @@ def get_dag_runs_by_date(dags: List[Dict[str, Any]], target_date: str) -> Dict[s
 
         # 실행 이력 확인
         try:
-            dag_runs = get_dag_runs(dag_id, start_date=start, end_date=end, limit=100)
+            dag_runs = dag_query.get_dag_runs(dag_id, start_date=start, end_date=end, limit=100)
         except Exception as e:
             logger.debug(f"Error getting dag runs for {dag_id}: {e}")
             dag_runs = []
