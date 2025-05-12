@@ -252,6 +252,7 @@ def get_schedule_run_detail_with_logs(schedule_id: str, run_id: str) -> Dict[str
         logger.error(f"Error getting schedule run detail: {str(e)}")
         raise e
 
+
 def get_all_schedules_with_details(
         status: Optional[str] = None,
         search: Optional[str] = None,
@@ -271,8 +272,19 @@ def get_all_schedules_with_details(
     # 제목 검색
     if search:
         search = search.lower()
-        dags = [dag for dag in dags if search in dag.get("dag_id", "").lower() or
-                search in dag.get("description", "").lower()]
+        filtered_dags = []
+        for dag in dags:
+            # 태그에서 title 추출
+            dag_title = extract_title_from_tags(dag.get("tags", []))
+            if not dag_title:
+                dag_title = dag.get("name", dag.get("dag_id", ""))
+
+            # 검색어가 dag_id, title, description에 포함되어 있는지 확인
+            if (search in dag.get("dag_id", "").lower() or
+                    search in dag_title.lower() or
+                    search in dag.get("description", "").lower()):
+                filtered_dags.append(dag)
+        dags = filtered_dags
 
     # 각 DAG의 상세 정보 조회
     schedule_list = []
@@ -280,6 +292,11 @@ def get_all_schedules_with_details(
     try:
         for dag in dags:
             dag_id = dag.get("dag_id", "")
+
+            # 태그에서 title 추출
+            title = extract_title_from_tags(dag.get("tags", []))
+            if not title:
+                title = dag.get("name", dag_id)
 
             try:
                 # 상세 정보 조회
@@ -347,7 +364,7 @@ def get_all_schedules_with_details(
                 # 오류 시 기본 정보만 추가
                 schedule_list.append({
                     "schedule_id": dag_id,
-                    "title": dag.get("description", "").split(" (Start:")[0] or dag_id,
+                    "title": title,
                     "description": dag.get("description", ""),
                     "is_paused": dag.get("is_paused", False),
                     "frequency": "unknown",
