@@ -48,8 +48,8 @@ class CodeGenerator:
     def __init__(self):
         self.logger = MemoryLogger()
         self.minio_client = MinioClient()
-        self.cllm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0, callbacks=[self.logger])
-        self.llm = ChatOpenAI(model_name="gpt-4.1-nano", temperature=0, callbacks=[self.logger])
+        self.illm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0, callbacks=[self.logger]) # InferenceProvider 해보기
+        self.ollm = ChatOpenAI(model_name="gpt-4.1-nano", temperature=0, callbacks=[self.logger]) # ChatOllama 해보기
         self.sllm = ChatOpenAI(model_name="gpt-4.1-mini", temperature=0, callbacks=[self.logger])
 
     def classify_and_group(self, state: AgentState) -> AgentState:
