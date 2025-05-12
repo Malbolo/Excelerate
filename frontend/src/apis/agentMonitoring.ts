@@ -3,26 +3,33 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { api } from '@/apis/core';
 import { TLog } from '@/types/agent';
 
-import { JobResponse } from './jobManagement';
-
 interface GetJobListRequest {
-  name: string;
-  startdate: string;
-  enddate: string;
+  user_name: string;
+  start_date: string;
+  end_date: string;
   page: string;
   size: string;
 }
 
+interface LogResponse {
+  log_id: string;
+  user_name: string;
+  agent_name: string;
+  log_detail: string;
+  total_latency: number;
+  created_at: string;
+}
+
 interface GetJobListResponse {
-  jobs: JobResponse[];
-  page: number;
+  logs: LogResponse[];
+  pages: number;
   size: number;
   total: number;
 }
 
 const getJobList = async (request: GetJobListRequest) => {
   const { data, error, success } = await api<GetJobListResponse>(
-    `/api/jobs?mine=False&name=${request.name}&startdate=${request.startdate}&enddate=${request.enddate}&page=${request.page}&size=${request.size}`,
+    `/api/agent/logs?&user_name=${request.user_name}&start_date=${request.start_date}&end_date=${request.end_date}&page=${request.page}&size=${request.size}`,
   );
 
   if (!success) {
@@ -48,9 +55,9 @@ export const useGetJobList = (request: GetJobListRequest) => {
   return useSuspenseQuery({
     queryKey: [
       'jobList',
-      request.name,
-      request.startdate,
-      request.enddate,
+      request.user_name,
+      request.start_date,
+      request.end_date,
       request.page,
       request.size,
     ],
