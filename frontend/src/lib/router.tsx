@@ -84,7 +84,7 @@ const routes = [
     ],
   },
   {
-    path: '/job-management/job/:jobId',
+    path: '/job-management/edit/:jobId',
     element: (
       <Layout>
         <Suspense fallback={<div>로딩중...</div>}>

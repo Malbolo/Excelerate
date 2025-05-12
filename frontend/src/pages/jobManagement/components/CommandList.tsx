@@ -42,7 +42,7 @@ const CommandList = ({ selectedJob }: { selectedJob: JobResponse | null }) => {
 
   const handleJobEdit = () => {
     if (!selectedJob) return;
-    push(`/job-management/job/${selectedJob.id}`);
+    push(`/job-management/edit/${selectedJob.id}`);
   };
 
   if (!selectedJob) {
