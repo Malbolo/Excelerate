@@ -23,7 +23,6 @@ import { useCommandStore } from '@/store/useCommandStore';
 import { useJobResultStore } from '@/store/useJobResultStore';
 import { useJobStore } from '@/store/useJobStore';
 import { useSourceStore } from '@/store/useSourceStore';
-import { TJobType } from '@/types/agent';
 import { DataFrameRow } from '@/types/dataframe';
 import { createSortableColumns } from '@/utils/dataframe';
 
@@ -46,8 +45,7 @@ const JobEditPage = () => {
     resetResult,
   } = useJobResultStore();
 
-  const { setId, setTitle, setDescription, setType, resetJob, setCanSaveJob } =
-    useJobStore();
+  const { resetJob, setCanSaveJob } = useJobStore();
 
   const { goBack } = useInternalRouter();
 
@@ -94,30 +92,19 @@ const JobEditPage = () => {
       if (!jobId) return;
 
       const data = await getJobDetail(jobId);
-      const {
-        type,
-        title,
-        description,
-        data_load_command,
-        data_load_url,
-        commands,
-        code,
-      } = data;
+      const { data_load_command, data_load_url, commands, code } = data;
 
-      setId(jobId);
       setSourceDataCommand(data_load_command);
       setSourceDataUrl(data_load_url);
       setCode(code);
-      setType(type as TJobType);
-      setTitle(title);
-      setDescription(description);
-      setCanSaveJob(true);
       setCommandList(
         commands.map(command => ({
           title: command.content,
           status: 'success' as const,
         })),
       );
+
+      setCanSaveJob(true);
 
       const command_list = commands.map(command => command.content);
 

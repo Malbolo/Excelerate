@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
+import { useParams } from 'react-router-dom';
 import ClipLoader from 'react-spinners/ClipLoader';
 import { z } from 'zod';
 
 import { SaveJobRequest, useEditJob, useSaveJob } from '@/apis/job';
+import { useGetJobDetail } from '@/apis/jobManagement';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -65,38 +67,49 @@ const formSchema = z.object({
 });
 
 const SaveJobDialog: React.FC = () => {
+  const { jobId } = useParams();
+
   const [open, setOpen] = useState(false);
 
   const { sourceDataCommand, sourceDataUrl } = useSourceStore();
   const { commandList } = useCommandStore();
   const { code } = useJobResultStore();
-  const { id, isEditMode, canSaveJob, title, description, type } =
-    useJobStore();
+  const { isEditMode, canSaveJob } = useJobStore();
 
   const { mutateAsync: saveJobMutation, isPending: isJobSaving } = useSaveJob();
   const { mutateAsync: editJobMutation, isPending: isJobEditing } =
     useEditJob();
+
+  const getJobDetail = useGetJobDetail();
 
   const { push } = useInternalRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      jobType: type,
-      jobName: title,
-      jobDescription: description,
+      jobType: undefined,
+      jobName: '',
+      jobDescription: '',
       sendEmail: false,
     },
   });
 
   useEffect(() => {
-    form.reset({
-      jobType: type,
-      jobName: title,
-      jobDescription: description,
-      sendEmail: false,
-    });
-  }, [type, title, description, form]);
+    const fetchJobDetail = async () => {
+      if (!jobId) return;
+
+      const data = await getJobDetail(jobId);
+
+      form.reset({
+        jobType: data.type,
+        jobName: data.title,
+        jobDescription: data.description,
+        sendEmail: false,
+      });
+    };
+
+    fetchJobDetail();
+  }, []);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     const { jobType, jobName, jobDescription } = values;
@@ -110,7 +123,7 @@ const SaveJobDialog: React.FC = () => {
       code,
     };
 
-    if (id) await editJobMutation({ request, jobId: id });
+    if (jobId) await editJobMutation({ request, jobId });
     else await saveJobMutation(request);
 
     setOpen(false);
@@ -144,7 +157,6 @@ const SaveJobDialog: React.FC = () => {
                         <Select
                           onValueChange={field.onChange}
                           value={field.value}
-                          defaultValue={type}
                           required
                         >
                           <SelectTrigger className='w-full'>
