@@ -62,23 +62,33 @@ def make_classify_template() -> ChatPromptTemplate:
     """
 당신은 사용자 명령어를 'df'와 'excel', 'none'으로 분류하는 전문가입니다.
 - '템플릿' 또는 'template'이라는 단어가 들어있는 명령만 'excel'로 분류하세요.
-- 데이터프레임 조작과 관련없는 명령은 'none'으로 분류하세요.
-- 그 외 모든 명령은 'df'로 분류합니다.
-- 사용자 명령어의 순서를 반드시 유지하세요. ( df, excel, df 순으로 명령어가 들어올 수도 있습니다. )
-- 연속된 df 명령은 하나의 그룹으로 묶어, JSON 배열 하나의 요소로 'command'에 넣고 'type'을 'df'로 지정하세요.
-- 연속된 none 명령도 df 처럼 하나의 그룹으로 묶고 'type'을 'none'으로 지정하세요.
-- excel 명령은 하나의 커맨드를 'command'에 넣고 'type'을 'excel'로 지정하세요.
+- dataframe을 조작하는 명령(예: 필터링, 포맷 변경 등)은 'df'로 분류하세요.
+- 순수 숫자(0-9)로만 구성된 명령은 'none'으로 분류하세요.
+- 그 외 의미 없는 명령도 'none'으로 분류하세요.
+- 연속된 동일 타입 명령은 하나의 그룹으로 묶습니다.
+  - 연속된 df 명령은 하나의 'df' 그룹으로,
+  - 연속된 none 명령은 하나의 'none' 그룹으로 묶으세요.
+- 순서를 반드시 유지하세요.
 - 각 요소는 반드시 {{'command': '...', 'type': '...'}} 형태의 JSON 객체여야 합니다.
 """
 )
 
-    # 예시 1: 두 개의 df 연속 → 그룹, excel 단일
+    # 그룹화 예시
     example_h1 = HumanMessagePromptTemplate.from_template(
-        '["압력이 3이상인 것만 필터링 해주세요", "createdAt의 포맷을 YYYY-MM-DD로 바꿔주세요", "KPIreport 템플릿 불러오기"]'
+        '["4월 5일 이후의 데이터만 필터링 해주세요",'
+        '"defect_rate가 1 이상인 데이터만 필터링 해주세요",'
+        '"1","2","3",'
+        '"날짜의 포맷을 YYYY-MM-DD로 변경해 주세요",'
+        '"테스트 템플릿을 불러와 dataframe을 1열 5행에 붙여넣고 result로 저장해주세요"]'
     )
     example_a1 = AIMessagePromptTemplate.from_template(
-        '[{{"command":"[\\"압력이 3이상인 것만 필터링 해주세요\\",\\"createdAt의 포맷을 YYYY-MM-DD로 바꿔주세요\\"]","type":"df"}},'
-        '{{"command":"KPIreport 템플릿 불러오기","type":"excel"}}]'
+        '['
+          '{{"command":"[\\"4월 5일 이후의 데이터만 필터링 해주세요\\",'
+                         '\\"defect_rate가 1 이상인 데이터만 필터링 해주세요\\"]","type":"df"}},'
+          '{{"command":"[\\"1\\",\\"2\\",\\"3\\"]","type":"none"}},'
+          '{{"command":"[\\"날짜의 포맷을 YYYY-MM-DD로 변경해 주세요\\"]","type":"df"}},'
+          '{{"command":"테스트 템플릿을 불러와 dataframe을 1열 5행에 붙여넣고 result로 저장해주세요","type":"excel"}}'
+        ']'
     )
 
     # 예시 2: excel 먼저 → 두 개 df 그룹 → excel
@@ -123,7 +133,7 @@ def make_excel_template() -> ChatPromptTemplate:
             "{'Name':['Alice','Bob'], 'Score':[85,92]}"
         ),
         AIMessagePromptTemplate.from_template(
-            """```python
+            """
 from tempfile import TemporaryDirectory
 import os
 import pandas as pd
@@ -144,7 +154,7 @@ with TemporaryDirectory() as workdir:
                     start_col=2)
     # 업로드
     minio.upload_result("auto", "out1", out)
-```"""
+"""
         ),
 
         # 2번째 페어: C5 삽입 예시
@@ -316,11 +326,10 @@ def make_excel_code_snippet(template_name: str,
                              user_id: str = "test") -> str:
     """
     Excel 작업을 Airflow 등에서 재실행할 수 있도록 하는 Python 코드 스니펫을 생성합니다.
-    airflow와 연결 시, insert_df_to_excel과 MinioClient를 연결할 필요가 있습니다.(주입해도 되고)
     """
     sheet_repr = repr(sheet_name) if sheet_name is not None else 'None'
     return f"""
-# {template_name} 템플릿에 처리된 dataframe 붙여넣기
+# {template_name} 템플릿의 {start_col}열 {start_row}행에 dataframe 붙여넣기
 workdir = mkdtemp()
 tpl    = os.path.join(workdir, "{template_name}.xlsx")
 out    = os.path.join(workdir, "{output_name}.xlsx")
