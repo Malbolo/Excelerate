@@ -12,6 +12,9 @@ from app.schemas.job.job_create_schema import JobCreateRequest
 from app.schemas.job.job_detail_schema import JobDetailResponse, JobDetailRequest
 from app.schemas.job.job_update_schema import JobUpdateRequest
 from app.core import auth
+from app.schemas.job.job_create_schema import JobCreateResponseData, JobCreateResponse
+from app.app.schemas.job.job_list_schema import JobListResponse
+
 
 async def create_job(request: JobCreateRequest, user_id: int, db: Session) -> JSONResponse:
     try:
