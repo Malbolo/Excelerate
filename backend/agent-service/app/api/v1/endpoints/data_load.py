@@ -30,7 +30,10 @@ async def command_code(
             stream_id = "check" # 확인용 
 
         url, result, logs, code = data_loader.run(request.command, stream_id)
-        user_id = auth.get_user_id_from_header(req) 
+        user_id = auth.get_user_id_from_header(req)
+        print("Debug : ###\n\n")
+        print(user_id)
+        print("###########\n\n")
         if user_id is None:
             user_id = "guest"
 
