@@ -8,7 +8,6 @@ from app.services.airflow.dag_query import get_dag_runs
 from app.services.airflow.utils.cron import generate_expected_run_dates
 from app.services.airflow.utils.time import get_month_date_range
 
-
 def build_monthly_dag_calendar(dags: List[Dict[str, Any]], year: int, month: int) -> List[Dict[str, Any]]:
     """
     월별 DAG 실행 통계 생성 (pending 포함: 예상 실행일 기준)
@@ -80,7 +79,6 @@ def build_monthly_dag_calendar(dags: List[Dict[str, Any]], year: int, month: int
     # 최종 결과 반환 (날짜별로 정렬된 상태로 유지)
     return all_days
 
-
 def _extract_dag_dates(dag: Dict[str, Any], dag_id: str, now: datetime) -> tuple:
     """DAG의 시작일과 종료일을 추출"""
     # 1. 시작일 추출
@@ -151,7 +149,6 @@ def _extract_dag_start_date_from_api(dag: Dict[str, Any], dag_id: str) -> dateti
             pass
     return None
 
-
 def _extract_date_from_dag_id(dag_id: str) -> datetime:
     """DAG ID에서 날짜 추출"""
     try:
@@ -171,7 +168,6 @@ def _extract_date_from_dag_id(dag_id: str) -> datetime:
         logger.debug(f"Error extracting date from DAG ID {dag_id}: {str(e)}")
     return None
 
-
 def _extract_created_date(dag: Dict[str, Any], now: datetime) -> datetime:
     """생성일 또는 현재 날짜 사용"""
     created_date_str = dag.get("created")
@@ -181,7 +177,6 @@ def _extract_created_date(dag: Dict[str, Any], now: datetime) -> datetime:
         except (ValueError, TypeError):
             return now
     return now
-
 
 def _is_dag_in_month_range(dag_id: str, dag_start_date: datetime, dag_end_date: datetime,
                            first_day: datetime, last_day: datetime) -> bool:
@@ -199,40 +194,45 @@ def _is_dag_in_month_range(dag_id: str, dag_start_date: datetime, dag_end_date: 
     return True
 
 
-def _process_dag_runs_for_calendar(dag_id: str, cron_expr: str, effective_start: datetime,
-                                   effective_end: datetime, first_day: datetime, last_day: datetime,
-                                   date_index: Dict[str, int], all_days: List[Dict[str, Any]]):
-    """DAG 실행 정보 처리하여 캘린더 데이터 구성"""
-    try:
-        logger.debug(f"Generating expected dates for {dag_id} from {effective_start} to {effective_end}")
-        expected_dates = generate_expected_run_dates(cron_expr, effective_start, effective_end)
-        logger.debug(f"Expected dates for {dag_id}: {expected_dates}")
-    except Exception as e:
-        logger.error(f"Error generating expected dates for {dag_id}: {e}")
-        return
+def _process_dag_runs_for_calendar(dag_id, cron_expr, effective_start, effective_end,
+                                   first_day, last_day, date_index, all_days):
+    # 현재 시각 (UTC 기준)
+    now = datetime.now(timezone.utc)
 
     # 실행 이력 조회
-    try:
-        dag_runs = get_dag_runs(
-            dag_id,
-            start_date=first_day.isoformat().replace("+00:00", "Z"),
-            end_date=last_day.isoformat().replace("+00:00", "Z")
-        )
-        executed_map = {run.get("start_date", "").split("T")[0]: run.get("state", "").lower() for run in dag_runs}
-    except Exception as e:
-        logger.error(f"Error getting DAG runs for {dag_id}: {e}")
-        executed_map = {}
+    dag_runs = get_dag_runs(dag_id, start_date=first_day.isoformat(), end_date=last_day.isoformat())
+    executed_map = {run.get("start_date", "").split("T")[0]: run.get("state", "").lower() for run in dag_runs}
 
-    # 통계 누적 (날짜별 인덱스 사용)
-    for date in expected_dates:
-        if date in date_index:
-            idx = date_index[date]
-            all_days[idx]["total"] += 1
+    # 해당 월의 각 날짜에 대해 크론 표현식 평가
+    for date_str, idx in date_index.items():
+        # 해당 날짜의 datetime 객체 생성
+        date_dt = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
 
-            state = executed_map.get(date)
-            if state == "success":
-                all_days[idx]["success"] += 1
-            elif state in ("failed", "error"):
-                all_days[idx]["failed"] += 1
-            else:
-                all_days[idx]["pending"] += 1
+        # 해당 날짜가 effective_start와 effective_end 사이에 있는지 확인
+        if effective_start <= date_dt <= effective_end:
+            # 해당 날짜의 0시 0분을 기준으로 크론 표현식 평가
+            day_start = date_dt.replace(hour=0, minute=0, second=0)
+            day_end = date_dt.replace(hour=23, minute=59, second=59)
+
+            try:
+                # 해당 날짜에 실행되는 시간 찾기
+                cron_iter = croniter(cron_expr, day_start)
+                execution_time = cron_iter.get_next(datetime)
+
+                # 같은 날짜 내에 실행 시간이 있는지 확인
+                if execution_time <= day_end:
+                    # total에 추가할지 결정 (이미 지난 시간은 total에 포함되지 않음)
+                    if execution_time > now:
+                        all_days[idx]["total"] += 1
+
+                    # 실행 상태 확인
+                    state = executed_map.get(date_str)
+                    if state == "success":
+                        all_days[idx]["success"] += 1
+                    elif state in ("failed", "error"):
+                        all_days[idx]["failed"] += 1
+                    elif execution_time > now:
+                        # 실행 이력이 없고, 예정 시간이 현재보다 미래인 경우만 pending으로 표시
+                        all_days[idx]["pending"] += 1
+            except Exception as e:
+                logger.debug(f"Error evaluating cron for {dag_id} on {date_str}: {str(e)}")

@@ -292,7 +292,7 @@ def get_all_schedules_with_details(
     try:
         for dag in dags:
             dag_id = dag.get("dag_id", "")
-
+            owner = dag.get("owners", ["unknown"])[0]
             # 태그에서 title 추출
             title = extract_title_from_tags(dag.get("tags", []))
             if not title:
@@ -321,6 +321,7 @@ def get_all_schedules_with_details(
                         "end_time": recent_run.get("end_date")
                     }
 
+                    schedule_data["owner"] = owner
                     # 작업 상태 포함 여부에 따라 작업 상태 정보 추가
                     if include_job_status:
                         # 작업 실행 상태 조회
@@ -370,7 +371,8 @@ def get_all_schedules_with_details(
                     "frequency": "unknown",
                     "jobs": [],
                     "last_run": None,
-                    "next_run": None
+                    "next_run": None,
+                    "owner": owner,
                 })
     finally:
         db.close()
@@ -385,6 +387,9 @@ def get_dag_runs_by_date(dags: List[Dict[str, Any]], target_date: str) -> Dict[s
     target_date_dt = datetime.strptime(target_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
     start_dt = target_date_dt.replace(hour=0, minute=0, second=0)
     end_dt = target_date_dt.replace(hour=23, minute=59, second=59)
+
+    # 현재 시각 (UTC 기준)
+    now = datetime.now(timezone.utc)
 
     start = start_dt.isoformat()
     end = end_dt.isoformat()
@@ -445,40 +450,38 @@ def get_dag_runs_by_date(dags: List[Dict[str, Any]], target_date: str) -> Dict[s
                 elif state in ("failed", "error"):
                     result["failed"].append(run_info)
                 else:
+                    # "running", "queued" 등의 상태는 pending으로 표시
                     result["pending"].append(run_info)
         else:
-            # 실행 이력이 없는 경우, 시작일 확인 후 pending 여부 결정
+            # 실행 이력이 없는 경우, 시작일 및 실행 시각 확인
             should_be_pending = False
+            next_run_time = None
 
             # 시작일 추출 - DAG ID에서 날짜 부분 추출
             dag_start_date = _extract_date_from_dag_id(dag_id)
 
-            # 시작일이 대상 날짜 이전이거나 같으면 pending으로 간주
-            if dag_start_date and target_date_dt >= dag_start_date:
-                should_be_pending = True
-                logger.debug(f"{dag_id} should be pending for {target_date}")
-
-            # 시작일이 없거나 추출 실패한 경우, 기본값으로 pending 처리
-            if dag_start_date is None:
-                should_be_pending = True
-                logger.debug(f"No start_date found for {dag_id}, assuming it should be pending")
-
-            if should_be_pending:
-                # 다음 실행 시간 계산 (schedule_interval 기반)
+            # 시작일이 대상 날짜 이전이거나 같은 경우에만 계속 진행
+            if (dag_start_date and target_date_dt >= dag_start_date) or dag_start_date is None:
+                # 스케줄 정보 확인
                 schedule_interval = dag.get("schedule_interval", "")
-                next_run_time = None
-
                 if isinstance(schedule_interval, dict) and "value" in schedule_interval:
                     schedule_interval = schedule_interval["value"]
 
                 if schedule_interval and croniter.is_valid(schedule_interval):
                     try:
-                        # 크론 표현식에서 다음 실행 시간 계산
+                        # 해당 날짜의 00:00:00을 기준으로 크론 표현식 평가
                         cron_iter = croniter(schedule_interval, start_dt)
-                        next_run_time = cron_iter.get_next(datetime).isoformat()
-                    except Exception as e:
-                        logger.debug(f"Error calculating next run time for {dag_id}: {str(e)}")
+                        execution_time = cron_iter.get_next(datetime)
 
+                        # 같은 날짜 내에 실행 시간이 있고, 아직 실행 시간이 지나지 않았는지 확인
+                        if execution_time <= end_dt and execution_time > now:
+                            should_be_pending = True
+                            next_run_time = execution_time.isoformat()
+                            logger.debug(f"{dag_id} will run at {next_run_time} on {target_date}")
+                    except Exception as e:
+                        logger.debug(f"Error calculating execution time for {dag_id}: {str(e)}")
+
+            if should_be_pending:
                 result["pending"].append({
                     "schedule_id": dag_id,
                     "title": title,
