@@ -29,6 +29,7 @@ export interface Schedule {
   frequency: string;
   frequency_cron: string;
   frequency_display: FrequencyDisplay;
+  owner: string;
   is_paused: boolean;
   created_at: string;
   updated_at: string | null;
@@ -101,8 +102,14 @@ const createSchedule = async (schedule: CreateScheduleFormData) => {
         })),
         success_emails: schedule.successEmail,
         failure_emails: schedule.failEmail,
-        start_date: schedule.startDate.toISOString().split('.')[0],
-        end_date: schedule.endDate?.toISOString().split('.')[0],
+        start_date: new Date(schedule.startDate.getTime() + 9 * 60 * 60 * 1000)
+          .toISOString()
+          .split('.')[0],
+        end_date: schedule.endDate
+          ? new Date(schedule.endDate.getTime() + 9 * 60 * 60 * 1000)
+              .toISOString()
+              .split('.')[0]
+          : undefined,
         execution_time: schedule.executionTime,
         frequency: schedule.interval,
       }),
@@ -133,8 +140,14 @@ const updateSchedule = async (
         })),
         success_emails: schedule.successEmail,
         failure_emails: schedule.failEmail,
-        start_date: schedule.startDate.toISOString().split('.')[0],
-        end_date: schedule.endDate?.toISOString().split('.')[0],
+        start_date: new Date(schedule.startDate.getTime() + 9 * 60 * 60 * 1000)
+          .toISOString()
+          .split('.')[0],
+        end_date: schedule.endDate
+          ? new Date(schedule.endDate.getTime() + 9 * 60 * 60 * 1000)
+              .toISOString()
+              .split('.')[0]
+          : undefined,
         execution_time: schedule.executionTime,
         frequency: schedule.interval,
       }),

@@ -49,7 +49,7 @@ const ScheduleRow = ({ schedule }: ScheduleRowProps) => {
 
         <TableCell className='font-medium'>{schedule.title}</TableCell>
 
-        <TableCell>{schedule.title}</TableCell>
+        <TableCell>{schedule.owner}</TableCell>
 
         <TableCell>{formatInterval(schedule.frequency_display)}</TableCell>
 
@@ -75,7 +75,7 @@ const ScheduleRow = ({ schedule }: ScheduleRowProps) => {
           <TableCell colSpan={6} className='p-0'>
             <div className='space-y-2 p-4'>
               <h4 className='mb-2 text-sm font-semibold'>
-                Jobs for {schedule.title}:
+                Jobs for : {schedule.title}
               </h4>
               {schedule.jobs.length > 0 ? (
                 schedule.jobs.map(job => (
