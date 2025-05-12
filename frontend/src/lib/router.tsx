@@ -17,6 +17,7 @@ import MonthSchedulePage from '@/pages/monthSchedulerMonitoring';
 import PlayGroundPage from '@/pages/playGround';
 import ScheduleDetail from '@/pages/scheduleDetail';
 import SchedulerManagementPage from '@/pages/schedulerManagement';
+import TemplateManagementPage from '@/pages/templateManagement';
 
 const routes = [
   {
@@ -189,6 +190,18 @@ const routes = [
     ),
     errorElement: <ErrorBoundary />,
     name: 'Auth',
+  },
+  {
+    path: '/template-management',
+    element: (
+      <Layout>
+        <Suspense fallback={<div>로딩중...</div>}>
+          <TemplateManagementPage />
+        </Suspense>
+      </Layout>
+    ),
+    errorElement: <ErrorBoundary />,
+    name: 'TemplateManagement',
   },
 ];
 

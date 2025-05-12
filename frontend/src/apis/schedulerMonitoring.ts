@@ -31,27 +31,6 @@ interface GetDayScheduleResponse {
   pending: DaySchedule[];
 }
 
-interface GetRunIdResponse {
-  schedule_id: string;
-  title: string;
-  run_id: string;
-  status: string;
-  start_time: string;
-  end_time: string;
-  duration: number;
-  conf: object;
-  jobs: [
-    {
-      job_id: string;
-      status: string;
-      start_time: string;
-      end_time: string;
-      duration: number;
-      logs_url: string;
-    },
-  ];
-}
-
 export interface Command {
   content: string;
   order: number;
@@ -119,21 +98,6 @@ const getMonthSchedules = async (year: string, month: string) => {
   );
 
   if (!data) {
-    // 에러바운더리로 캐치할 데이터
-    throw new Error('No data');
-  }
-
-  return data;
-};
-
-const getSchedule = async (schedule_id: string, run_id: string) => {
-  const { data } = await api<GetRunIdResponse>(
-    `/api/schedules/${schedule_id}/runs/${run_id}`,
-    { method: 'GET' },
-  );
-
-  if (!data) {
-    // 에러바운더리로 캐치할 데이터
     throw new Error('No data');
   }
 
@@ -162,12 +126,5 @@ export const useGetMonthSchedules = (year: string, month: string) => {
   return useSuspenseQuery({
     queryKey: ['monthSchedules', year, month],
     queryFn: () => getMonthSchedules(year, month),
-  });
-};
-
-export const useGetSchedule = (schedule_id: string, run_id: string) => {
-  return useSuspenseQuery({
-    queryKey: ['schedule', schedule_id, run_id],
-    queryFn: () => getSchedule(schedule_id, run_id),
   });
 };

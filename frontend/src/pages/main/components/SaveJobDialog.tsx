@@ -38,7 +38,6 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { JOB_TYPES_CONFIG } from '@/constant/job';
-import useInternalRouter from '@/hooks/useInternalRouter';
 import { useCommandStore } from '@/store/useCommandStore';
 import { useJobResultStore } from '@/store/useJobResultStore';
 import { useJobStore } from '@/store/useJobStore';
@@ -81,8 +80,6 @@ const SaveJobDialog: React.FC = () => {
     useEditJob();
 
   const getJobDetail = useGetJobDetail();
-
-  const { push } = useInternalRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -128,7 +125,6 @@ const SaveJobDialog: React.FC = () => {
 
     setOpen(false);
     form.reset();
-    push('/job-management');
   };
 
   return (
