@@ -59,8 +59,13 @@ app.include_router(endpoints.router, prefix="/api/agent")
 )
 async def read_root(request: Request):
     try:
-        user_id = auth.get_user_id_from_header(request)
-        user_name = auth.get_user_info(user_id).name
+        user_id = auth.get_user_id_from_header(request) or "guest"
+
+        profile = auth.get_user_info(user_id)
+        if profile and isinstance(profile, dict):
+            user_name = profile.get("name") or "guest"
+        else:
+            user_name = "guest"
     except:
         user_name = "guest"
     return JSONResponse(status_code=200, content={"result" : "success", "data" : {"message": f"Hello, {user_name}!"}})
