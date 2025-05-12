@@ -5,7 +5,7 @@ import { ArrowLeftIcon } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import ClipLoader from 'react-spinners/ClipLoader';
 
-import { useGetSourceData } from '@/apis/job';
+import { useGetSourceData, useSendCommandList } from '@/apis/job';
 import { useGetJobDetail } from '@/apis/jobManagement';
 import { Button } from '@/components/ui/button';
 import {
@@ -38,7 +38,7 @@ const JobEditPage = () => {
     useSourceStore();
 
   const { addCommand, resetCommand, setCommandList } = useCommandStore();
-  const { setCode } = useJobResultStore();
+  const { setCode, setLogId } = useJobResultStore();
 
   const {
     setColumns,
@@ -46,12 +46,15 @@ const JobEditPage = () => {
     resetResult,
   } = useJobResultStore();
 
-  const { resetJob } = useJobStore();
+  const { resetJob, setCanSaveJob } = useJobStore();
 
   const { goBack } = useInternalRouter();
 
   const { mutateAsync: sourceDataMutation, isPending: isSourceDataLoading } =
     useGetSourceData();
+
+  const { mutateAsync: commandMutation, isPending: isCommandLoading } =
+    useSendCommandList();
 
   const fetchSourceData = async () => {
     const response = await sourceDataMutation(inputCommand);
@@ -104,13 +107,29 @@ const JobEditPage = () => {
       setSourceDataUrl(data_load_url);
       setCode(code);
       setTitle(title);
+      setCanSaveJob(true);
 
       setCommandList(
         commands.map(command => ({
           title: command.content,
-          status: 'pending' as const,
+          status: 'success' as const,
         })),
       );
+
+      const command_list = commands.map(command => command.content);
+
+      const response = await commandMutation({
+        command_list,
+        url: data_load_url,
+      });
+
+      setColumns(
+        response.dataframe[0][0]
+          ? createSortableColumns(response.dataframe[0][0])
+          : [],
+      );
+      setData(response.dataframe[response.dataframe.length - 1]);
+      setLogId(response.log_id);
     };
 
     fetchJobDetail();
@@ -136,7 +155,7 @@ const JobEditPage = () => {
                 className='flex items-center gap-2'
               >
                 <ArrowLeftIcon className='h-4 w-4' />
-                {title}
+                Back
               </Button>
             </div>
 
