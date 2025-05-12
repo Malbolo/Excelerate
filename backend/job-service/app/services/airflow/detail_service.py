@@ -386,7 +386,12 @@ def get_dag_runs_by_date(dags: List[Dict[str, Any]], target_date: str) -> Dict[s
     for dag in dags:
         dag_id = dag.get("dag_id")
         owner = dag.get("owners", ["unknown"])[0]
-        title = dag.get("name", dag_id)
+
+        # 태그에서 title 추출
+        title = extract_title_from_tags(dag.get("tags", []))
+        if not title:
+            title = dag.get("name", dag_id)  # 태그에 없으면 name이나 dag_id 사용
+
         description = dag.get("description", "")
         is_paused = dag.get("is_paused", False)
 
