@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import ClipLoader from 'react-spinners/ClipLoader';
 import { z } from 'zod';
 
-import { SaveJobRequest, useSaveJob } from '@/apis/job';
+import { SaveJobRequest, useEditJob, useSaveJob } from '@/apis/job';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -70,9 +70,12 @@ const SaveJobDialog: React.FC = () => {
   const { sourceDataCommand, sourceDataUrl } = useSourceStore();
   const { commandList } = useCommandStore();
   const { code } = useJobResultStore();
-  const { isEditMode, canSaveJob, title, description, type } = useJobStore();
+  const { id, isEditMode, canSaveJob, title, description, type } =
+    useJobStore();
 
-  const { mutateAsync: jobMutation, isPending: isJobSaving } = useSaveJob();
+  const { mutateAsync: saveJobMutation, isPending: isJobSaving } = useSaveJob();
+  const { mutateAsync: editJobMutation, isPending: isJobEditing } =
+    useEditJob();
 
   const { push } = useInternalRouter();
 
@@ -107,7 +110,9 @@ const SaveJobDialog: React.FC = () => {
       code,
     };
 
-    await jobMutation(request);
+    if (id) await editJobMutation({ request, jobId: id });
+    else await saveJobMutation(request);
+
     setOpen(false);
     form.reset();
     push('/job-management');
@@ -228,9 +233,9 @@ const SaveJobDialog: React.FC = () => {
                   <Button
                     type='submit'
                     className='flex-1'
-                    disabled={isJobSaving}
+                    disabled={isJobSaving || isJobEditing}
                   >
-                    {isJobSaving ? (
+                    {isJobSaving || isJobEditing ? (
                       <ClipLoader size={18} color='white' />
                     ) : (
                       'Save'

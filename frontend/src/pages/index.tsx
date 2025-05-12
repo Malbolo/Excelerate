@@ -37,7 +37,7 @@ const MainPage: React.FC = () => {
     resetResult,
   } = useJobResultStore();
 
-  const { resetJob } = useJobStore();
+  const { resetJob, setCanSaveJob } = useJobStore();
 
   const { mutateAsync: sourceDataMutation, isPending: isSourceDataLoading } =
     useGetSourceData();
@@ -71,6 +71,7 @@ const MainPage: React.FC = () => {
         break;
     }
 
+    setCanSaveJob(false);
     setInputCommand('');
   };
 

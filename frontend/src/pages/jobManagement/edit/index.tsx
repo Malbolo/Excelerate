@@ -38,7 +38,7 @@ const JobEditPage = () => {
     useSourceStore();
 
   const { addCommand, resetCommand, setCommandList } = useCommandStore();
-  const { setCode, setLogId } = useJobResultStore();
+  const { dataframe, setCode, setLogId } = useJobResultStore();
 
   const {
     setColumns,
@@ -46,7 +46,7 @@ const JobEditPage = () => {
     resetResult,
   } = useJobResultStore();
 
-  const { setTitle, setDescription, setType, resetJob, setCanSaveJob } =
+  const { setId, setTitle, setDescription, setType, resetJob, setCanSaveJob } =
     useJobStore();
 
   const { goBack } = useInternalRouter();
@@ -104,6 +104,7 @@ const JobEditPage = () => {
         code,
       } = data;
 
+      setId(jobId);
       setSourceDataCommand(data_load_command);
       setSourceDataUrl(data_load_url);
       setCode(code);
@@ -111,7 +112,6 @@ const JobEditPage = () => {
       setTitle(title);
       setDescription(description);
       setCanSaveJob(true);
-
       setCommandList(
         commands.map(command => ({
           title: command.content,
@@ -131,6 +131,7 @@ const JobEditPage = () => {
           ? createSortableColumns(response.dataframe[0][0])
           : [],
       );
+
       setData(response.dataframe[response.dataframe.length - 1]);
       setLogId(response.log_id);
     };
@@ -216,7 +217,13 @@ const JobEditPage = () => {
         <ResizableHandle withHandle />
 
         <ResizablePanel minSize={30} maxSize={60} defaultSize={30}>
-          <MainSideBar />
+          {!dataframe || isCommandLoading ? (
+            <div className='flex h-full w-full items-center justify-center border-l bg-[#FAFCFF]'>
+              <ClipLoader size={18} color='#7d9ecd' />
+            </div>
+          ) : (
+            <MainSideBar />
+          )}
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>

@@ -92,6 +92,7 @@ const CodePanel: React.FC<{ code: string }> = ({ code }) => {
   return (
     <div className='h-full py-2'>
       <Editor
+        key={code}
         defaultLanguage='python'
         defaultValue={code}
         options={{

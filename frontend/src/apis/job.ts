@@ -51,6 +51,22 @@ const saveJob = async (request: SaveJobRequest) => {
   return data;
 };
 
+const editJob = async (request: SaveJobRequest, jobId: string) => {
+  const { data, error, success } = await api<SaveJobResponse>(
+    `/api/jobs/${jobId}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(request),
+    },
+  );
+
+  if (!success) {
+    throw new Error(error);
+  }
+
+  return data;
+};
+
 const sendCommandList = async ({
   command_list,
   url,
@@ -93,6 +109,26 @@ export const useSaveJob = () => {
     onSuccess: () => {
       toast.success('Job saved successfully');
       queryClient.invalidateQueries({ queryKey: ['jobList'] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+
+  return { mutateAsync, isPending };
+};
+
+export const useEditJob = () => {
+  const { mutateAsync, isPending } = useMutation({
+    mutationFn: ({
+      request,
+      jobId,
+    }: {
+      request: SaveJobRequest;
+      jobId: string;
+    }) => editJob(request, jobId),
+    onSuccess: () => {
+      toast.success('Job edited successfully');
     },
     onError: (error: Error) => {
       toast.error(error.message);
