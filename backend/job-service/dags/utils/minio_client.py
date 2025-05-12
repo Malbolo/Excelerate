@@ -1,6 +1,6 @@
 from minio import Minio
 from minio.error import S3Error
-from minio_settings import settings
+from utils.minio_settings import settings
 import json
 import io
 import logging
