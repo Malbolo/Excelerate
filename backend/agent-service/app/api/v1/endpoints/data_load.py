@@ -30,19 +30,19 @@ async def command_code(
             stream_id = "check" # 확인용 
 
         url, result, logs, code = data_loader.run(request.command, stream_id)
-        user_id = auth.get_user_id_from_header(req)
-        print("Debug : ###\n\n")
-        print(user_id)
-        print("###########\n\n")
-        if user_id is None:
-            user_id = "guest"
+        user_id = auth.get_user_id_from_header(req) or "guest"
 
-        try:
-            user_name = auth.get_user_info(user_id).name
-            if user_name is None:
-                user_name = "guest"
-        except:
+        profile = auth.get_user_info(user_id)
+        if profile and isinstance(profile, dict):
+            user_name = profile.get("name") or "guest"
+        else:
             user_name = "guest"
+
+        print("DEBUG:###\n")
+        print("ID:", user_id)
+        print("Name:", user_name)
+        print("#########\n")
+
         log_id = generate_log_id(user_name)
 
         api_end = datetime.now(ZoneInfo("Asia/Seoul"))
