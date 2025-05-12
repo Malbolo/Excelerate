@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
+import useInternalRouter from '@/hooks/useInternalRouter';
 import { DataFrame } from '@/types/dataframe';
 
 import { api } from './core';
@@ -104,11 +105,13 @@ const getSourceData = async (command: string) => {
 
 export const useSaveJob = () => {
   const queryClient = useQueryClient();
+  const { push } = useInternalRouter();
   const { mutateAsync, isPending } = useMutation({
     mutationFn: (request: SaveJobRequest) => saveJob(request),
     onSuccess: () => {
       toast.success('Job saved successfully');
       queryClient.invalidateQueries({ queryKey: ['jobList'] });
+      push('/job-management');
     },
     onError: (error: Error) => {
       toast.error(error.message);
