@@ -55,8 +55,8 @@ class CodeGenerator:
     def classify_and_group(self, state: AgentState) -> AgentState:
         """
         1) 사용자 커맨드 리스트를 LLM에 넘겨
-           [{'command': ..., 'type': 'df'|'excel'}, ...] 형태로 분류
-        2) 실패 시 모든 명령을 'df'로 간주
+           [{'command': ..., 'type': 'df'|'excel|'none''}, ...] 형태로 분류
+        2) 실패 시 모든 명령을 'none'으로 간주
         """
         # 로그 이름 설정 & 초기화
         self.logger.set_name("LLM Call: Split Command List")
@@ -110,13 +110,13 @@ class CodeGenerator:
             for item in parsed:
                 cmd = item.get("command")
                 typ = item.get("type")
-                if not cmd or typ not in ("df", "excel"):
+                if not cmd or typ not in ("df", "excel", "none"):
                     raise ValueError(f"Invalid item: {item}")
                 classified.append({"cmd": cmd, "type": typ})
 
         except Exception:
-            # 파싱 실패 시, 모든 명령을 df로 처리
-            classified = [{"cmd": c, "type": "df"} for c in cmds]
+            # 파싱 실패 시, 모든 명령을 none으로 처리
+            classified = [{"cmd": c, "type": "none"} for c in cmds]
 
         # 로깅 추출
         llm_entry = self.logger.get_logs()[-1] if self.logger.get_logs() else None
@@ -159,6 +159,17 @@ class CodeGenerator:
             "retry_count":  0
         }
         return new_state
+
+    def none_handler(self, state: AgentState) -> AgentState:
+        """
+        'none' 타입 명령 처리: 코드에 주석 추가 후 다음 유닛으로 스킵
+        """
+        unit = state['current_unit']
+        cmd = unit.get('cmd', '')
+        comment = f"# {cmd}"
+        codes = state.get('python_codes_list', []) + [comment]
+        merged = merge_code_snippets(codes)
+        return {"python_codes_list": codes, "python_code": merged}
 
     def code_gen(self, state: AgentState) -> AgentState:
         """
@@ -337,6 +348,7 @@ class CodeGenerator:
         handlers = {
             'split' : self.classify_and_group,
             'next_unit' : self.next_unit,
+            'none_handler': self.none_handler,
             'codegen': self.code_gen,
             'retry':   self.retry,
             'error':   self.error_node,
@@ -358,9 +370,12 @@ class CodeGenerator:
             {
                 'done': END,
                 'df': 'codegen',
-                'excel': 'excel_manipulate'
+                'excel': 'excel_manipulate',
+                'none': 'none_handler'
             }
         )
+
+        graph_builder.add_edge('none_handler', 'next_unit')
 
         # DataFrame 코드 생성 → 실행 → 분기 처리
         graph_builder.add_edge('codegen', 'execute')

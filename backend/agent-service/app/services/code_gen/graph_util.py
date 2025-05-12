@@ -18,10 +18,10 @@ def make_code_template() -> ChatPromptTemplate:
 사용자의 요청 리스트에 따라 pandas DataFrame(`df`)을 변형하는 **직접 실행 가능한 스크립트**를 작성하세요.
 - 시작 시 `intermediate = []` 로 빈 리스트를 만들고,
 - 사용자의 각 요청에 맞게 df를 변형하는 코드를 작성하고, 해당 코드 위에 주석으로 해당 요청을 표시하세요.
+- 사용자의 요청과 관련없는 코드는 생성하지 마세요.
 - 각 변형 결과마다 `intermediate.append(…)` 를 호출하세요.
 - 각 변형 결과를 다음 단계의 dataframe으로 사용하세요.
 - 전체 코드 마지막에 `df = intermediate[-1]`로 df에 최종 결과를 대입하세요.
-- 사용자가 요청하지 않은 작업은 하지 마세요.
 
 import문이나 함수 정의(`def …`)나 `return` 문은 쓰지 마세요.
 
@@ -46,7 +46,8 @@ def make_classify_template() -> ChatPromptTemplate:
     사용자 명령어 리스트를 분석하여,
     1) 연속된 데이터프레임(df) 명령은 하나의 그룹으로 묶어 하나의 JSON 문자열로 'command'에 넣고, 'type'을 'df'로 지정합니다.
     2) '템플릿'(또는 'template') 키워드가 포함된 명령은 'type'을 'excel'로 지정하고, 개별 문자열로 처리합니다.
-    출력은 JSON 객체 배열이며, 각 객체는 'command'(문자열)와 'type'('df' 또는 'excel') 필드를 가집니다.
+    3) 아무 의미없는 명령은 'type'을 'none'으로 지정하고 무시합니다.
+    출력은 JSON 객체 배열이며, 각 객체는 'command'(문자열)와 'type'('df' 또는 'excel' 또는 'none') 필드를 가집니다.
 
     예시 입력:
       ["압력이 3이상인 것만 필터링 해주세요", "createdAt의 포맷을 YYYY-MM-DD로 바꿔주세요", "KPIreport 템플릿 불러오기"]
@@ -59,13 +60,15 @@ def make_classify_template() -> ChatPromptTemplate:
     # 시스템 메시지: 분류 규칙 정의
     system = SystemMessagePromptTemplate.from_template(
     """
-당신은 사용자 명령어를 'df'와 'excel'로 분류하는 전문가입니다.
+당신은 사용자 명령어를 'df'와 'excel', 'none'으로 분류하는 전문가입니다.
 - '템플릿' 또는 'template'이라는 단어가 들어있는 명령만 'excel'로 분류하세요.
-- 그 외 모든 명령은 반드시 'df'로 분류합니다.
+- 데이터프레임 조작과 관련없는 명령은 'none'으로 분류하세요.
+- 그 외 모든 명령은 'df'로 분류합니다.
+- 사용자 명령어의 순서를 반드시 유지하세요. ( df, excel, df 순으로 명령어가 들어올 수도 있습니다. )
 - 연속된 df 명령은 하나의 그룹으로 묶어, JSON 배열 하나의 요소로 'command'에 넣고 'type'을 'df'로 지정하세요.
+- 연속된 none 명령도 df 처럼 하나의 그룹으로 묶고 'type'을 'none'으로 지정하세요.
 - excel 명령은 하나의 커맨드를 'command'에 넣고 'type'을 'excel'로 지정하세요.
 - 각 요소는 반드시 {{'command': '...', 'type': '...'}} 형태의 JSON 객체여야 합니다.
-- 사용자 명령어의 순서를 반드시 유지하세요. ( df, excel, df 순으로 명령어가 들어올 수 있습니다. )
 """
 )
 
@@ -80,10 +83,11 @@ def make_classify_template() -> ChatPromptTemplate:
 
     # 예시 2: excel 먼저 → 두 개 df 그룹 → excel
     example_h2 = HumanMessagePromptTemplate.from_template(
-        '["A가 B인 것만 남겨", "B 컬럼 제거해줘", "C가 5 이상인 것만 필터링해"]'
+        '["A가 B인 것만 남겨", "B 컬럼 제거해줘", "C가 5 이상인 것만 필터링해", "집가고 싶다"]'
     )
     example_a2 = AIMessagePromptTemplate.from_template(
-        '[{{"command":"[\\"A가 B인 것만 남겨\\",\\"B 컬럼 제거해줘\\",\\"C가 5 이상인 것만 필터링해\\"]","type":"df"}}]'
+        '[{{"command":"[\\"A가 B인 것만 남겨\\",\\"B 컬럼 제거해줘\\",\\"C가 5 이상인 것만 필터링해\\"]","type":"df"}},'
+        '{{"command":"[\\"집가고 싶다\\"]","type":"none"}}]'
     )
 
     # 사용자 입력 바인딩
