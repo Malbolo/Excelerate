@@ -1,6 +1,6 @@
 import math
+from sqlalchemy import or_
 from sqlalchemy.orm.exc import NoResultFound
-from typing import Optional
 from fastapi import HTTPException
 from sqlalchemy.orm import Session, joinedload
 from starlette.responses import JSONResponse
@@ -12,22 +12,25 @@ from app.schemas.job.job_create_schema import JobCreateRequest
 from app.schemas.job.job_detail_schema import JobDetailResponse, JobDetailRequest
 from app.schemas.job.job_update_schema import JobUpdateRequest
 from app.core import auth
+from app.schemas.job.job_create_schema import JobCreateResponseData, JobCreateResponse
+from app.app.schemas.job.job_list_schema import JobListResponse
+
 
 async def create_job(request: JobCreateRequest, user_id: int, db: Session) -> JSONResponse:
     try:
         user_info = auth.get_user_info(user_id)
         job = await crud.create_job(db, request, user_id, user_info.get("name"), user_info.get("department"))
 
-        data = job_create_schema.JobCreateResponseData(
+        data = JobCreateResponseData(
             job_id=str(job.id),
             created_at=str(job.created_at)
         )
-        response = job_create_schema.JobCreateResponse(result="success", data=data)
+        response = JobCreateResponse(result="success", data=data)
         return JSONResponse(content=response.dict())
 
     except Exception as e:
         logger.debug(f"Job Creation Failed: {e}")
-        response = job_create_schema.JobCreateResponse(result="fail", data=None)
+        response = JobCreateResponse(result="fail", data=None)
         return JSONResponse(content=response.dict())
 
 async def get_job_detail(job_id: str, db: Session) -> JSONResponse:
@@ -55,8 +58,9 @@ def filter_query(request: JobDetailRequest, query):
         query = query.filter(models.Job.user_name.ilike(f"%{request.name}%"))
     if request.dep:
         query = query.filter(models.Job.user_department == request.dep)
-    if request.type:
-        query = query.filter(models.Job.type == request.type)
+    if request.types:
+        types = [t.strip() for t in request.types.split(',')]
+        query = query.filter(or_(*[models.Job.type == t for t in types]))
     if request.title:
         query = query.filter(models.Job.title.ilike(f"%{request.title}%"))
     return query
@@ -97,7 +101,7 @@ def get_jobs(db: Session, request: JobDetailRequest, user_id: int):
     jobs = paginate_query(query, request.page, request.size)
     job_data = [job_detail_schema.create_job_detail_schema(job) for job in jobs]
 
-    response = job_list_schema.JobListResponse(
+    response = JobListResponse(
         result="success",
         data={
             "jobs": job_data,

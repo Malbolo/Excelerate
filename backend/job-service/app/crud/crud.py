@@ -12,7 +12,7 @@ async def create_job(db: Session, job: JobCreateRequest, user_id: int, user_name
     db.add(db_job)
     db.flush()
     for idx, command in enumerate(job.commands):
-        db_command = models.JobCommand(content=command, order=idx + 1, job=db_job)
+        db_command = JobCommand(content=command, order=idx + 1, job=db_job)
         db.add(db_command)
     db.commit()
     db.refresh(db_job)
