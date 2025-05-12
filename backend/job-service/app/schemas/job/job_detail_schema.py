@@ -8,7 +8,7 @@ class JobDetailRequest:
         mine: bool = Query(...),
         name: Optional[str] = Query(None),
         dep: Optional[str] = Query(None),
-        type: Optional[str] = Query(None),
+        types: Optional[str] = Query(None),
         page: Optional[int] = Query(None, ge=1),
         size: Optional[int] = Query(None, ge=1),
         title: Optional[str] = Query(None),
@@ -16,7 +16,7 @@ class JobDetailRequest:
         self.mine = mine
         self.name = name
         self.dep = dep
-        self.type = type
+        self.types = types
         self.page = page
         self.size = size
         self.title = title

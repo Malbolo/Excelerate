@@ -1,6 +1,5 @@
 import math
 from sqlalchemy.orm.exc import NoResultFound
-from typing import Optional
 from fastapi import HTTPException
 from sqlalchemy.orm import Session, joinedload
 from starlette.responses import JSONResponse
@@ -18,16 +17,16 @@ async def create_job(request: JobCreateRequest, user_id: int, db: Session) -> JS
         user_info = auth.get_user_info(user_id)
         job = await crud.create_job(db, request, user_id, user_info.get("name"), user_info.get("department"))
 
-        data = job_create_schema.JobCreateResponseData(
+        data = JobCreateResponseData(
             job_id=str(job.id),
             created_at=str(job.created_at)
         )
-        response = job_create_schema.JobCreateResponse(result="success", data=data)
+        response = JobCreateResponse(result="success", data=data)
         return JSONResponse(content=response.dict())
 
     except Exception as e:
         logger.debug(f"Job Creation Failed: {e}")
-        response = job_create_schema.JobCreateResponse(result="fail", data=None)
+        response = JobCreateResponse(result="fail", data=None)
         return JSONResponse(content=response.dict())
 
 async def get_job_detail(job_id: str, db: Session) -> JSONResponse:
@@ -97,7 +96,7 @@ def get_jobs(db: Session, request: JobDetailRequest, user_id: int):
     jobs = paginate_query(query, request.page, request.size)
     job_data = [job_detail_schema.create_job_detail_schema(job) for job in jobs]
 
-    response = job_list_schema.JobListResponse(
+    response = JobListResponse(
         result="success",
         data={
             "jobs": job_data,
