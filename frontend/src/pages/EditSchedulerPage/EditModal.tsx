@@ -1,12 +1,16 @@
+import { useState } from 'react';
+
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format as formatDate } from 'date-fns';
 import { enUS } from 'date-fns/locale';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { JobResponse } from '@/apis/jobManagement';
 import { Schedule, useUpdateSchedule } from '@/apis/schedulerManagement';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -42,8 +46,8 @@ import { cn } from '@/lib/utils';
 export interface EditScheduleFormData {
   scheduleTitle: string;
   scheduleDescription: string;
-  successEmail: string;
-  failEmail: string;
+  successEmail: string[];
+  failEmail: string[];
   interval: 'daily' | 'weekly' | 'monthly';
   startDate: Date;
   endDate: Date | undefined;
@@ -56,13 +60,15 @@ const formSchema = z
     scheduleTitle: z.string().min(1, 'Please enter a schedule title.'),
     scheduleDescription: z.string().min(1, 'Please enter a description.'),
     successEmail: z
-      .string()
-      .min(1, 'Please enter a success notification email.')
-      .email({ message: 'Please enter a valid email address.' }),
+      .array(
+        z.string().email({ message: 'Please enter a valid email address.' }),
+      )
+      .min(1, 'Please add at least one success notification email.'),
     failEmail: z
-      .string()
-      .min(1, 'Please enter a failure notification email.')
-      .email({ message: 'Please enter a valid email address.' }),
+      .array(
+        z.string().email({ message: 'Please enter a valid email address.' }),
+      )
+      .min(1, 'Please add at least one failure notification email.'),
     interval: z.enum(['daily', 'weekly', 'monthly'], {
       required_error: 'Please select an execution interval.',
     }),
@@ -102,13 +108,16 @@ const EditScheduleModal = ({
   selectedJobs,
   scheduleDetail,
 }: EditScheduleModalProps) => {
+  const [currentSuccessEmail, setCurrentSuccessEmail] = useState('');
+  const [currentFailEmail, setCurrentFailEmail] = useState('');
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       scheduleTitle: scheduleDetail.title,
       scheduleDescription: scheduleDetail.description,
-      successEmail: scheduleDetail.success_emails[0],
-      failEmail: scheduleDetail.failure_emails[0],
+      successEmail: scheduleDetail.success_emails,
+      failEmail: scheduleDetail.failure_emails,
       interval: scheduleDetail.frequency as 'daily' | 'weekly' | 'monthly',
       startDate: new Date(scheduleDetail.start_date),
       endDate: scheduleDetail.end_date
@@ -133,18 +142,68 @@ const EditScheduleModal = ({
 
     onOpenChange(false);
     form.reset();
+    setCurrentSuccessEmail('');
+    setCurrentFailEmail('');
   }
 
   const handleOpenChange = (open: boolean) => {
     onOpenChange(open);
     if (!open) {
-      form.reset();
+      form.reset({
+        scheduleTitle: scheduleDetail.title,
+        scheduleDescription: scheduleDetail.description,
+        successEmail: scheduleDetail.success_emails,
+        failEmail: scheduleDetail.failure_emails,
+        interval: scheduleDetail.frequency as 'daily' | 'weekly' | 'monthly',
+        startDate: new Date(scheduleDetail.start_date),
+        endDate: scheduleDetail.end_date
+          ? new Date(scheduleDetail.end_date)
+          : new Date(2099, 11, 31),
+        executionTime: scheduleDetail.execution_time,
+      });
+      setCurrentSuccessEmail('');
+      setCurrentFailEmail('');
     }
+  };
+
+  const handleAddEmail = (
+    emailValue: string,
+    setEmailValue: React.Dispatch<React.SetStateAction<string>>,
+    fieldName: 'successEmail' | 'failEmail',
+  ) => {
+    if (emailValue.trim() === '') return;
+    const emailCheck = z.string().email().safeParse(emailValue);
+    if (!emailCheck.success) {
+      toast.error('Invalid email format');
+      return;
+    }
+
+    const currentEmails = form.getValues(fieldName) || [];
+    if (currentEmails.includes(emailValue)) {
+      toast.error(`Email "${emailValue}" already added.`);
+      return;
+    }
+    form.setValue(fieldName, [...currentEmails, emailValue], {
+      shouldValidate: true,
+    });
+    setEmailValue('');
+  };
+
+  const handleRemoveEmail = (
+    emailToRemove: string,
+    fieldName: 'successEmail' | 'failEmail',
+  ) => {
+    const currentEmails = form.getValues(fieldName) || [];
+    form.setValue(
+      fieldName,
+      currentEmails.filter(email => email !== emailToRemove),
+      { shouldValidate: true },
+    );
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className='flex max-h-[100vh] flex-col sm:max-w-3xl'>
+      <DialogContent className='flex max-h-[100vh] flex-col sm:max-w-4xl'>
         <DialogHeader>
           <DialogTitle>Edit Schedule</DialogTitle>
           <DialogDescription>
@@ -216,14 +275,59 @@ const EditScheduleModal = ({
                           Success Notification Email{' '}
                           <span className='text-red-500'>*</span>
                         </FormLabel>
-                        <FormControl>
-                          <Input
-                            type='email'
-                            placeholder='Email address for success notification'
-                            {...field}
-                          />
-                        </FormControl>
+                        <div className='flex items-center gap-2'>
+                          <FormControl>
+                            <Input
+                              type='email'
+                              placeholder='Enter email and press Add'
+                              value={currentSuccessEmail}
+                              onChange={e =>
+                                setCurrentSuccessEmail(e.target.value)
+                              }
+                              onKeyDown={e => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  handleAddEmail(
+                                    currentSuccessEmail,
+                                    setCurrentSuccessEmail,
+                                    'successEmail',
+                                  );
+                                }
+                              }}
+                            />
+                          </FormControl>
+                          <Button
+                            type='button'
+                            variant='outline'
+                            onClick={() =>
+                              handleAddEmail(
+                                currentSuccessEmail,
+                                setCurrentSuccessEmail,
+                                'successEmail',
+                              )
+                            }
+                          >
+                            Add
+                          </Button>
+                        </div>
                         <FormMessage />
+                        <div className='mt-2 flex flex-wrap gap-1'>
+                          {field.value &&
+                            field.value.map((email, index) => (
+                              <Badge key={index} variant='secondary'>
+                                {email}
+                                <button
+                                  type='button'
+                                  className='text-destructive-foreground ml-1.5 rounded-full p-0.5 opacity-70 hover:opacity-100'
+                                  onClick={() =>
+                                    handleRemoveEmail(email, 'successEmail')
+                                  }
+                                >
+                                  <X className='h-3 w-3' />
+                                </button>
+                              </Badge>
+                            ))}
+                        </div>
                       </FormItem>
                     )}
                   />
@@ -236,14 +340,59 @@ const EditScheduleModal = ({
                           Failure Notification Email{' '}
                           <span className='text-red-500'>*</span>
                         </FormLabel>
-                        <FormControl>
-                          <Input
-                            type='email'
-                            placeholder='Email address for failure notification'
-                            {...field}
-                          />
-                        </FormControl>
+                        <div className='flex items-center gap-2'>
+                          <FormControl>
+                            <Input
+                              type='email'
+                              placeholder='Enter email and press Add'
+                              value={currentFailEmail}
+                              onChange={e =>
+                                setCurrentFailEmail(e.target.value)
+                              }
+                              onKeyDown={e => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  handleAddEmail(
+                                    currentFailEmail,
+                                    setCurrentFailEmail,
+                                    'failEmail',
+                                  );
+                                }
+                              }}
+                            />
+                          </FormControl>
+                          <Button
+                            type='button'
+                            variant='outline'
+                            onClick={() =>
+                              handleAddEmail(
+                                currentFailEmail,
+                                setCurrentFailEmail,
+                                'failEmail',
+                              )
+                            }
+                          >
+                            Add
+                          </Button>
+                        </div>
                         <FormMessage />
+                        <div className='mt-2 flex flex-wrap gap-1'>
+                          {field.value &&
+                            field.value.map((email, index) => (
+                              <Badge key={index} variant='secondary'>
+                                {email}
+                                <button
+                                  type='button'
+                                  className='text-destructive-foreground ml-1.5 rounded-full p-0.5 opacity-70 hover:opacity-100'
+                                  onClick={() =>
+                                    handleRemoveEmail(email, 'failEmail')
+                                  }
+                                >
+                                  <X className='h-3 w-3' />
+                                </button>
+                              </Badge>
+                            ))}
+                        </div>
                       </FormItem>
                     )}
                   />
