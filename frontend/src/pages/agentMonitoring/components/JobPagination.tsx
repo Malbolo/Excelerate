@@ -20,42 +20,42 @@ import useInternalRouter from '@/hooks/useInternalRouter';
 import usePagination from '@/hooks/usePagination';
 
 const JobPagination: React.FC = () => {
-  // TODO: 백엔드 서버 API 연동 시 사용
   const [searchParams] = useSearchParams();
   const name = searchParams.get('name') || '';
-  const department = searchParams.get('dep') || '';
-  const jobType = searchParams.get('type') || '';
+  const startDate = searchParams.get('startDate') || '';
+  const endDate = searchParams.get('endDate') || '';
+  const page = searchParams.get('page') || '1';
 
   const {
-    data: { jobs, total },
+    data: { logs, pages },
   } = useGetJobList({
-    name: name,
-    dep: department,
-    type: jobType,
-    page: '1',
+    user_name: name,
+    start_date: startDate,
+    end_date: endDate,
+    page: page,
     size: '4',
   });
 
-  const { curPage, handlePageChange } = usePagination(total);
+  const { curPage, handlePageChange, pageNumbers } = usePagination(pages);
 
   const { push } = useInternalRouter();
 
   return (
-    <>
-      <section className='flex flex-1 flex-col gap-4'>
-        {jobs.map(job => (
+    <div className='flex w-full grow flex-col justify-between'>
+      <section className='grid w-full grid-cols-1 gap-4'>
+        {logs.map(log => (
           <Card
-            key={job.id}
-            onClick={() => push(`/agent-monitoring/job/${job.id}`)}
-            className='cursor-pointer p-5'
+            key={log.log_id}
+            onClick={() => push(`/agent-monitoring/job/${log.log_id}`)}
+            className='w-full cursor-pointer p-5'
           >
             <CardHeader>
-              <CardTitle>{job.title}</CardTitle>
-              <CardDescription>{job.description}</CardDescription>
+              <CardTitle>{log.agent_name}</CardTitle>
+              <CardDescription>{log.log_detail}</CardDescription>
             </CardHeader>
             <CardContent className='flex w-full justify-between'>
-              <p>{job.user_name}</p>
-              <p>{job.created_at}</p>
+              <p>{log.user_name}</p>
+              <p>{log.created_at}</p>
             </CardContent>
           </Card>
         ))}
@@ -69,25 +69,25 @@ const JobPagination: React.FC = () => {
               aria-disabled={curPage === 1}
             />
           </PaginationItem>
-          {Array.from({ length: total }).map((_, index) => (
-            <PaginationItem key={index}>
+          {pageNumbers.map(pageNum => (
+            <PaginationItem key={pageNum}>
               <PaginationLink
-                isActive={curPage === index + 1}
-                onClick={() => handlePageChange(index + 1)}
+                isActive={curPage === pageNum}
+                onClick={() => handlePageChange(pageNum)}
               >
-                {index + 1}
+                {pageNum}
               </PaginationLink>
             </PaginationItem>
           ))}
           <PaginationItem>
             <PaginationNext
-              onClick={() => handlePageChange(Math.min(total, curPage + 1))}
-              aria-disabled={curPage === total}
+              onClick={() => handlePageChange(Math.min(pages, curPage + 1))}
+              aria-disabled={curPage === pages}
             />
           </PaginationItem>
         </PaginationContent>
       </Pagination>
-    </>
+    </div>
   );
 };
 
