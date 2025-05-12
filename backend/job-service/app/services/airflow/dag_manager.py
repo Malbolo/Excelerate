@@ -171,7 +171,8 @@ def update_dag(
                     job_details.append({
                         "id": job.id,
                         "name": job.title,
-                        "code": job.code
+                        "code": job.code,
+                        "data_load_url": job.data_load_url
                     })
             finally:
                 db.close()
@@ -190,7 +191,8 @@ def update_dag(
                                 job_details.append({
                                     "id": job.id,
                                     "name": job.title,
-                                    "code": job.code
+                                    "code": job.code,
+                                    "data_load_url": job.data_load_url
                                 })
                     finally:
                         db.close()
