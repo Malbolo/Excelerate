@@ -18,7 +18,7 @@ const TemplateList: React.FC = () => {
           <Link to='/template-management'>
             <Button>
               <Settings />
-              템플릿
+              Settings
             </Button>
           </Link>
         )}
