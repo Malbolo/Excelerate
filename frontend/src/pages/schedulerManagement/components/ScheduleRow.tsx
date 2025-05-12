@@ -5,6 +5,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Schedule } from '@/apis/schedulerManagement';
 import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from '@/components/ui/table';
+import JobDisplay from '@/pages/scheduleDetail/components/JobDisplay';
 
 import {
   formatDate,
@@ -56,7 +57,9 @@ const ScheduleRow = ({ schedule }: ScheduleRowProps) => {
           {schedule.last_run ? formatDateTime(schedule.last_run.end_time) : '-'}
         </TableCell>
         <TableCell>
-          {formatDateTime(schedule.next_run.data_interval_end)}
+          {schedule.next_run
+            ? formatDateTime(schedule.next_run.data_interval_end)
+            : '-'}
         </TableCell>
 
         <TableCell>{formatDate(schedule.end_date)}</TableCell>
@@ -76,8 +79,7 @@ const ScheduleRow = ({ schedule }: ScheduleRowProps) => {
               </h4>
               {schedule.jobs.length > 0 ? (
                 schedule.jobs.map(job => (
-                  // <JobDisplay key={job.id} title={job.title} job={job} />
-                  <div key={job.id} />
+                  <JobDisplay key={job.id} title={job.title} job={job} />
                 ))
               ) : (
                 <p className='px-2 py-1 text-sm text-gray-500'>

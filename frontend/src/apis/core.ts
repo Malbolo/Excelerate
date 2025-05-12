@@ -32,6 +32,14 @@ export async function api<T>(
       : {}),
   };
 
+  if (init?.body instanceof FormData) {
+    delete headers['Content-Type'];
+  } else {
+    if (!headers['Content-Type']) {
+      headers['Content-Type'] = 'application/json';
+    }
+  }
+
   const res = await fetch(url, { ...init, headers });
   const { data } = (await res.json()) as DataResponse<T>;
 

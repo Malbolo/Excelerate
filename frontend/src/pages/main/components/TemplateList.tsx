@@ -1,16 +1,31 @@
-import { useState } from 'react';
+import { Settings } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-import { MTemplates } from '@/mocks/datas/template';
+import { useGetUserInfoAPI } from '@/apis/auth';
+import { useGetTemplates } from '@/apis/templates';
+import { Button } from '@/components/ui/button';
 
 const TemplateList: React.FC = () => {
-  const [templates] = useState<string[]>(MTemplates);
+  const { data: userInfo } = useGetUserInfoAPI();
+  const isAdmin = userInfo?.role === 'ADMIN';
+  const { data: templates } = useGetTemplates();
 
   return (
     <section className='flex max-h-48 flex-1 flex-col gap-4'>
-      <p className='text-lg font-bold'>Template List</p>
+      <div className='flex items-center justify-between'>
+        <p className='text-lg font-bold'>Template List</p>
+        {isAdmin && (
+          <Link to='/template-management'>
+            <Button>
+              <Settings />
+              템플릿
+            </Button>
+          </Link>
+        )}
+      </div>
       <div className='card-gradient flex grow flex-col gap-2 overflow-y-auto rounded-xl border p-4'>
         <ul className='flex flex-col gap-2.5'>
-          {templates.map(template => (
+          {templates.templates.map(template => (
             <li
               key={template}
               className='group hover:text-accent-foreground flex items-center gap-3 rounded-lg p-1'

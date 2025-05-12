@@ -41,7 +41,7 @@ export interface Schedule {
   last_run: null | {
     end_time: string;
   };
-  next_run: {
+  next_run: null | {
     data_interval_end: string;
   };
 }
@@ -150,7 +150,7 @@ const updateSchedule = async (
 
 const toggleSchedule = async (scheduleId: string) => {
   const { error, success } = await api(`/api/schedules/${scheduleId}/toggle`, {
-    method: 'POST',
+    method: 'PATCH',
   });
 
   if (!success) {
@@ -185,16 +185,38 @@ const deleteSchedule = async (scheduleId: string) => {
 };
 
 export const useToggleSchedule = () => {
+  const queryClient = useQueryClient();
   const { mutate } = useMutation({
     mutationFn: (scheduleId: string) => toggleSchedule(scheduleId),
+    onSuccess: () => {
+      toast.success('Schedule toggled successfully');
+      queryClient.invalidateQueries({ queryKey: ['scheduleList'] });
+      queryClient.invalidateQueries({ queryKey: ['daySchedules'] });
+      queryClient.invalidateQueries({ queryKey: ['monthSchedules'] });
+      queryClient.invalidateQueries({ queryKey: ['scheduleDetail'] });
+    },
+    onError: error => {
+      toast.error(error.message);
+    },
   });
 
   return mutate;
 };
 
 export const useOneTimeSchedule = () => {
+  const queryClient = useQueryClient();
   const { mutate } = useMutation({
     mutationFn: (scheduleId: string) => oneTimeSchedule(scheduleId),
+    onSuccess: () => {
+      toast.success('Schedule started successfully');
+      queryClient.invalidateQueries({ queryKey: ['scheduleList'] });
+      queryClient.invalidateQueries({ queryKey: ['daySchedules'] });
+      queryClient.invalidateQueries({ queryKey: ['monthSchedules'] });
+      queryClient.invalidateQueries({ queryKey: ['scheduleDetail'] });
+    },
+    onError: error => {
+      toast.error(error.message);
+    },
   });
 
   return mutate;
@@ -209,6 +231,9 @@ export const useCreateSchedule = () => {
     onSuccess: () => {
       toast.success('Schedule created successfully');
       queryClient.invalidateQueries({ queryKey: ['scheduleList'] });
+      queryClient.invalidateQueries({ queryKey: ['daySchedules'] });
+      queryClient.invalidateQueries({ queryKey: ['monthSchedules'] });
+      queryClient.invalidateQueries({ queryKey: ['scheduleDetail'] });
       navigate('/scheduler-management');
     },
     onError: error => {
@@ -226,6 +251,9 @@ export const useDeleteSchedule = () => {
     onSuccess: () => {
       toast.success('Schedule deleted successfully');
       queryClient.invalidateQueries({ queryKey: ['scheduleList'] });
+      queryClient.invalidateQueries({ queryKey: ['daySchedules'] });
+      queryClient.invalidateQueries({ queryKey: ['monthSchedules'] });
+      queryClient.invalidateQueries({ queryKey: ['scheduleDetail'] });
     },
     onError: error => {
       toast.error(error.message);
@@ -249,6 +277,9 @@ export const useUpdateSchedule = () => {
     onSuccess: () => {
       toast.success('Schedule updated successfully');
       queryClient.invalidateQueries({ queryKey: ['scheduleList'] });
+      queryClient.invalidateQueries({ queryKey: ['daySchedules'] });
+      queryClient.invalidateQueries({ queryKey: ['monthSchedules'] });
+      queryClient.invalidateQueries({ queryKey: ['scheduleDetail'] });
       navigate('/scheduler-management');
     },
     onError: error => {
