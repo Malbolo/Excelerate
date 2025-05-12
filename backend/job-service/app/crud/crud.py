@@ -45,13 +45,15 @@ def update_job(db: Session, job_id: int, job_request: JobUpdateRequest, user_id:
     db.commit()
     db.refresh(job)
 
-    return {
-        "result": "success",
-        "data": {
-            "job_id": job.id,
-            "updated_at": job.updated_at.isoformat()
-        }
-    }
+    data = JobUpdateResponseData(
+        job_id=str(job.id),
+        updated_at=str(job.updated_at)
+    )
+
+    return JobUpdateResponse(
+        result="success",
+        data=data
+    )
 
 
 def delete_job(db: Session, job_id: int, user_id: int):
@@ -63,7 +65,9 @@ def delete_job(db: Session, job_id: int, user_id: int):
     db.delete(job)
     db.commit()
 
-    return {"result": "success", "data": None}
+    response = JobDeleteResponse(result="success", data=None)
+
+    return response
 
 
 def get_job_by_id(db: Session, job_id: str):
