@@ -375,6 +375,8 @@ def get_all_schedules_with_details(
     finally:
         db.close()
 
+    schedule_list.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+
     return schedule_list
 
 def get_dag_runs_by_date(dags: List[Dict[str, Any]], target_date: str) -> Dict[str, Any]:
