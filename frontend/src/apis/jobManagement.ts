@@ -73,7 +73,7 @@ export const useDeleteJob = () => {
     },
     onSuccess: ({ page, keyword, mine }) => {
       console.log('onSuccess', { page, keyword, mine });
-      toast.success('작업이 삭제되었습니다.');
+      toast.success('Job deleted successfully');
       queryClient.invalidateQueries({
         queryKey: ['jobList', page, keyword],
       });
@@ -90,19 +90,20 @@ const getJobList = async ({
   title = '',
   mine = false,
   dep = '',
-  type = '',
+  types = '',
   name = '',
 }: {
   page: number;
   title: string;
   mine: boolean;
   dep: string;
-  type: string;
+  types: string;
   name: string;
 }) => {
   const isMine = mine ? 'True' : 'False';
+
   const { data, error, success } = await api<JobListResponse>(
-    `/api/jobs?mine=${isMine}&page=${page}&size=6&title=${title}&type=${type === 'all' ? '' : type}&dep=${dep === 'all' ? '' : dep}&name=${name}`,
+    `/api/jobs?mine=${isMine}&page=${page}&size=6&title=${title}&types=${types}&dep=${dep === 'all' ? '' : dep}&name=${name}`,
   );
 
   if (!success) {
@@ -116,13 +117,13 @@ export const useGetJobList = ({
   page = 1,
   mine = false,
   dep = '',
-  type = '',
+  types = '',
   title = '',
   name = '',
 }) => {
   return useSuspenseQuery({
-    queryKey: ['jobList', page, title, mine, dep, type, name],
-    queryFn: () => getJobList({ page, title, mine, dep, type, name }),
+    queryKey: ['jobList', page, title, mine, dep, types, name],
+    queryFn: () => getJobList({ page, title, mine, dep, types, name }),
   });
 };
 
