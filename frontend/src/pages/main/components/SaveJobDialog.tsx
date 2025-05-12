@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -41,9 +41,10 @@ import { useCommandStore } from '@/store/useCommandStore';
 import { useJobResultStore } from '@/store/useJobResultStore';
 import { useJobStore } from '@/store/useJobStore';
 import { useSourceStore } from '@/store/useSourceStore';
+import { TJobType } from '@/types/agent';
 
 const formSchema = z.object({
-  jobType: z.string(),
+  jobType: z.custom<TJobType>(),
   jobName: z
     .string()
     .min(2, {
@@ -69,7 +70,7 @@ const SaveJobDialog: React.FC = () => {
   const { sourceDataCommand, sourceDataUrl } = useSourceStore();
   const { commandList } = useCommandStore();
   const { code } = useJobResultStore();
-  const { isEditMode, canSaveJob } = useJobStore();
+  const { isEditMode, canSaveJob, title, description, type } = useJobStore();
 
   const { mutateAsync: jobMutation, isPending: isJobSaving } = useSaveJob();
 
@@ -78,12 +79,21 @@ const SaveJobDialog: React.FC = () => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      jobType: undefined,
-      jobName: '',
-      jobDescription: '',
+      jobType: type,
+      jobName: title,
+      jobDescription: description,
       sendEmail: false,
     },
   });
+
+  useEffect(() => {
+    form.reset({
+      jobType: type,
+      jobName: title,
+      jobDescription: description,
+      sendEmail: false,
+    });
+  }, [type, title, description, form]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     const { jobType, jobName, jobDescription } = values;
@@ -126,7 +136,12 @@ const SaveJobDialog: React.FC = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormControl>
-                        <Select onValueChange={field.onChange} required>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                          defaultValue={type}
+                          required
+                        >
                           <SelectTrigger className='w-full'>
                             <SelectValue placeholder='Job Type' />
                           </SelectTrigger>
