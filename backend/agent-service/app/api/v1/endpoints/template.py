@@ -16,6 +16,23 @@ async def upload_template(
     file: UploadFile = File(...),
     minio: MinioClient = Depends(get_minio_client),
 ):
+    # --- 0) 파일 확장자/콘텐츠 타입 검사 ---
+    filename = file.filename or ""
+    ext = os.path.splitext(filename)[1].lower()
+    if ext != ".xlsx":
+        raise HTTPException(
+            status_code=400,
+            detail="지원되지 않는 파일 형식입니다. ‘.xlsx’ 파일만 업로드 가능합니다."
+        )
+
+    # (선택) 추가로 헤더 레벨에서 content_type 검사
+    if file.content_type != "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+        raise HTTPException(
+            status_code=400,
+            detail=f"잘못된 콘텐츠 타입입니다: {file.content_type}"
+        )
+    # ------------------------------------------
+
     # 1) OS에 맞는 임시 디렉터리 생성
     with tempfile.TemporaryDirectory() as tmpdir:
         suffix = os.path.splitext(file.filename)[1] or ".xlsx"
