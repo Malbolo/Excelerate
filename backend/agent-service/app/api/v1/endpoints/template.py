@@ -25,20 +25,27 @@ async def upload_template(
             detail="지원되지 않는 파일 형식입니다. ‘.xlsx’ 파일만 업로드 가능합니다."
         )
 
-    # (선택) 추가로 헤더 레벨에서 content_type 검사
+    # 추가로 헤더 레벨에서 content_type 검사
     if file.content_type != "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
         raise HTTPException(
             status_code=400,
             detail=f"잘못된 콘텐츠 타입입니다: {file.content_type}"
         )
-    # ------------------------------------------
 
-    # 1) OS에 맞는 임시 디렉터리 생성
+    # 1) 중복 이름 처리 (중복 시 자동 번호 부여)
+    base_name = template_name
+    counter = 1
+    object_name = f"templates/{template_name}.xlsx"
+    while minio.exists(object_name):
+        template_name = f"{base_name} ({counter})"
+        object_name = f"templates/{template_name}.xlsx"
+        counter += 1
+
+    # 2) OS에 맞는 임시 디렉터리 생성
     with tempfile.TemporaryDirectory() as tmpdir:
-        suffix = os.path.splitext(file.filename)[1] or ".xlsx"
-        tmp_path = os.path.join(tmpdir, f"{uuid.uuid4().hex}{suffix}")
+        tmp_path = os.path.join(tmpdir, f"{uuid.uuid4().hex}{ext}")
 
-        # 2) 업로드된 파일을 임시 디렉터리에 저장
+        # 3) 업로드된 파일을 임시 디렉터리에 저장
         try:
             contents = await file.read()
             with open(tmp_path, "wb") as f:
@@ -46,7 +53,7 @@ async def upload_template(
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"파일 저장 실패: {e}")
 
-        # 3) MinIO에 템플릿 업로드
+        # 4) MinIO에 템플릿 업로드
         try:
             minio.upload_template(template_name, tmp_path)
         except Exception as e:
