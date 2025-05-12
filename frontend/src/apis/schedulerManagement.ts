@@ -116,11 +116,14 @@ const createSchedule = async (schedule: CreateScheduleFormData) => {
   return;
 };
 
-const updateSchedule = async (schedule: CreateScheduleFormData) => {
+const updateSchedule = async (
+  scheduleId: string,
+  schedule: CreateScheduleFormData,
+) => {
   const { error, success } = await api<CreateScheduleResponse>(
-    '/api/schedules',
+    `/api/schedules/${scheduleId}`,
     {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify({
         title: schedule.scheduleTitle,
         description: schedule.scheduleDescription,
@@ -236,7 +239,13 @@ export const useUpdateSchedule = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { mutate } = useMutation({
-    mutationFn: (schedule: CreateScheduleFormData) => updateSchedule(schedule),
+    mutationFn: ({
+      scheduleId,
+      schedule,
+    }: {
+      scheduleId: string;
+      schedule: CreateScheduleFormData;
+    }) => updateSchedule(scheduleId, schedule),
     onSuccess: () => {
       toast.success('Schedule updated successfully');
       queryClient.invalidateQueries({ queryKey: ['scheduleList'] });

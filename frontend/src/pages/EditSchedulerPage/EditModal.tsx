@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { JobResponse } from '@/apis/jobManagement';
-import { Schedule, useCreateSchedule } from '@/apis/schedulerManagement';
+import { Schedule, useUpdateSchedule } from '@/apis/schedulerManagement';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -113,24 +113,23 @@ const EditScheduleModal = ({
       startDate: new Date(scheduleDetail.start_date),
       endDate: scheduleDetail.end_date
         ? new Date(scheduleDetail.end_date)
-        : undefined,
+        : new Date(2099, 11, 31),
       executionTime: scheduleDetail.execution_time,
     },
   });
 
-  const createSchedule = useCreateSchedule();
+  const editSchedule = useUpdateSchedule();
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const finalEndDate =
-      values.endDate instanceof Date ? values.endDate : new Date(2099, 11, 31);
-
     const submissionData = {
       ...values,
-      endDate: finalEndDate,
       selectedJobs,
     };
 
-    createSchedule(submissionData);
+    editSchedule({
+      scheduleId: scheduleDetail.schedule_id,
+      schedule: submissionData,
+    });
 
     onOpenChange(false);
     form.reset();
@@ -145,12 +144,11 @@ const EditScheduleModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className='flex max-h-[85vh] flex-col sm:max-w-3xl'>
+      <DialogContent className='flex max-h-[100vh] flex-col sm:max-w-3xl'>
         <DialogHeader>
-          <DialogTitle>Create New Schedule</DialogTitle>
+          <DialogTitle>Edit Schedule</DialogTitle>
           <DialogDescription>
-            Configure the new schedule for the selected {selectedJobs.length}{' '}
-            JOBs. (All fields required)
+            Edit the schedule for the selected {selectedJobs.length} JOBs.
           </DialogDescription>
         </DialogHeader>
 
@@ -435,7 +433,7 @@ const EditScheduleModal = ({
             onClick={form.handleSubmit(onSubmit)}
             disabled={form.formState.isSubmitting}
           >
-            {form.formState.isSubmitting ? 'Creating...' : 'Create'}
+            {form.formState.isSubmitting ? 'Updating...' : 'Update'}
           </Button>
         </DialogFooter>
       </DialogContent>

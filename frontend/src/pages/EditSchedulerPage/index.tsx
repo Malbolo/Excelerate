@@ -64,10 +64,8 @@ const CreateSchedulerPage = () => {
     [selectedJobs],
   );
 
-  const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().getMonth() + 1;
-  const layoutTitle = `Create Schedule`;
-  const backPath = `/scheduler-monitoring/month/${currentYear}-${String(currentMonth).padStart(2, '0')}`;
+  const layoutTitle = `Edit Schedule`;
+  const backPath = '/scheduler-management';
 
   return (
     <SchedulerMonitoringLayout title={layoutTitle} backPath={backPath}>
