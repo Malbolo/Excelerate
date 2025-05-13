@@ -11,7 +11,7 @@ import { useJobResultStore } from '@/store/useJobResultStore';
 import { useStreamStore } from '@/store/useStreamStore';
 import { DataFrame, DataFrameRow } from '@/types/dataframe';
 
-import DataFrameModal from './DataFrameModal';
+import ExpandModal from './ExpandModal';
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -72,10 +72,9 @@ const DataPanel = memo<{
           }}
         />
       </div>
-      <DataFrameModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
+      <ExpandModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+        <DataTable columns={columns} data={data} />
+      </ExpandModal>
     </div>
   );
 });
@@ -83,6 +82,7 @@ const DataPanel = memo<{
 DataPanel.displayName = 'DataPanel';
 
 const CodePanel: React.FC<{ code: string }> = ({ code }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   if (!code)
     return (
       <div className='flex h-full items-center justify-center'>No code</div>
@@ -100,6 +100,27 @@ const CodePanel: React.FC<{ code: string }> = ({ code }) => {
           minimap: { enabled: false },
         }}
       />
+      <div className='absolute bottom-2 left-1 z-10 cursor-pointer rounded-full border bg-white p-3'>
+        <Expand
+          color='#374151'
+          size={18}
+          onClick={() => {
+            setIsModalOpen(true);
+          }}
+        />
+      </div>
+      <ExpandModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+        <Editor
+          key={code}
+          defaultLanguage='python'
+          defaultValue={code}
+          options={{
+            readOnly: true,
+            domReadOnly: true,
+            minimap: { enabled: false },
+          }}
+        />
+      </ExpandModal>
     </div>
   );
 };
