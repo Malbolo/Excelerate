@@ -33,6 +33,7 @@ class JobDetailSchema(BaseModel):
     description: str
     data_load_command: str
     data_load_url: str
+    data_load_code: str
     commands: List[CommandSchema]
     code: str
     created_at: str
@@ -50,6 +51,7 @@ def create_job_detail_schema(job):
         description=job.description,
         data_load_command=job.data_load_command,
         data_load_url=job.data_load_url,
+        data_load_code=job.data_load_code,
         code=job.code,
         commands=[
             CommandSchema(content=cmd.content, order=cmd.order)
