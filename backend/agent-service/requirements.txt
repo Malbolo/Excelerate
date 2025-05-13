@@ -22,7 +22,7 @@ distlib
 distro
 dulwich
 executing
-excel2img
+# excel2img
 fastapi
 fastjsonschema
 filelock

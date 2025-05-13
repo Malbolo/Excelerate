@@ -14,7 +14,6 @@ import shutil
 import subprocess
 import glob
 import platform
-import excel2img
 
 # Windows 테스트 용용
 from openpyxl import load_workbook
@@ -128,6 +127,7 @@ async def preview_template(
     if system == "Windows":
         # COM 기반 excel2img (로컬 테스트용)
         import pythoncom
+        import excel2img
         def do_export_com():
             pythoncom.CoInitialize()
             excel2img.export_img(xlsx_path, png_path, ws.title, cell_range)
