@@ -125,7 +125,7 @@ async def preview_template(
     # 4) 플랫폼별 이미지 변환
     system = platform.system()
     if system == "Windows":
-        # COM 기반 excel2img (로컬 테스트용)
+        # COM 기반 excel2img (로컬 테스트용). linux에선 import 시도 시 에러 뜨므로 분리
         import pythoncom
         import excel2img
         def do_export_com():
