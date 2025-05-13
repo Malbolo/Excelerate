@@ -1,14 +1,14 @@
 import { toast } from 'sonner';
 import { create } from 'zustand';
 
-import { TLog } from '@/types/agent';
+import { Log } from '@/types/agent';
 import { generateStreamId } from '@/utils/random';
 
 interface StreamState {
   streamId: string | null;
   isConnected: boolean;
   eventSource: EventSource | null;
-  logs: TLog[];
+  logs: Log[];
 
   connectStream: () => void;
   disconnectStream: () => void;
@@ -37,7 +37,7 @@ export const useStreamStore = create<StreamState>((set, get) => ({
 
     eventSource.addEventListener('log', event => {
       try {
-        const log: TLog = JSON.parse(event.data);
+        const log = JSON.parse(event.data) as Log;
         set(state => ({
           logs: [...state.logs, log],
           isConnected: true,

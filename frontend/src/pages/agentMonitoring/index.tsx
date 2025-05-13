@@ -15,6 +15,18 @@ import useInternalRouter from '@/hooks/useInternalRouter';
 import { cn } from '@/lib/utils';
 import JobPagination from '@/pages/agentMonitoring/components/JobPagination';
 
+// 유틸 함수로 분리해야함
+const disabledDate = (
+  date: Date,
+  endDate: Date | undefined,
+  startDate: Date | undefined,
+) => {
+  if (endDate && date > endDate) return true;
+  if (startDate && date < startDate) return true;
+  if (date > new Date(new Date().setHours(0, 0, 0, 0))) return true;
+  return false;
+};
+
 const AgentMonitoringPage: React.FC = () => {
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
@@ -29,8 +41,8 @@ const AgentMonitoringPage: React.FC = () => {
     if (startDate)
       searchParams.set('startDate', format(startDate, 'yyyy-MM-dd'));
     if (endDate) searchParams.set('endDate', format(endDate, 'yyyy-MM-dd'));
-    searchParams.set('page', '1');
 
+    searchParams.set('page', '1');
     push(`/agent-monitoring?${searchParams.toString()}`);
   };
 
@@ -60,12 +72,7 @@ const AgentMonitoringPage: React.FC = () => {
               selected={startDate}
               onSelect={setStartDate}
               initialFocus
-              disabled={date => {
-                const today = new Date(new Date().setHours(0, 0, 0, 0));
-                if (endDate && date > endDate) return true;
-                if (date > today) return true;
-                return false;
-              }}
+              disabled={date => disabledDate(date, endDate, startDate)}
             />
           </PopoverContent>
         </Popover>
@@ -89,12 +96,7 @@ const AgentMonitoringPage: React.FC = () => {
               selected={endDate}
               onSelect={setEndDate}
               initialFocus
-              disabled={date => {
-                const today = new Date(new Date().setHours(0, 0, 0, 0));
-                if (startDate && date < startDate) return true;
-                if (date > today) return true;
-                return false;
-              }}
+              disabled={date => disabledDate(date, endDate, startDate)}
             />
           </PopoverContent>
         </Popover>

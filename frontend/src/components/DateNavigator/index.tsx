@@ -24,8 +24,8 @@ import {
 import DayPicker from './DayPicker';
 import MonthYearSelector from './MonthYearSelector';
 
-function SchedulerNavigator() {
-  const { dayId, monthId } = useParams<{ dayId?: string; monthId?: string }>();
+const SchedulerNavigator = () => {
+  const { dayId, monthId } = useParams<{ dayId: string; monthId: string }>();
   const navigate = useNavigate();
 
   const [isDayPickerOpen, setIsDayPickerOpen] = useState(false);
@@ -200,6 +200,6 @@ function SchedulerNavigator() {
       </Button>
     </div>
   );
-}
+};
 
 export default SchedulerNavigator;

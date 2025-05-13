@@ -42,10 +42,10 @@ import { useCommandStore } from '@/store/useCommandStore';
 import { useJobResultStore } from '@/store/useJobResultStore';
 import { useJobStore } from '@/store/useJobStore';
 import { useSourceStore } from '@/store/useSourceStore';
-import { TJobType } from '@/types/agent';
+import { JobType } from '@/types/job';
 
 const formSchema = z.object({
-  jobType: z.custom<TJobType>(),
+  jobType: z.custom<JobType>(),
   jobName: z
     .string()
     .min(2, {
