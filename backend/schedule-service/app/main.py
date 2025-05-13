@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.db.database import Base, engine
+# from app.db.database import Base, engine
 from app.api.schedule_api import router as schedule_router
 
 # app = FastAPI()

@@ -5,7 +5,7 @@ import os
 
 from app.core.config import settings
 from app.core.log_config import logger
-from app.db.database import get_db
+# from app.db.database import get_db
 # 모듈 단위 import로 변경
 from app.services import dag_query
 from app.services.metadata import get_dag_metadata
@@ -310,7 +310,7 @@ def get_all_schedules_with_details(
 
     # 각 DAG의 상세 정보 조회
     schedule_list = []
-    db = next(get_db())
+    # db = next(get_db())
     try:
         for dag in dags:
             dag_id = dag.get("dag_id", "")
@@ -397,7 +397,8 @@ def get_all_schedules_with_details(
                     "owner": owner,
                 })
     finally:
-        db.close()
+        logger.debug(f"schedule_list: {schedule_list}")
+        # db.close()
 
     schedule_list.sort(key=lambda x: x.get("created_at", ""), reverse=True)
 
