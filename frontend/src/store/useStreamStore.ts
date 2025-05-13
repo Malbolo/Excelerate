@@ -1,8 +1,8 @@
 import { toast } from 'sonner';
 import { create } from 'zustand';
 
+import { generateStreamId } from '@/lib/generateStreamId';
 import { Log } from '@/types/agent';
-import { generateStreamId } from '@/utils/random';
 
 interface StreamState {
   streamId: string | null;

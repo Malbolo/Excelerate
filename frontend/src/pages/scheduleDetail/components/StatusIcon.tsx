@@ -1,6 +1,8 @@
 import { CheckCircle, Clock, HelpCircle, XCircle } from 'lucide-react';
 
-const StatusIcon = ({ status }: { status: string }) => {
+import { Status } from '@/types/job';
+
+const StatusIcon = ({ status }: { status: Status }) => {
   switch (status) {
     case 'success':
       return <CheckCircle className='z-50 h-5 w-5 text-green-500' />;

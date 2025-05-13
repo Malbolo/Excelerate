@@ -9,12 +9,13 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
+import { Status } from '@/types/job';
 
-import StatusIcon from '../../../components/StatusIcon';
 import CommandItem from './CommandItem';
+import StatusIcon from './StatusIcon';
 
 interface JobDisplayProps {
-  status?: string;
+  status?: Status;
   title: string;
   job: Job;
 }

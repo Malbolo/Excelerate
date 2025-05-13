@@ -1,10 +1,6 @@
 import { create } from 'zustand';
 
-import { Command, Status } from '@/types/job';
-
-interface CommandWithStatus extends Command {
-  status: Status;
-}
+import { Command, CommandWithStatus, Status } from '@/types/job';
 
 interface CommandState {
   commandList: CommandWithStatus[];
@@ -55,7 +51,7 @@ export const useCommandStore = create<CommandState>(set => ({
         i === index
           ? {
               content: newCommand,
-              order: state.commandList.length,
+              order: index,
               status: 'pending',
             }
           : { ...cmd, status: 'pending' },
@@ -69,7 +65,7 @@ export const useCommandStore = create<CommandState>(set => ({
       ),
     })),
 
-  reorderCommands: (oldIndex: number, newIndex: number) =>
+  reorderCommands: (oldIndex, newIndex) =>
     set(state => {
       const newList = [...state.commandList];
       const [movedItem] = newList.splice(oldIndex, 1);

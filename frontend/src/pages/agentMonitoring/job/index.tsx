@@ -5,10 +5,10 @@ import { useParams } from 'react-router-dom';
 
 import { useGetJobLogs } from '@/apis/agentMonitoring';
 import LLMGraph from '@/components/Graph/LLMGraph';
-import Tabs from '@/components/Tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import useInternalRouter from '@/hooks/useInternalRouter';
+import Tabs from '@/pages/main/components/Tabs';
 import { Log, LogMessage, LogMetadata } from '@/types/agent';
 
 // 컴포넌트 분리가 어려워 컴포넌트 분리 추후 진행

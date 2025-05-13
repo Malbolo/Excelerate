@@ -7,4 +7,8 @@ export interface Command {
   order: number;
 }
 
+export interface CommandWithStatus extends Command {
+  status: Status;
+}
+
 export type JobType = (typeof JOB_TYPES_CONFIG)[number]['id'];

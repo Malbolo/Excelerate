@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/resizable';
 import { Textarea } from '@/components/ui/textarea';
 import useInternalRouter from '@/hooks/useInternalRouter';
+import { createSortableColumns } from '@/lib/createSortableColumns';
 import CommandList from '@/pages/main/components/CommandList';
 import MainSideBar from '@/pages/main/components/MainSideBar';
 import SourceData from '@/pages/main/components/SourceData';
@@ -26,7 +27,6 @@ import { useJobStore } from '@/store/useJobStore';
 import { useSourceStore } from '@/store/useSourceStore';
 import { useStreamStore } from '@/store/useStreamStore';
 import { DataFrameRow } from '@/types/dataframe';
-import { createSortableColumns } from '@/utils/dataframe';
 
 const JobEditPage = () => {
   const { jobId } = useParams();

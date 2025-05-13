@@ -17,15 +17,15 @@ import ClipLoader from 'react-spinners/ClipLoader';
 import { toast } from 'sonner';
 
 import { useSendCommandList } from '@/apis/job';
-import Command from '@/components/Command';
 import { Button } from '@/components/ui/button';
+import { createSortableColumns } from '@/lib/createSortableColumns';
+import Command from '@/pages/main/components/Command';
 import { useCommandStore } from '@/store/useCommandStore';
 import { useJobResultStore } from '@/store/useJobResultStore';
 import { useJobStore } from '@/store/useJobStore';
 import { useSourceStore } from '@/store/useSourceStore';
 import { useStreamStore } from '@/store/useStreamStore';
 import { DataFrameRow } from '@/types/dataframe';
-import { createSortableColumns } from '@/utils/dataframe';
 
 import SaveJobDialog from './SaveJobDialog';
 
@@ -98,14 +98,14 @@ const CommandList: React.FC = () => {
     try {
       await handleSendCommandList();
 
-      commandList.forEach((_, index) => {
-        updateCommandStatus(index, 'success');
+      commandList.forEach(({ order }) => {
+        updateCommandStatus(order, 'success');
       });
 
       setCanSaveJob(true);
     } catch (error) {
-      commandList.forEach((_, index) => {
-        updateCommandStatus(index, 'failed');
+      commandList.forEach(({ order }) => {
+        updateCommandStatus(order, 'failed');
       });
     }
   };
@@ -145,9 +145,8 @@ const CommandList: React.FC = () => {
             {commandList.map((command, index) => (
               <Command
                 key={`${command.content}-${index}`}
+                command={command}
                 index={index}
-                command={command.content}
-                status={command.status}
               />
             ))}
           </SortableContext>

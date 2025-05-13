@@ -2,9 +2,8 @@ import { Suspense } from 'react';
 
 import { createBrowserRouter } from 'react-router-dom';
 
-import ErrorBoundary from '@/components/ErrorBoundary';
+import ErrorBoundary from '@/components/Layout/ErrorBoundary';
 import Layout from '@/components/Layout/Layout';
-import MainPage from '@/pages';
 import EditSchedulerPage from '@/pages/EditSchedulerPage';
 import AgentMonitoringPage from '@/pages/agentMonitoring';
 import JobAgentMonitoringPage from '@/pages/agentMonitoring/job';
@@ -13,6 +12,7 @@ import CreateSchedulerPage from '@/pages/createScheduler';
 import DaySchedulePage from '@/pages/daySchedulerMonitoring';
 import JobManagementPage from '@/pages/jobManagement';
 import JobEditPage from '@/pages/jobManagement/edit';
+import MainPage from '@/pages/main';
 import MonthSchedulePage from '@/pages/monthSchedulerMonitoring';
 import PlayGroundPage from '@/pages/playGround';
 import ScheduleDetail from '@/pages/scheduleDetail';

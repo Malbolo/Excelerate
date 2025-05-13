@@ -16,17 +16,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from './ui/table';
+} from '@/components/ui/table';
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
-  data: TData[];
+interface DataTableProps<T, P> {
+  columns: ColumnDef<T, P>[];
+  data: T[];
 }
 
-function DataTable<TData, TValue>({
-  columns,
-  data,
-}: DataTableProps<TData, TValue>) {
+function DataTable<T, P>({ columns, data }: DataTableProps<T, P>) {
   const [sorting, setSorting] = useState<SortingState>([]);
 
   const table = useReactTable({

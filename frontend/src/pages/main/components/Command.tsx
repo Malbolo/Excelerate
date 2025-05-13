@@ -14,12 +14,11 @@ import {
 import { cn } from '@/lib/utils';
 import { useCommandStore } from '@/store/useCommandStore';
 import { useJobStore } from '@/store/useJobStore';
-import { Status } from '@/types/job';
+import { CommandWithStatus, Status } from '@/types/job';
 
 interface CommandProps {
+  command: CommandWithStatus;
   index: number;
-  command: string;
-  status: Status;
 }
 
 const statusColor: Record<Status, string> = {
@@ -29,15 +28,17 @@ const statusColor: Record<Status, string> = {
   failed: 'bg-destructive/80',
 };
 
-const Command: React.FC<CommandProps> = ({ index, command, status }) => {
+const Command = ({ command, index }: CommandProps) => {
+  const { content, status } = command;
+
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [editingCommand, setEdtingCommand] = useState<string>(command);
+  const [editingCommand, setEdtingCommand] = useState(content);
 
   const { updateCommand, deleteCommand } = useCommandStore();
   const { isEditMode, setIsEditMode, setCanSaveJob } = useJobStore();
 
   const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id: `${command}-${index}` });
+    useSortable({ id: `${content}-${index}` });
 
   const sortableProps = {
     ref: isEditMode ? undefined : setNodeRef,
@@ -109,7 +110,7 @@ const Command: React.FC<CommandProps> = ({ index, command, status }) => {
             }}
           />
         ) : (
-          <p>{command}</p>
+          <p>{content}</p>
         )}
       </div>
 
