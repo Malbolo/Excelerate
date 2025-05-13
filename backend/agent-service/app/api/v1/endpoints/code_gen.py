@@ -15,6 +15,7 @@ from zoneinfo import ZoneInfo
 
 from app.utils.redis_client import generate_log_id, save_logs_to_redis, save_states_to_redis, get_states_from_redis
 from uuid import uuid4
+from app.utils.api_utils import get_log_queue
 
 router = APIRouter()
 docs = CodeGenDocs()
@@ -36,6 +37,9 @@ async def command_code(
         else:
             stream_id = "check" # 확인용 
 
+        q = get_log_queue(stream_id)
+        q.put_nowait({"type": "notice", "content": "CodeGenerator를 호출합니다."})
+
         query = make_initial_query(request.url, request.command_list, stream_id)
 
         try:
@@ -56,7 +60,7 @@ async def command_code(
             query.update(old_state)
         else:
             uid = uuid4().hex
-
+        
         answer = await run_in_threadpool(graph.invoke, query)
 
         # answer["dataframe"] 가 이제 List[pd.DataFrame] 라면…
@@ -74,6 +78,7 @@ async def command_code(
         api_end = datetime.now(ZoneInfo("Asia/Seoul"))
         api_latency = (api_end - api_start).total_seconds()
         
+        q.put_nowait({"type": "notice", "content": "Log를 저장 중입니다..."})
         save_logs_to_redis(log_id, answer["logs"], metadata={
             "agent_name":  "Code Generetor",
             "log_detail":  "코드를 생성합니다.",
@@ -94,4 +99,6 @@ async def command_code(
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+    q.put_nowait({"type": "stop", "content": "API 호출이 정상 종료되었습니다."})
     return JSONResponse(status_code=200, content={"result" : "success", "data" : jsonable_encoder(payload)})

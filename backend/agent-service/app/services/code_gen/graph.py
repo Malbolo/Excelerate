@@ -51,6 +51,7 @@ class CodeGenerator:
         self.illm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0, callbacks=[self.logger]) # InferenceProvider 해보기
         self.ollm = ChatOpenAI(model_name="gpt-4.1-nano", temperature=0, callbacks=[self.logger]) # ChatOllama 해보기
         self.sllm = ChatOpenAI(model_name="gpt-4.1-mini", temperature=0, callbacks=[self.logger])
+        self.q = None
 
     def classify_and_group(self, state: AgentState) -> AgentState:
         """
@@ -61,6 +62,8 @@ class CodeGenerator:
         # 로그 이름 설정 & 초기화
         self.logger.set_name("LLM Call: Split Command List")
         self.logger.reset()
+        self.q = get_log_queue(state["stream_id"])
+        self.q.put_nowait({"type": "notice", "content": "커맨드 리스트를 분류하고 있습니다."})
 
         prev_cls = state.get("classified_cmds", [])
         all_cmds = state["command_list"]
@@ -124,8 +127,7 @@ class CodeGenerator:
 
         # stream_id로 쏘기
         if llm_entry:
-            q = get_log_queue(state["stream_id"])
-            q.put_nowait({"type": "log", "content": llm_entry.model_dump_json()})
+            self.q.put_nowait({"type": "log", "content": llm_entry.model_dump_json()})
 
         # State 업데이트
         return {
@@ -158,6 +160,7 @@ class CodeGenerator:
             "queue_idx":    idx + 1,
             "retry_count":  0
         }
+
         return new_state
 
     def none_handler(self, state: AgentState) -> AgentState:
@@ -169,6 +172,8 @@ class CodeGenerator:
         comment = f"# {cmd}"
         codes = state.get('python_codes_list', []) + [comment]
         merged = merge_code_snippets(codes)
+        self.q.put_nowait({"type": "notice", "content": "none 타입 명령을 처리합니다."})
+        self.q.put_nowait({"type": "codes", "content": merged})
         return {"python_codes_list": codes, "python_code": merged}
 
     def code_gen(self, state: AgentState) -> AgentState:
@@ -189,6 +194,7 @@ class CodeGenerator:
         # 메시지를 state에서 가져옵니다.
         df = state['dataframe'][-1] # 마지막 df
         input = state["current_unit"]["cmd"]
+        self.q.put_nowait({"type": "notice", "content": f"{input}에 대한 코드를 생성 중입니다."})
 
         code_gen_prompt = make_code_template()
 
@@ -213,8 +219,7 @@ class CodeGenerator:
 
         # stream_id로 쏘기
         if llm_entry:
-            q = get_log_queue(state["stream_id"])
-            q.put_nowait({"type": "log", "content": llm_entry.model_dump_json()})
+            self.q.put_nowait({"type": "log", "content": llm_entry.model_dump_json()})
 
         # 응답 메시지를 포함하는 새로운 state를 반환합니다.
         return {'messages': [response], 'python_code': response.content, 'logs': new_logs}
@@ -227,12 +232,14 @@ class CodeGenerator:
         # 재시도 카운트 증가
         count = state['retry_count'] + 1
         if count > 3:
+            self.q.put_nowait({"type": "notice", "content": "코드 생성에 실패해 재 생성 중..."})
             return {'retry_count': count}
 
         return {'error_msg': None, 'retry_count': count}
 
     def error_node(self, state: AgentState) -> AgentState:
         msg = AIMessage(content="⚠️ 코드 생성이 3회 연속 실패했습니다. 나중에 다시 시도해주세요.")
+        self.q.put_nowait({"type": "notice", "content": "⚠️ 코드 생성이 3회 연속 실패했습니다."})
         # 에러 시 처리 코드 추가
         return {
             "messages": state["messages"] + [msg]
@@ -243,6 +250,7 @@ class CodeGenerator:
         df = state["dataframe"][-1]
 
         commands = state["command_list"]
+        self.q.put_nowait({"type": "notice", "content": "생성된 코드를 실행 중입니다."})
 
         fence_pattern = re.compile(r"```(?:python)?\n([\s\S]*?)```", re.IGNORECASE)
         m = fence_pattern.search(code_str)
@@ -272,9 +280,9 @@ class CodeGenerator:
 
         merged_code = merge_code_snippets(codes)
 
-        q = get_log_queue(state["stream_id"])
-        q.put_nowait({"type": "data", "content": dfs})
-        q.put_nowait({"type": "code", "content": merged_code})
+        self.q.put_nowait({"type": "notice", "content": "코드가 정상적으로 실행되었습니다."})
+        self.q.put_nowait({"type": "data", "content": dfs})
+        self.q.put_nowait({"type": "code", "content": merged_code})
 
 
         # 4) 정상 리턴
@@ -300,6 +308,7 @@ class CodeGenerator:
 
         prompt = make_extract_excel_params_template()
         params = json.loads((prompt | self.sllm).invoke({"command": str(cmd)}).content)
+        self.q.put_nowait({"type": "notice", "content": f"{params['template_name']} 템플릿을 불러옵니다."})
 
         with TemporaryDirectory() as workdir:
             tpl_path = f"{workdir}/template.xlsx"
@@ -343,9 +352,9 @@ class CodeGenerator:
 
         # stream_id로 쏘기
         if llm_entry:
-            q = get_log_queue(state["stream_id"])
-            q.put_nowait({"type": "log", "content": llm_entry.model_dump_json()})
-            q.put_nowait({"type": "code", "content": merged_code})
+            self.q.put_nowait({"type": "notice", "content": "엑셀 파일을 생성하였습니다."})
+            self.q.put_nowait({"type": "log", "content": llm_entry.model_dump_json()})
+            self.q.put_nowait({"type": "code", "content": merged_code})
 
         return {"download_token": token, "error_msg": None, "logs": new_logs, "python_code":merged_code, "python_codes_list": codes}
 

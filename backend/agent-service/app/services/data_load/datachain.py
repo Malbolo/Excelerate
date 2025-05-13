@@ -169,6 +169,7 @@ class FileAPIClient:
         self.mlogger.reset()
 
         q = get_log_queue(stream_id)
+        q.put_nowait({"type": "notice", "content": "요청으로부터 파라미터를 추출중입니다."})
 
         python_code = None
 
@@ -195,6 +196,7 @@ class FileAPIClient:
 
         # 2) start_date가 ISO 포맷이 아니면 → LLM으로 코드 생성 후 exec
         if not is_iso_date(entities.start_date):
+            q.put_nowait({"type": "notice", "content": f"{entities.start_date} -> date 형태로 변환 중입니다."})
             self.mlogger.set_name("LLM Call: Transfrom Date Param")
             # 2-1) 날짜 계산용 템플릿 꺼내기
             prompt = make_date_code_template()
@@ -219,6 +221,7 @@ class FileAPIClient:
         # 3) URL 생성 & 호출
         url = self._assemble_url(entities)
         logger.info(f"API 호출 URL: {url}")
+        q.put_nowait({"type": "notice", "content": "서버에서 데이터를 불러오는 중..."})
 
         try:
             raw = self.fetch_data(url)
@@ -228,6 +231,7 @@ class FileAPIClient:
 
         dataframe = pd.DataFrame(raw["data"])
         q.put_nowait({"type": "data", "content": dataframe.to_dict(orient="records")})
+        q.put_nowait({"type": "notice", "content": "data를 불러왔습니다."})
 
         # 4) DataFrame 반환
         return url, pd.DataFrame(raw["data"]), entity_logs, python_code, entities
