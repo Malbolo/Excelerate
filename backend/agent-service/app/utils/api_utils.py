@@ -55,7 +55,7 @@ async def _df_sender(stream_id: str):
         while True:
             df = await df_q.get()
             log_q.put_nowait({"type": "data", "content": df.to_dict(orient="records")})
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(0.3) # 0.3초
     except asyncio.CancelledError:
         # 태스크가 취소될 때 조용히 종료
         return
