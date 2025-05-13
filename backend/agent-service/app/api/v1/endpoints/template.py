@@ -16,7 +16,7 @@ import glob
 import platform
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
-from openpyxl.worksheet.page import PageMargins, PageSetupPr
+from openpyxl.worksheet.page import PageMargins
 
 from fastapi.concurrency import run_in_threadpool
 
@@ -144,8 +144,6 @@ async def preview_template(
             raise HTTPException(500, detail="LibreOffice가 설치되어 있지 않습니다.")
 
         ws.print_area = cell_range # 범위를 출력 범위로 설정
-
-        ws.sheet_properties.pageSetUpPr = PageSetupPr(fitToPage=True)
         ws.page_setup.fitToWidth = 1
         # ★ 여백을 좁게 설정
         ws.page_margins = PageMargins(
