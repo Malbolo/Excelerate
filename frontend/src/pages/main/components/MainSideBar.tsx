@@ -4,20 +4,19 @@ import Editor from '@monaco-editor/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { DownloadIcon, Expand } from 'lucide-react';
 
-import { useGetJobLogs } from '@/apis/agentMonitoring';
 import DataTable from '@/components/DataTable';
 import LLMGraph from '@/components/Graph/LLMGraph';
 import Tabs from '@/components/Tabs';
 import { useJobResultStore } from '@/store/useJobResultStore';
+import { useStreamStore } from '@/store/useStreamStore';
 import { DataFrame, DataFrameRow } from '@/types/dataframe';
 
-import DataFrameModal from './DataFrameModal';
+import ExpandModal from './ExpandModal';
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const MainSideBar = memo(() => {
-  const { dataframe, columns, code, logId, downloadToken } =
-    useJobResultStore();
+  const { dataframe, columns, code, downloadToken } = useJobResultStore();
 
   const tabPanels = [
     <DataPanel
@@ -27,7 +26,7 @@ const MainSideBar = memo(() => {
       downloadToken={downloadToken}
     />,
     <CodePanel key='code' code={code} />,
-    <TracePanel key='trace' logId={logId} />,
+    <TracePanel key='trace' />,
   ];
 
   return (
@@ -73,10 +72,9 @@ const DataPanel = memo<{
           }}
         />
       </div>
-      <DataFrameModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
+      <ExpandModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+        <DataTable columns={columns} data={data} />
+      </ExpandModal>
     </div>
   );
 });
@@ -84,6 +82,7 @@ const DataPanel = memo<{
 DataPanel.displayName = 'DataPanel';
 
 const CodePanel: React.FC<{ code: string }> = ({ code }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   if (!code)
     return (
       <div className='flex h-full items-center justify-center'>No code</div>
@@ -101,14 +100,35 @@ const CodePanel: React.FC<{ code: string }> = ({ code }) => {
           minimap: { enabled: false },
         }}
       />
+      <div className='absolute bottom-2 left-1 z-10 cursor-pointer rounded-full border bg-white p-3'>
+        <Expand
+          color='#374151'
+          size={18}
+          onClick={() => {
+            setIsModalOpen(true);
+          }}
+        />
+      </div>
+      <ExpandModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+        <Editor
+          key={code}
+          defaultLanguage='python'
+          defaultValue={code}
+          options={{
+            readOnly: true,
+            domReadOnly: true,
+            minimap: { enabled: false },
+          }}
+        />
+      </ExpandModal>
     </div>
   );
 };
 
-const TracePanel: React.FC<{ logId: string }> = ({ logId }) => {
-  const { data: logs } = useGetJobLogs(logId);
+const TracePanel: React.FC = () => {
+  const { logs } = useStreamStore();
 
-  if (!logId)
+  if (!logs || logs.length === 0)
     return (
       <div className='flex h-full items-center justify-center'>No Log</div>
     );

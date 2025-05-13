@@ -37,6 +37,7 @@ interface GetSourceDataResponse {
 interface SendCommandListRequest {
   command_list: string[];
   url: string;
+  stream_id: string;
 }
 
 const saveJob = async (request: SaveJobRequest) => {
@@ -71,6 +72,7 @@ const editJob = async (request: SaveJobRequest, jobId: string) => {
 const sendCommandList = async ({
   command_list,
   url,
+  stream_id,
 }: SendCommandListRequest) => {
   const { data, error, success } = await api<SendCommandListResponse>(
     '/api/agent/code/generate',
@@ -79,6 +81,7 @@ const sendCommandList = async ({
       body: JSON.stringify({
         command_list,
         url,
+        stream_id,
       }),
     },
   );

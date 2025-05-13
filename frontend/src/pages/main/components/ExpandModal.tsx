@@ -1,24 +1,25 @@
-import DataTable from '@/components/DataTable';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { useJobResultStore } from '@/store/useJobResultStore';
 
 interface DataFrameModalProps {
+  children: React.ReactNode;
   isOpen: boolean;
   onClose: () => void;
 }
 
-const DataFrameModal: React.FC<DataFrameModalProps> = ({ isOpen, onClose }) => {
-  const { dataframe, columns } = useJobResultStore();
-
+const ExpandModal: React.FC<DataFrameModalProps> = ({
+  children,
+  isOpen,
+  onClose,
+}) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className='h-screen min-w-full'>
         <div className='my-4 h-full w-full overflow-auto rounded-lg border'>
-          <DataTable columns={columns} data={dataframe!} />
+          {children}
         </div>
       </DialogContent>
     </Dialog>
   );
 };
 
-export default DataFrameModal;
+export default ExpandModal;
