@@ -146,7 +146,7 @@ async def preview_template(
         cmd = [
             soffice,
             "--headless",
-            "--convert-to", "png",
+            "--convert-to", "png:calc_png_Export",
             "--outdir", tmpdir,
             xlsx_path
         ]
