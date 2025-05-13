@@ -281,7 +281,7 @@ class CodeGenerator:
         merged_code = merge_code_snippets(codes)
 
         self.q.put_nowait({"type": "notice", "content": "코드가 정상적으로 실행되었습니다."})
-        self.q.put_nowait({"type": "data", "content": dfs})
+        self.q.put_nowait({"type": "data", "content": dfs[-1]})
         self.q.put_nowait({"type": "code", "content": merged_code})
 
 
