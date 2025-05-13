@@ -17,9 +17,12 @@ class Job(Base):
     description = Column(Text, nullable=False)
     data_load_command = Column(Text, nullable=False)
     data_load_url = Column(String(255), nullable=False)
+    data_load_code = Column(LONGTEXT)
     code = Column(LONGTEXT, nullable=False)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
     commands = relationship("JobCommand", back_populates="job", cascade="all, delete")
 
@@ -34,6 +37,7 @@ class Job(Base):
         description=job.description,
         data_load_command=job.data_load_command,
         data_load_url=job.data_load_url,
+        data_load_code=job.data_load_code,
         code=job.code
     )
 
