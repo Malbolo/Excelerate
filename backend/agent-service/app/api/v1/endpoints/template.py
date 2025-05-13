@@ -16,7 +16,7 @@ import glob
 import platform
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
-from openpyxl.worksheet.page import PageMargins
+from openpyxl.worksheet.page import PageMargins, PageSetupPr
 
 from fastapi.concurrency import run_in_threadpool
 
@@ -144,13 +144,15 @@ async def preview_template(
             raise HTTPException(500, detail="LibreOffice가 설치되어 있지 않습니다.")
 
         ws.print_area = cell_range # 범위를 출력 범위로 설정
+
+        ws.sheet_properties.pageSetUpPr = PageSetupPr(fitToPage=True)
         ws.page_setup.fitToWidth = 1
         # ★ 여백을 좁게 설정
         ws.page_margins = PageMargins(
-            left=0.2,    # 왼쪽 여백 0.2 인치
-            right=0.2,   # 오른쪽 여백 0.2 인치
-            top=0.2,     # 위쪽 여백 0.2 인치
-            bottom=0.2,  # 아래쪽 여백 0.2 인치
+            left=0.01,    # 왼쪽 여백 0.01 인치
+            right=0.01,   # 오른쪽 여백 0.01 인치
+            top=0.01,     # 위쪽 여백 0.01 인치
+            bottom=0.01,  # 아래쪽 여백 0.01 인치
         )
 
         wb.save(xlsx_path) # 변경 사항 저장
@@ -181,7 +183,7 @@ async def preview_template(
                     "-singlefile",    # 단일 PNG 파일
                     "-png",
                     "-f", "1",        # 첫 페이지
-                    "-scale-to-x", "1024",
+                    "-scale-to-x", "2048",
                     pdf_path,
                     png_base
                 ],
