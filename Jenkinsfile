@@ -13,15 +13,11 @@ pipeline {
           def targets = []
 
           for (path in changedPaths) {
-            echo "path : ${path}"
             if (path.startsWith('frontend/')) {
               targets << 'frontend'
             } else if (path.startsWith('backend/')) {
-              echo 'backend process'
               def subdir = path.split('/')[1]
-              echo 'service : ${subdir}'
               if (['agent-service', 'storage-service', 'notification-service', 'user-service', 'auth-service', 'job-service', 'schedule-service'].contains(subdir)) {
-                echo 'condition passed'
                 targets << "backend-${subdir}"
               }
             }
