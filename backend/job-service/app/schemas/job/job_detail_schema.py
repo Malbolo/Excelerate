@@ -33,7 +33,7 @@ class JobDetailSchema(BaseModel):
     description: str
     data_load_command: str
     data_load_url: str
-    data_load_code: str
+    data_load_code: Optional[str] = None
     commands: List[CommandSchema]
     code: str
     created_at: str
