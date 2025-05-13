@@ -6,7 +6,7 @@ from datetime import datetime
 
 from app.core.config import settings
 from app.core.log_config import logger
-from app.db.database import get_db
+# from app.db.database import get_db
 from app.services.dag_query import get_dag_detail
 from app.services.execution import toggle_dag_pause
 from app.services.metadata import save_dag_metadata, get_dag_metadata
