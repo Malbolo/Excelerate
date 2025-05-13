@@ -78,7 +78,7 @@ async def command_code(
 
     return JSONResponse(status_code=200, content={
         "result" : "success",
-        "data" : {"url": url, "dataframe" : result.to_dict(orient="records"), "log_id": log_id, "code": code, "params": params.dict()}})
+        "data" : {"url": url, "dataframe" : result.to_dict(orient="records"), "log_id": log_id, "data_load_code": code, "params": params.dict()}})
 
 
 @router.post("/make")

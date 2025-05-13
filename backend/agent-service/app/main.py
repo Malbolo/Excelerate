@@ -11,6 +11,8 @@ from contextlib import asynccontextmanager
 from app.services.llmtest import LLMTest
 from app.services.code_gen.graph import CodeGenerator
 from app.core import auth
+from app.utils.api_utils import _DF_SENDER_TASKS
+import asyncio
 
 # Lifespan 컨텍스트 매니저로 startup과 shutdown 로직을 한 곳에 정의
 @asynccontextmanager
@@ -26,6 +28,12 @@ async def lifespan(app: FastAPI):
         await app.state.llm_service.close()
     if hasattr(app.state.code_gen, "close"):
         await app.state.code_gen.close()
+    # 백그라운드 task 모두 종료
+    tasks = list(_DF_SENDER_TASKS.values())
+    for t in tasks:
+        t.cancel()
+    # 태스크들이 종료될 때까지 기다림
+    await asyncio.gather(*tasks, return_exceptions=True)
 
 app = None
 

@@ -26,7 +26,7 @@ from app.models.log import LogDetail
 from app.core.config import settings
 
 from app.services.code_gen.merge_utils import merge_code_snippets
-from app.utils.api_utils import get_log_queue
+from app.utils.api_utils import get_log_queue, get_df_queue
 
 load_dotenv()
 
@@ -172,7 +172,7 @@ class CodeGenerator:
         comment = f"# {cmd}"
         codes = state.get('python_codes_list', []) + [comment]
         merged = merge_code_snippets(codes)
-        self.q.put_nowait({"type": "notice", "content": "none 타입 명령을 처리합니다."})
+        self.q.put_nowait({"type": "notice", "content": f"{cmd} -> none 타입 명령으로 처리합니다."})
         self.q.put_nowait({"type": "codes", "content": merged})
         return {"python_codes_list": codes, "python_code": merged}
 
@@ -281,9 +281,12 @@ class CodeGenerator:
         merged_code = merge_code_snippets(codes)
 
         self.q.put_nowait({"type": "notice", "content": "코드가 정상적으로 실행되었습니다."})
-        self.q.put_nowait({"type": "data", "content": dfs[-1]})
         self.q.put_nowait({"type": "code", "content": merged_code})
 
+        # self.q.put_nowait({"type": "data", "content": dfs[-1]})
+        df_q = get_df_queue(state["stream_id"])
+        for df in dfs:
+            df_q.put_nowait(df)
 
         # 4) 정상 리턴
         return {
