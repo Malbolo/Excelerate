@@ -35,13 +35,38 @@ def make_initial_query(url: str, command_list: List[str], stream_id: str) -> Dic
     return query
 
 _LOG_QUEUES: Dict[str, asyncio.Queue] = {}
+_DF_QUEUES: Dict[str, asyncio.Queue]  = {}
+_DF_SENDER_TASKS: Dict[str, asyncio.Task] = {}
 
 def get_log_queue(stream_id: str) -> asyncio.Queue:
-    """
-    stream_id별로 하나의 Queue를 생성·반환.
-    Graph 실행 코드에서 새 로그를 여기로 put 하고,
-    SSE 핸들러에서는 이 Queue를 get하며 스트리밍합니다.
-    """
     if stream_id not in _LOG_QUEUES:
         _LOG_QUEUES[stream_id] = asyncio.Queue()
     return _LOG_QUEUES[stream_id]
+
+def get_df_queue(stream_id: str) -> asyncio.Queue:
+    if stream_id not in _DF_QUEUES:
+        _DF_QUEUES[stream_id] = asyncio.Queue()
+    return _DF_QUEUES[stream_id]
+
+async def _df_sender(stream_id: str):
+    df_q  = get_df_queue(stream_id)
+    log_q = get_log_queue(stream_id)
+    try:
+        while True:
+            df = await df_q.get()
+            log_q.put_nowait({"type": "data", "content": df.to_dict(orient="records")})
+            await asyncio.sleep(0.3) # 0.3초
+    except asyncio.CancelledError:
+        # 태스크가 취소될 때 조용히 종료
+        return
+
+def ensure_df_sender_task(stream_id: str):
+    """
+    stream_id당 하나의 _df_sender 태스크만 생성하고 레지스트리에 저장
+    """
+    task = _DF_SENDER_TASKS.get(stream_id)
+    if task is None or task.done():
+        # 현재 루프에 태스크 생성
+        task = asyncio.create_task(_df_sender(stream_id))
+        _DF_SENDER_TASKS[stream_id] = task
+    return task

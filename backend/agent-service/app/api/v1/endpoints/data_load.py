@@ -7,6 +7,7 @@ from app.services.data_load.makerag import CatalogIngestor
 from app.core.config import settings
 from app.utils.redis_client import generate_log_id, save_logs_to_redis
 from app.core import auth
+from app.utils.api_utils import get_log_queue
 
 from fastapi.concurrency import run_in_threadpool
 
@@ -25,11 +26,15 @@ async def command_code(
 ):
     try:
         api_start = datetime.now(ZoneInfo("Asia/Seoul"))
+
         # 나중엔 Optional이 아닌 필수로 연결하도록 요청
         if request.stream_id:
             stream_id = request.stream_id
         else:
             stream_id = "check" # 확인용 
+
+        q = get_log_queue(stream_id)
+        q.put_nowait({"type": "notice", "content": "DataLoader를 호출합니다."})
 
         url, result, logs, code, params = await run_in_threadpool(
             data_loader.run,
@@ -53,6 +58,7 @@ async def command_code(
         api_end = datetime.now(ZoneInfo("Asia/Seoul"))
         api_latency = (api_end - api_start).total_seconds()
 
+        q.put_nowait({"type": "notice", "content": "Log를 저장 중입니다..."})
         save_logs_to_redis(log_id, logs, metadata={
             "agent_name":  "Data Loader",
             "log_detail":  "데이터를 불러옵니다.",
@@ -66,9 +72,13 @@ async def command_code(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+    
+    q.put_nowait({"type": "stop", "content": "API 호출이 정상 종료되었습니다."})
+
     return JSONResponse(status_code=200, content={
         "result" : "success",
-        "data" : {"url": url, "dataframe" : result.to_dict(orient="records"), "log_id": log_id, "code": code, "params": params.dict()}})
+        "data" : {"url": url, "dataframe" : result.to_dict(orient="records"), "log_id": log_id, "data_load_code": code, "params": params.dict()}})
 
 
 @router.post("/make")

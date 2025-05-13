@@ -6,7 +6,7 @@ from typing import Optional
 from datetime import datetime, date
 import math
 
-from app.utils.api_utils import get_log_queue
+from app.utils.api_utils import get_log_queue, ensure_df_sender_task
 from fastapi.responses import StreamingResponse
 
 router = APIRouter()
@@ -134,6 +134,8 @@ async def list_user_logs(
 
 @router.get("/stream/{stream_id}")
 async def stream_logs(request: Request, stream_id: str):
+    ensure_df_sender_task(stream_id)
+
     async def event_generator():
         queue = get_log_queue(stream_id)
 
@@ -142,11 +144,17 @@ async def stream_logs(request: Request, stream_id: str):
                 break
 
             entry = await queue.get()
-            data = entry.model_dump_json()
+            data_type = entry["type"]
+            data_content = entry["content"]
+
+            if data_type == "end":
+                yield f"event: end\n"
+                yield f"data: 연결을 종료합니다.\n\n"
+                break
 
             # 한 줄씩 yield → ASGI 레벨에서 바로 전송 시도
-            yield "event: log\n"
-            yield f"data: {data}\n\n"
+            yield f"event: {data_type}\n"
+            yield f"data: {data_content}\n\n"
 
     headers = {
         "Cache-Control":       "no-cache",
