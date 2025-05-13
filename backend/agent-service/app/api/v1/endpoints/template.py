@@ -144,14 +144,10 @@ async def preview_template(
             raise HTTPException(500, detail="LibreOffice가 설치되어 있지 않습니다.")
 
         ws.print_area = cell_range # 범위를 출력 범위로 설정
-        ws.page_setup.fitToWidth = 1
-        # ★ 여백을 좁게 설정
-        ws.page_margins = PageMargins(
-            left=0.01,    # 왼쪽 여백 0.01 인치
-            right=0.01,   # 오른쪽 여백 0.01 인치
-            top=0.01,     # 위쪽 여백 0.01 인치
-            bottom=0.01,  # 아래쪽 여백 0.01 인치
-        )
+        ws.page_setup.paperSize = ws.PAPERSIZE_A3 # 더 큰 용지 사용
+        ws.page_setup.scale = 50 # 50% 축소해서 다 담기게끔 설정
+        ws.page_setup.fitToWidth = 1 # 가로 폭에 맞추기
+        ws.page_margins = PageMargins(left=0.1, right=0.1, top=0.1, bottom=0.1) # PDF화의 여백 좁게 설정
 
         ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE # 가로방향 출력
 
@@ -171,7 +167,7 @@ async def preview_template(
             shutil.rmtree(tmpdir, ignore_errors=True)
             raise HTTPException(500, detail=f"LibreOffice 변환 실패: {stderr}")
 
-        # ② PDF→PNG 변환 (ImageMagick 필요)
+        # ② PDF→PNG 변환 (poppler-uilts 사용용)
         pdf_path = os.path.join(tmpdir, f"{template_name}.pdf")
         png_base = os.path.join(tmpdir, template_name)
 
