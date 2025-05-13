@@ -1,0 +1,16 @@
+.venv
+venv/
+
+.idea/
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+.env
+test_main.http
+
+../dags/*
+!../dags/.gitkeep
+../init-scripts/*
+!../init-scripts/.gitkeep
