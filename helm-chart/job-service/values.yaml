@@ -17,8 +17,6 @@ ingress:
   paths:
     - path: /api/jobs
       pathType: Prefix
-    - path: /api/schedules
-      pathType: Prefix
   annotations:
     kubernetes.io/ingress.class: traefik
     traefik.ingress.kubernetes.io/router.middlewares: auth-service-forward-auth@kubernetescrd
