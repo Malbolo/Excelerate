@@ -26,7 +26,9 @@ def create_dag(
 ) -> str:
     """새로운 DAG를 생성합니다."""
     # DAG ID는 고유해야 함
-    dag_id = f"{owner}_{name.lower().replace(' ', '_')}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    # DAG ID는 userid_time 형식으로 생성 (밀리초까지 포함하여 추가 고유성 확보)
+    timestamp = datetime.now().strftime('%Y%m%d%H%M%S%f')[:18]  # 년월일시분초밀리초(3자리)
+    dag_id = f"{owner}_{timestamp}"
 
     # MySQL에서 job 정보 가져오기
     db = next(get_db())
@@ -344,7 +346,7 @@ default_args = {{
     'email_on_failure': {bool(failure_emails or [])},
     'email_on_retry': False,
     'retries': 1,
-    'retry_delay': timedelta(minutes=5),
+    'retry_delay': timedelta(seconds=1),
 }}
 
 dag = DAG(

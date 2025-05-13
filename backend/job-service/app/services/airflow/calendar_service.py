@@ -149,21 +149,34 @@ def _extract_dag_start_date_from_api(dag: Dict[str, Any], dag_id: str) -> dateti
             pass
     return None
 
+
 def _extract_date_from_dag_id(dag_id: str) -> datetime:
-    """DAG ID에서 날짜 추출"""
+    """DAG ID에서 날짜 추출 - userid_time 형식에 맞게 수정"""
     try:
-        # DAG ID 형식: 'owner_name_YYYYMMDDHHMMSS'
-        date_part = dag_id.split('_')[-1]
+        # DAG ID 형식: 'owner_YYYYMMDDHHMMSS' 또는 'owner_YYYYMMDDHHMMSS[f]'
+        parts = dag_id.split('_')
+        if len(parts) >= 2:
+            # 두 번째 부분이 날짜 형식인지 확인
+            date_part = parts[1]
 
-        # 날짜 부분이 숫자인지 확인
-        if len(date_part) >= 8 and date_part.isdigit():
-            year_part = int(date_part[:4])
-            month_part = int(date_part[4:6])
-            day_part = int(date_part[6:8])
+            # 날짜 부분이 숫자로 시작하는지 확인 (밀리초 부분 처리)
+            if date_part and date_part[:8].isdigit():
+                year_part = int(date_part[:4])
+                month_part = int(date_part[4:6])
+                day_part = int(date_part[6:8])
 
-            # 유효한 날짜인지 확인
-            if 2000 <= year_part <= 2100 and 1 <= month_part <= 12 and 1 <= day_part <= 31:
-                return datetime(year_part, month_part, day_part, tzinfo=timezone.utc)
+                # 유효한 날짜인지 확인
+                if 2000 <= year_part <= 2100 and 1 <= month_part <= 12 and 1 <= day_part <= 31:
+                    # 시간 부분이 있으면 시간도 설정 (선택적)
+                    if len(date_part) >= 14 and date_part[8:14].isdigit():
+                        hour_part = int(date_part[8:10])
+                        minute_part = int(date_part[10:12])
+                        second_part = int(date_part[12:14])
+                        return datetime(year_part, month_part, day_part,
+                                        hour_part, minute_part, second_part,
+                                        tzinfo=timezone.utc)
+                    else:
+                        return datetime(year_part, month_part, day_part, tzinfo=timezone.utc)
     except (ValueError, IndexError) as e:
         logger.debug(f"Error extracting date from DAG ID {dag_id}: {str(e)}")
     return None
@@ -214,6 +227,10 @@ def _process_dag_runs_for_calendar(dag_id, cron_expr, effective_start, effective
             day_start = date_dt.replace(hour=0, minute=0, second=0)
             day_end = date_dt.replace(hour=23, minute=59, second=59)
 
+            # 실행 결과가 있는지 확인
+            state = executed_map.get(date_str)
+            has_execution = state is not None
+
             try:
                 # 해당 날짜에 실행되는 시간 찾기
                 cron_iter = croniter(cron_expr, day_start)
@@ -221,12 +238,11 @@ def _process_dag_runs_for_calendar(dag_id, cron_expr, effective_start, effective
 
                 # 같은 날짜 내에 실행 시간이 있는지 확인
                 if execution_time <= day_end:
-                    # total에 추가할지 결정 (이미 지난 시간은 total에 포함되지 않음)
-                    if execution_time > now:
+                    # 실행 결과가 있거나 미래 실행 시간이 있으면 total 증가
+                    if has_execution or execution_time > now:
                         all_days[idx]["total"] += 1
 
                     # 실행 상태 확인
-                    state = executed_map.get(date_str)
                     if state == "success":
                         all_days[idx]["success"] += 1
                     elif state in ("failed", "error"):
