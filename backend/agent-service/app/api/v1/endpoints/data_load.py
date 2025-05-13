@@ -8,6 +8,8 @@ from app.core.config import settings
 from app.utils.redis_client import generate_log_id, save_logs_to_redis
 from app.core import auth
 
+from fastapi.concurrency import run_in_threadpool
+
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -29,19 +31,22 @@ async def command_code(
         else:
             stream_id = "check" # 확인용 
 
-        url, result, logs, code = data_loader.run(request.command, stream_id)
-        user_id = auth.get_user_id_from_header(req) or "guest"
+        url, result, logs, code = await run_in_threadpool(
+            data_loader.run,
+            request.command,
+            stream_id
+        )
 
-        profile = auth.get_user_info(user_id)
-        if profile and isinstance(profile, dict):
-            user_name = profile.get("name") or "guest"
-        else:
+        try:
+            user_id = auth.get_user_id_from_header(req) or "guest"
+            profile = auth.get_user_info(user_id)
+            if profile and isinstance(profile, dict):
+                user_name = profile.get("name") or "guest"
+            else:
+                user_name = "guest"
+        except:
+            user_id = "guest"
             user_name = "guest"
-
-        print("DEBUG:###\n")
-        print("ID:", user_id)
-        print("Name:", user_name)
-        print("#########\n")
 
         log_id = generate_log_id(user_name)
 

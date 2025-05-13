@@ -7,7 +7,7 @@ from datetime import datetime, date
 import math
 
 from app.utils.api_utils import get_log_queue
-from sse_starlette.sse import EventSourceResponse
+from fastapi.responses import StreamingResponse
 
 router = APIRouter()
 
@@ -134,17 +134,27 @@ async def list_user_logs(
 
 @router.get("/stream/{stream_id}")
 async def stream_logs(request: Request, stream_id: str):
-    queue = get_log_queue(stream_id)
-
     async def event_generator():
+        queue = get_log_queue(stream_id)
+
         while True:
             if await request.is_disconnected():
                 break
-            entry = await queue.get()
-            data_json = entry.model_dump_json()
-            yield {
-                "event": "log",
-                "data": data_json
-            }
 
-    return EventSourceResponse(event_generator())
+            entry = await queue.get()
+            data = entry.model_dump_json()
+
+            # 한 줄씩 yield → ASGI 레벨에서 바로 전송 시도
+            yield "event: log\n"
+            yield f"data: {data}\n\n"
+
+    headers = {
+        "Cache-Control":       "no-cache",
+        "X-Accel-Buffering":   "no"
+    }
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers=headers
+    )

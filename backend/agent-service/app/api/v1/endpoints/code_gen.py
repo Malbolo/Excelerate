@@ -8,6 +8,8 @@ from app.utils.api_utils import make_initial_query
 from fastapi.encoders import jsonable_encoder
 from app.core import auth
 
+from fastapi.concurrency import run_in_threadpool
+
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -36,12 +38,15 @@ async def command_code(
 
         query = make_initial_query(request.url, request.command_list, stream_id)
 
-        user_id = auth.get_user_id_from_header(req) or "guest"
-
-        profile = auth.get_user_info(user_id)
-        if profile and isinstance(profile, dict):
-            user_name = profile.get("name") or "guest"
-        else:
+        try:
+            user_id = auth.get_user_id_from_header(req) or "guest"
+            profile = auth.get_user_info(user_id)
+            if profile and isinstance(profile, dict):
+                user_name = profile.get("name") or "guest"
+            else:
+                user_name = "guest"
+        except:
+            user_id = "guest"
             user_name = "guest"
 
         if request.uid:
@@ -52,7 +57,7 @@ async def command_code(
         else:
             uid = uuid4().hex
 
-        answer = graph.invoke(query)
+        answer = await run_in_threadpool(graph.invoke, query)
 
         # answer["dataframe"] 가 이제 List[pd.DataFrame] 라면…
         df_list = answer["dataframe"]
