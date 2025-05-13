@@ -16,7 +16,7 @@ const TemplateList: React.FC = () => {
         <p className='text-lg font-bold'>Template List</p>
         {isAdmin && (
           <Link to='/template-management'>
-            <Button>
+            <Button variant='ghost' className='h-6'>
               <Settings />
               Settings
             </Button>

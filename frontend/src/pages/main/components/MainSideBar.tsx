@@ -4,11 +4,11 @@ import Editor from '@monaco-editor/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { DownloadIcon, Expand } from 'lucide-react';
 
-import { useGetJobLogs } from '@/apis/agentMonitoring';
 import DataTable from '@/components/DataTable';
 import LLMGraph from '@/components/Graph/LLMGraph';
 import Tabs from '@/components/Tabs';
 import { useJobResultStore } from '@/store/useJobResultStore';
+import { useStreamStore } from '@/store/useStreamStore';
 import { DataFrame, DataFrameRow } from '@/types/dataframe';
 
 import DataFrameModal from './DataFrameModal';
@@ -16,8 +16,7 @@ import DataFrameModal from './DataFrameModal';
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const MainSideBar = memo(() => {
-  const { dataframe, columns, code, logId, downloadToken } =
-    useJobResultStore();
+  const { dataframe, columns, code, downloadToken } = useJobResultStore();
 
   const tabPanels = [
     <DataPanel
@@ -27,7 +26,7 @@ const MainSideBar = memo(() => {
       downloadToken={downloadToken}
     />,
     <CodePanel key='code' code={code} />,
-    <TracePanel key='trace' logId={logId} />,
+    <TracePanel key='trace' />,
   ];
 
   return (
@@ -105,10 +104,10 @@ const CodePanel: React.FC<{ code: string }> = ({ code }) => {
   );
 };
 
-const TracePanel: React.FC<{ logId: string }> = ({ logId }) => {
-  const { data: logs } = useGetJobLogs(logId);
+const TracePanel: React.FC = () => {
+  const { logs } = useStreamStore();
 
-  if (!logId)
+  if (!logs || logs.length === 0)
     return (
       <div className='flex h-full items-center justify-center'>No Log</div>
     );

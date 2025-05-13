@@ -4,6 +4,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import { ArrowLeftIcon } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import ClipLoader from 'react-spinners/ClipLoader';
+import { toast } from 'sonner';
 
 import { useGetSourceData, useSendCommandList } from '@/apis/job';
 import { useGetJobDetail } from '@/apis/jobManagement';
@@ -23,6 +24,7 @@ import { useCommandStore } from '@/store/useCommandStore';
 import { useJobResultStore } from '@/store/useJobResultStore';
 import { useJobStore } from '@/store/useJobStore';
 import { useSourceStore } from '@/store/useSourceStore';
+import { useStreamStore } from '@/store/useStreamStore';
 import { DataFrameRow } from '@/types/dataframe';
 import { createSortableColumns } from '@/utils/dataframe';
 
@@ -37,7 +39,7 @@ const JobEditPage = () => {
     useSourceStore();
 
   const { addCommand, resetCommand, setCommandList } = useCommandStore();
-  const { dataframe, setCode, setLogId } = useJobResultStore();
+  const { dataframe, setCode } = useJobResultStore();
 
   const {
     setColumns,
@@ -46,6 +48,8 @@ const JobEditPage = () => {
   } = useJobResultStore();
 
   const { resetJob, setCanSaveJob } = useJobStore();
+
+  const { connectStream, resetStream } = useStreamStore();
 
   const { goBack } = useInternalRouter();
 
@@ -88,7 +92,7 @@ const JobEditPage = () => {
   };
 
   useEffect(() => {
-    const fetchJobDetail = async () => {
+    const initialize = async () => {
       if (!jobId) return;
 
       const data = await getJobDetail(jobId);
@@ -106,11 +110,31 @@ const JobEditPage = () => {
 
       setCanSaveJob(true);
 
+      connectStream();
+
+      // Stream ID가 설정될 때까지 대기
+      await new Promise<void>(resolve => {
+        const checkStreamId = setInterval(() => {
+          if (useStreamStore.getState().streamId) {
+            clearInterval(checkStreamId);
+            resolve();
+          }
+        }, 100);
+      });
+
       const command_list = commands.map(command => command.content);
+
+      const currentStreamId = useStreamStore.getState().streamId;
+
+      if (!currentStreamId) {
+        toast.error('Stream ID is not found');
+        return;
+      }
 
       const response = await commandMutation({
         command_list,
         url: data_load_url,
+        stream_id: currentStreamId,
       });
 
       setColumns(
@@ -120,16 +144,20 @@ const JobEditPage = () => {
       );
 
       setData(response.dataframe[response.dataframe.length - 1]);
-      setLogId(response.log_id);
     };
 
-    fetchJobDetail();
-
-    return () => {
+    const cleanup = () => {
       resetResult();
       resetSource();
       resetCommand();
       resetJob();
+      resetStream();
+    };
+
+    initialize();
+
+    return () => {
+      cleanup();
     };
   }, [jobId]);
 

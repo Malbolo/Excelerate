@@ -19,6 +19,7 @@ import { useCommandStore } from '@/store/useCommandStore';
 import { useJobResultStore } from '@/store/useJobResultStore';
 import { useJobStore } from '@/store/useJobStore';
 import { useSourceStore } from '@/store/useSourceStore';
+import { useStreamStore } from '@/store/useStreamStore';
 import { DataFrameRow } from '@/types/dataframe';
 import { createSortableColumns } from '@/utils/dataframe';
 
@@ -41,6 +42,8 @@ const MainPage: React.FC = () => {
 
   const { mutateAsync: sourceDataMutation, isPending: isSourceDataLoading } =
     useGetSourceData();
+
+  const { connectStream, resetStream } = useStreamStore();
 
   const fetchSourceData = async () => {
     const response = await sourceDataMutation(inputCommand);
@@ -76,11 +79,18 @@ const MainPage: React.FC = () => {
   };
 
   useEffect(() => {
-    return () => {
+    connectStream();
+
+    const cleanup = () => {
       resetResult();
       resetSource();
       resetCommand();
       resetJob();
+      resetStream();
+    };
+
+    return () => {
+      cleanup();
     };
   }, []);
 

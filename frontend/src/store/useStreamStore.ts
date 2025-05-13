@@ -1,0 +1,90 @@
+import { toast } from 'sonner';
+import { create } from 'zustand';
+
+import { TLog } from '@/types/agent';
+import { generateStreamId } from '@/utils/random';
+
+interface StreamState {
+  streamId: string | null;
+  isConnected: boolean;
+  eventSource: EventSource | null;
+  logs: TLog[];
+
+  connectStream: () => void;
+  disconnectStream: () => void;
+  resetLogs: () => void;
+  resetStream: () => void;
+}
+
+export const useStreamStore = create<StreamState>((set, get) => ({
+  streamId: null,
+  isConnected: false,
+  eventSource: null,
+  logs: [],
+
+  connectStream: () => {
+    const currentEventSource = get().eventSource;
+    const currentStreamId = get().streamId;
+
+    if (currentEventSource !== null && currentStreamId !== null) {
+      return;
+    }
+
+    const newStreamId = generateStreamId();
+    const eventSource = new EventSource(
+      `${import.meta.env.VITE_BASE_URL}/api/agent/logs/stream/${newStreamId}`,
+    );
+
+    eventSource.addEventListener('log', event => {
+      try {
+        const log: TLog = JSON.parse(event.data);
+        set(state => ({
+          logs: [...state.logs, log],
+          isConnected: true,
+        }));
+      } catch (error) {
+        toast.error(`Failed to parse SSE message: ${error}`);
+      }
+    });
+
+    eventSource.onerror = error => {
+      set({ isConnected: false });
+      toast.error(`Connection error: ${error}`);
+    };
+
+    set({
+      eventSource,
+      streamId: newStreamId,
+      isConnected: true,
+    });
+  },
+
+  disconnectStream: () => {
+    const { eventSource } = get();
+    if (eventSource) {
+      eventSource.close();
+      set({
+        isConnected: false,
+        eventSource: null,
+        streamId: null,
+      });
+    }
+  },
+
+  resetLogs: () => {
+    set({ logs: [] });
+  },
+
+  resetStream: () => {
+    const { eventSource } = get();
+    if (eventSource) {
+      eventSource.close();
+    }
+    set({
+      isConnected: false,
+      eventSource: null,
+      logs: [],
+      streamId: null,
+    });
+  },
+}));

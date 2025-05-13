@@ -14,6 +14,7 @@ import {
 } from '@dnd-kit/sortable';
 import { ColumnDef } from '@tanstack/react-table';
 import ClipLoader from 'react-spinners/ClipLoader';
+import { toast } from 'sonner';
 
 import { useSendCommandList } from '@/apis/job';
 import Command from '@/components/Command';
@@ -22,6 +23,7 @@ import { useCommandStore } from '@/store/useCommandStore';
 import { useJobResultStore } from '@/store/useJobResultStore';
 import { useJobStore } from '@/store/useJobStore';
 import { useSourceStore } from '@/store/useSourceStore';
+import { useStreamStore } from '@/store/useStreamStore';
 import { DataFrameRow } from '@/types/dataframe';
 import { createSortableColumns } from '@/utils/dataframe';
 
@@ -38,10 +40,10 @@ const CommandList: React.FC = () => {
     setCode,
     setColumns,
     setDownloadToken,
-    setLogId,
   } = useJobResultStore();
 
   const { isEditMode, setCanSaveJob } = useJobStore();
+  const { streamId, resetLogs } = useStreamStore();
 
   const { mutateAsync: commandMutation, isPending: isCommandLoading } =
     useSendCommandList();
@@ -66,10 +68,18 @@ const CommandList: React.FC = () => {
   };
 
   const handleSendCommandList = async () => {
+    if (!streamId) {
+      toast.error('Stream ID is not found');
+      return;
+    }
+
+    resetLogs();
+
     const commands = commandList.map(cmd => cmd.title);
     const response = await commandMutation({
       command_list: commands,
       url: sourceDataUrl,
+      stream_id: streamId,
     });
 
     const columns: ColumnDef<DataFrameRow>[] = response.dataframe[0][0]
@@ -80,7 +90,6 @@ const CommandList: React.FC = () => {
     setCode(response.codes[response.codes.length - 1]);
     setColumns(columns);
     setDownloadToken(response.download_token);
-    setLogId(response.log_id);
   };
 
   const handleRun = async () => {
