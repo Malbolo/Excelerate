@@ -48,6 +48,7 @@ def create_dag(
                 method="POST",
                 endpoint="/api/jobs/for-schedule/commands",
                 data={"job_ids": int_job_ids},
+                user_id=user_id
             )
 
             if not response or "job_details" not in response:
