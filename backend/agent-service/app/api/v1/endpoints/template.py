@@ -144,11 +144,7 @@ async def preview_template(
             raise HTTPException(500, detail="LibreOffice가 설치되어 있지 않습니다.")
 
         ws.print_area = cell_range # 범위를 출력 범위로 설정
-        
-        ws.page_setup.fitToPage = True
         ws.page_setup.fitToWidth = 1
-        # ws.page_setup.fitToHeight = 1 # 세로는 한 페이지에 담기는 대로
-
         # ★ 여백을 좁게 설정
         ws.page_margins = PageMargins(
             left=0.2,    # 왼쪽 여백 0.2 인치
