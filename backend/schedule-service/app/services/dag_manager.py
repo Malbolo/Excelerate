@@ -40,13 +40,14 @@ def create_dag(
 
         # Job Service API를 통해 job 정보 가져오기
         try:
+            int_job_ids = [int(job_id) for job_id in job_ids]
+
             # auth.py의 함수 사용하여 API 호출
             response = auth.call_service_api(
                 service_url=job_service_url,
                 method="POST",
                 endpoint="/api/jobs/for-schedule/commands",
-                data={"job_ids": job_ids},
-                user_id=user_id
+                data={"job_ids": int_job_ids},
             )
 
             if not response or "job_details" not in response:
