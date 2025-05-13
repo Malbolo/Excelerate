@@ -102,9 +102,10 @@ const JobEditPage = () => {
       setSourceDataUrl(data_load_url);
       setCode(code);
       setCommandList(
-        commands.map(command => ({
-          title: command.content,
-          status: 'success' as const,
+        commands.map(({ content, order }) => ({
+          content,
+          order,
+          status: 'success',
         })),
       );
 
@@ -122,7 +123,7 @@ const JobEditPage = () => {
         }, 100);
       });
 
-      const command_list = commands.map(command => command.content);
+      const command_list = commands.map(({ content }) => content);
 
       const currentStreamId = useStreamStore.getState().streamId;
 
@@ -187,7 +188,6 @@ const JobEditPage = () => {
               <CommandList />
             </div>
 
-            {/* Command Input */}
             <div className='flex gap-2'>
               <div className='relative flex-1'>
                 <Textarea

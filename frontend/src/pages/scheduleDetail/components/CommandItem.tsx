@@ -1,6 +1,6 @@
 import { HardDrive } from 'lucide-react';
 
-import { Command } from '@/apis/schedulerMonitoring';
+import { Command } from '@/types/job';
 
 interface CommandItemProps {
   command: Command;

@@ -116,7 +116,7 @@ const SaveJobDialog: React.FC = () => {
       description: jobDescription,
       data_load_command: sourceDataCommand,
       data_load_url: sourceDataUrl,
-      commands: commandList.map(command => command.title),
+      commands: commandList.map(({ content }) => content),
       code,
     };
 

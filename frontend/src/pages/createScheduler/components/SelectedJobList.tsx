@@ -16,14 +16,14 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 
-import { JobResponse } from '@/apis/jobManagement';
+import { JobManagement } from '@/apis/jobManagement';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 import SortableJobItem from './SortableJobItem';
 
 interface SelectedJobListProps {
-  selectedJobs: JobResponse[];
-  handleJobOrderChange: (newOrder: JobResponse[]) => void;
+  selectedJobs: JobManagement[];
+  handleJobOrderChange: (newOrder: JobManagement[]) => void;
   handleJobDeselect: (jobId: string) => void;
 }
 

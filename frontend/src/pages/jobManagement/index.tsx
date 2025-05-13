@@ -4,7 +4,7 @@ import { Separator } from '@radix-ui/react-separator';
 import { useSearchParams } from 'react-router-dom';
 
 import {
-  JobResponse,
+  JobManagement,
   useGetJobDetail,
   useGetJobList,
 } from '@/apis/jobManagement';
@@ -17,19 +17,17 @@ import CommandList from './components/CommandList';
 export const ITEMS_PER_PAGE = 6;
 
 const JobManagementPage = () => {
-  const [selectedJob, setSelectedJob] = useState<JobResponse | null>(null);
+  const [selectedJob, setSelectedJob] = useState<JobManagement | null>(null);
   const getJobDetail = useGetJobDetail();
   const [searchParams] = useSearchParams();
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
   const title = searchParams.get('title') || '';
-  const dep = searchParams.get('dep') || '';
   const types = searchParams.get('types') || '';
   const name = searchParams.get('name') || '';
 
   const { data: jobList } = useGetJobList({
     page: currentPage,
     title,
-    dep,
     types,
     name,
     mine: true,
@@ -37,7 +35,7 @@ const JobManagementPage = () => {
 
   const { total, jobs } = jobList;
 
-  const handleJobSelect = async (job: JobResponse) => {
+  const handleJobSelect = async (job: JobManagement) => {
     const jobDetail = await getJobDetail(job.id);
     setSelectedJob(jobDetail);
   };

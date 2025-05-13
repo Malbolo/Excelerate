@@ -2,8 +2,7 @@ import { useState } from 'react';
 
 import { ChevronDown } from 'lucide-react';
 
-import { JobResponse } from '@/apis/jobManagement';
-import { Job } from '@/apis/schedulerMonitoring';
+import { Job } from '@/apis/jobManagement';
 import {
   Collapsible,
   CollapsibleContent,
@@ -17,7 +16,7 @@ import CommandItem from './CommandItem';
 interface JobDisplayProps {
   status?: string;
   title: string;
-  job: JobResponse | Job;
+  job: Job;
 }
 
 const JobDisplay = ({ status, title, job }: JobDisplayProps) => {

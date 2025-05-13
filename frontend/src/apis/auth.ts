@@ -15,9 +15,7 @@ interface LoginResponse {
 }
 
 interface UserInfoResponse {
-  email: string;
   name: string;
-  department: string;
   role: string;
 }
 
@@ -94,8 +92,8 @@ export const useSignupAPI = () => {
     onSuccess: () => {
       toast.success('회원가입이 완료되었습니다.');
     },
-    onError: error => {
-      toast.error(error.message);
+    onError: () => {
+      toast.error('Failed to signup');
     },
   });
 

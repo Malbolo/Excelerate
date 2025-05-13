@@ -1,16 +1,6 @@
-import { DataFrameRow } from '@/types/dataframe';
+export type Status = 'pending' | 'success' | 'failed' | 'running';
 
-export interface TCommand {
-  title: string;
-  status: TCommandStatus;
-}
-
-export type TCommandStatus = 'pending' | 'processing' | 'success' | 'fail';
-
-export interface TMachine extends DataFrameRow {
-  machineId: string;
-  parameter: string;
-  value: number;
-  unit: string;
-  collectedAt: string;
+export interface Command {
+  content: string;
+  order: number;
 }

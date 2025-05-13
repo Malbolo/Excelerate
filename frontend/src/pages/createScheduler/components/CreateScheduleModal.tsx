@@ -8,7 +8,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { JobResponse } from '@/apis/jobManagement';
+import { JobManagement } from '@/apis/jobManagement';
 import { useCreateSchedule } from '@/apis/schedulerManagement';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -52,7 +52,7 @@ export interface CreateScheduleFormData {
   startDate: Date;
   endDate?: Date;
   executionTime: string;
-  selectedJobs: JobResponse[];
+  selectedJobs: JobManagement[];
 }
 
 const formSchema = z
@@ -98,7 +98,7 @@ const formSchema = z
 interface CreateScheduleModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  selectedJobs: JobResponse[];
+  selectedJobs: JobManagement[];
 }
 
 const CreateScheduleModal = ({

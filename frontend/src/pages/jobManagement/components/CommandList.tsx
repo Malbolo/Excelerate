@@ -1,9 +1,8 @@
 import { useState } from 'react';
 
 import { Editor } from '@monaco-editor/react';
-import { useSearchParams } from 'react-router-dom';
 
-import { JobResponse, useDeleteJob } from '@/apis/jobManagement';
+import { JobManagement, useDeleteJob } from '@/apis/jobManagement';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,11 +18,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import useInternalRouter from '@/hooks/useInternalRouter';
 
-const CommandList = ({ selectedJob }: { selectedJob: JobResponse | null }) => {
-  const [searchParams] = useSearchParams();
-  const page = searchParams.get('page') || '1';
-  const keyword = searchParams.get('keyword') || '';
-
+const CommandList = ({
+  selectedJob,
+}: {
+  selectedJob: JobManagement | null;
+}) => {
   const deleteJobMutation = useDeleteJob();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
@@ -36,7 +35,7 @@ const CommandList = ({ selectedJob }: { selectedJob: JobResponse | null }) => {
 
   const handleConfirmDelete = () => {
     if (!selectedJob) return;
-    deleteJobMutation({ id: selectedJob.id, page, keyword });
+    deleteJobMutation(selectedJob.id);
     setIsDeleteDialogOpen(false);
   };
 

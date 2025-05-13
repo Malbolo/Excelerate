@@ -75,7 +75,7 @@ const CommandList: React.FC = () => {
 
     resetLogs();
 
-    const commands = commandList.map(cmd => cmd.title);
+    const commands = commandList.map(({ content }) => content);
     const response = await commandMutation({
       command_list: commands,
       url: sourceDataUrl,
@@ -105,7 +105,7 @@ const CommandList: React.FC = () => {
       setCanSaveJob(true);
     } catch (error) {
       commandList.forEach((_, index) => {
-        updateCommandStatus(index, 'fail');
+        updateCommandStatus(index, 'failed');
       });
     }
   };
@@ -137,14 +137,16 @@ const CommandList: React.FC = () => {
           onDragEnd={handleDragEnd}
         >
           <SortableContext
-            items={commandList.map((cmd, idx) => `${cmd.title}-${idx}`)}
+            items={commandList.map(
+              (command, idx) => `${command.content}-${idx}`,
+            )}
             strategy={verticalListSortingStrategy}
           >
             {commandList.map((command, index) => (
               <Command
-                key={`${command.title}-${index}`}
-                id={`${command.title}-${index}`}
-                command={command.title}
+                key={`${command.content}-${index}`}
+                index={index}
+                command={command.content}
                 status={command.status}
               />
             ))}

@@ -1,14 +1,14 @@
 import { CheckIcon } from 'lucide-react';
 
-import { JobResponse } from '@/apis/jobManagement';
+import { JobManagement } from '@/apis/jobManagement';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
 interface AvailableJobListProps {
   selectedJobIds?: Set<string>;
-  selectedJob?: JobResponse | null;
-  onJobSelect?: (job: JobResponse, checked: boolean) => void;
-  jobs: JobResponse[];
+  selectedJob?: JobManagement | null;
+  onJobSelect?: (job: JobManagement, checked: boolean) => void;
+  jobs: JobManagement[];
 }
 
 const AvailableJobList = ({
@@ -17,7 +17,7 @@ const AvailableJobList = ({
   selectedJob,
   jobs,
 }: AvailableJobListProps) => {
-  const handleJobSelect = async (job: JobResponse, checked: boolean) => {
+  const handleJobSelect = async (job: JobManagement, checked: boolean) => {
     onJobSelect && onJobSelect(job, checked);
   };
 
