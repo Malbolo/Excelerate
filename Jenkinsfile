@@ -13,6 +13,7 @@ pipeline {
           def targets = []
 
           for (path in changedPaths) {
+            echo "path : ${path}"
             if (path.startsWith('frontend/')) {
               targets << 'frontend'
             } else if (path.startsWith('backend/')) {
