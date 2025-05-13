@@ -8,6 +8,7 @@ RUN apt-get update && \
       build-essential \
       python3-dev \
       libreoffice-calc \
+      poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --upgrade pip setuptools

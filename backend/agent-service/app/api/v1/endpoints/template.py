@@ -146,7 +146,7 @@ async def preview_template(
         cmd = [
             soffice,
             "--headless",
-            "--convert-to", "png:calc_png_Export",
+            "--convert-to", "pdf:calc_pdf_Export",
             "--outdir", tmpdir,
             xlsx_path
         ]
@@ -157,19 +157,36 @@ async def preview_template(
             shutil.rmtree(tmpdir, ignore_errors=True)
             raise HTTPException(500, detail=f"LibreOffice 변환 실패: {stderr}")
 
-        # 생성된 PNG 찾아내기
-        patterns = [
-            os.path.join(tmpdir, f"{template_name}.png"),
-            os.path.join(tmpdir, f"{template_name}.*.png"),
-            os.path.join(tmpdir, "*.png"),
-        ]
-        matches = []
-        for pat in patterns:
-            matches.extend(glob.glob(pat))
-        if not matches:
+        # ② PDF→PNG 변환 (ImageMagick 필요)
+        pdf_path = os.path.join(tmpdir, f"{template_name}.pdf")
+        png_base = os.path.join(tmpdir, template_name)
+
+        # 4-2) PDF → PNG (첫 페이지만)
+        try:
+            subprocess.run(
+                [
+                    "pdftoppm",
+                    "-singlefile",    # 단일 PNG 파일
+                    "-png",
+                    "-f", "1",        # 첫 페이지
+                    "-scale-to-x", "800",
+                    "-scale-to-y", "600",
+                    pdf_path,
+                    png_base
+                ],
+                check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
+        except subprocess.CalledProcessError as e:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+            detail = e.stderr.decode(errors="ignore")
+            raise HTTPException(500, detail=f"PDF→PNG 변환 실패: {detail}")
+        
+        # 5) 생성된 PNG 파일 찾기
+        png_files = glob.glob(os.path.join(tmpdir, "*.png"))
+        if not png_files:
             shutil.rmtree(tmpdir, ignore_errors=True)
             raise HTTPException(500, detail="변환된 PNG 파일을 찾을 수 없습니다.")
-        png_path = matches[0]
+        png_path = png_files[0]
 
     # 5) 응답 후 임시 디렉터리 삭제 스케줄
     background_tasks.add_task(shutil.rmtree, tmpdir, True)
