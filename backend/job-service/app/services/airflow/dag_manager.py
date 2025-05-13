@@ -43,7 +43,8 @@ def create_dag(
                 "id": job.id,
                 "name": job.title,
                 "code": job.code,
-                "data_load_url": job.data_load_url
+                "data_load_url": job.data_load_url,
+                "data_load_code": job.data_load_code
             })
 
         # 시작일과 종료일 문자열로 변환
@@ -172,7 +173,8 @@ def update_dag(
                         "id": job.id,
                         "name": job.title,
                         "code": job.code,
-                        "data_load_url": job.data_load_url
+                        "data_load_url": job.data_load_url,
+                        "data_load_code": job.data_load_code
                     })
             finally:
                 db.close()
@@ -192,7 +194,8 @@ def update_dag(
                                     "id": job.id,
                                     "name": job.title,
                                     "code": job.code,
-                                    "data_load_url": job.data_load_url
+                                    "data_load_url": job.data_load_url,
+                                    "data_load_code": job.data_load_code
                                 })
                     finally:
                         db.close()
@@ -329,6 +332,7 @@ import requests
 from tempfile import mkdtemp
 import pandas as pd
 import os
+import re
 
 from utils.minio_client import MinioClient
 from utils.code_util import insert_df_to_excel
@@ -367,6 +371,15 @@ dag = DAG(
         skip_id   = f"skip_email_{job['id']}"
         email_id = f"email_job_{job['id']}"
 
+        # data_load_code 체크
+        if job.get("data_load_code"):
+            data_load_code = job['data_load_code'].rstrip()
+            indented_data_code = "\n".join("        " + line for line in data_load_code.split("\n"))
+            has_code = True
+        else:
+            indented_data_code = ""
+            has_code = False
+
         # 코드에 들여쓰기 적용
         job_code = job['code'].rstrip()
         # 각 줄 앞에 4칸 들여쓰기 추가
@@ -376,8 +389,17 @@ dag = DAG(
         dag_code += f"""
 def {function_name}(**kwargs):
     # Job {job['id']} - {job['name']}
+
+    # 0) url 날짜 변환
+    if {has_code}:
+{indented_data_code}
+        # 기존 URL의 start_date=값만 교체
+        url = re.sub(r"(start_date=)[^&]+", "\\\\1" + startdate, "{job['data_load_url']}")
+    else:
+        url = "{job['data_load_url']}"
+
     # 1) 데이터 로드
-    resp = requests.get("{job['data_load_url']}")
+    resp = requests.get(url)
     resp.raise_for_status()
     raw = resp.json()
     df = pd.DataFrame(raw["data"])
