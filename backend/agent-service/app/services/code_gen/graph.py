@@ -328,8 +328,11 @@ class CodeGenerator:
                 start_col=params["start_col"]
             )
             # url = self.minio_client.upload_result(user_id="test", template_name=params["output_name"], local_path=out_path)
-            uid        = uuid4().hex
-            file_name  = f"{params['template_name']}_{uid}.xlsx"
+            if params['output_name']:
+                output_name = params['output_name']
+            else:
+                output_name = f"{params['template_name']}_result"
+            file_name  = f"{output_name}.xlsx"
             object_key = f"outputs/{file_name}"
             self.minio_client.upload_excel(object_key, out_path)
             signer = TimestampSigner(settings.TOKEN_SECRET_KEY)
