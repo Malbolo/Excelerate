@@ -4,10 +4,13 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    build-essential \
-    python3-dev && \
-    rm -rf /var/lib/apt/lists/*
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      build-essential \
+      python3-dev \
+      libreoffice-core \
+      libreoffice-calc \
+      libreoffice-headless \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --upgrade pip setuptools
 
