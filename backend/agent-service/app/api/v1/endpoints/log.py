@@ -142,11 +142,12 @@ async def stream_logs(request: Request, stream_id: str):
                 break
 
             entry = await queue.get()
-            data = entry.model_dump_json()
+            data_type = entry["type"]
+            data_content = entry["content"]
 
             # 한 줄씩 yield → ASGI 레벨에서 바로 전송 시도
-            yield "event: log\n"
-            yield f"data: {data}\n\n"
+            yield f"event: {data_type}\n"
+            yield f"data: {data_content}\n\n"
 
     headers = {
         "Cache-Control":       "no-cache",

@@ -125,7 +125,7 @@ class CodeGenerator:
         # stream_id로 쏘기
         if llm_entry:
             q = get_log_queue(state["stream_id"])
-            q.put_nowait(llm_entry)
+            q.put_nowait({"type": "log", "content": llm_entry.model_dump_json()})
 
         # State 업데이트
         return {
@@ -214,7 +214,7 @@ class CodeGenerator:
         # stream_id로 쏘기
         if llm_entry:
             q = get_log_queue(state["stream_id"])
-            q.put_nowait(llm_entry)
+            q.put_nowait({"type": "log", "content": llm_entry.model_dump_json()})
 
         # 응답 메시지를 포함하는 새로운 state를 반환합니다.
         return {'messages': [response], 'python_code': response.content, 'logs': new_logs}
@@ -271,6 +271,11 @@ class CodeGenerator:
         codes = state.get("python_codes_list", []) + [code_str]
 
         merged_code = merge_code_snippets(codes)
+
+        q = get_log_queue(state["stream_id"])
+        q.put_nowait({"type": "data", "content": dfs})
+        q.put_nowait({"type": "code", "content": merged_code})
+
 
         # 4) 정상 리턴
         return {
@@ -339,7 +344,8 @@ class CodeGenerator:
         # stream_id로 쏘기
         if llm_entry:
             q = get_log_queue(state["stream_id"])
-            q.put_nowait(llm_entry)
+            q.put_nowait({"type": "log", "content": llm_entry.model_dump_json()})
+            q.put_nowait({"type": "code", "content": merged_code})
 
         return {"download_token": token, "error_msg": None, "logs": new_logs, "python_code":merged_code, "python_codes_list": codes}
 

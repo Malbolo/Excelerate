@@ -188,7 +188,7 @@ class FileAPIClient:
 
         entity_logs: list[LogDetail] = self.mlogger.get_logs()
         # 로그 스트리밍
-        q.put_nowait(entity_logs[-1])
+        q.put_nowait({"type": "log", "content": entity_logs[-1].model_dump_json()})
 
         if entities.start_date is None:
             raise HTTPException(status_code=400, detail=f"Start date is required")
@@ -210,7 +210,8 @@ class FileAPIClient:
 
             entity_logs: list[LogDetail] = self.mlogger.get_logs()
             # 로그 스트리밍
-            q.put_nowait(entity_logs[-1])
+            q.put_nowait({"type": "code", "content": python_code})
+            q.put_nowait({"type": "log", "content": entity_logs[-1].model_dump_json()})
 
         # 2) 검증
         self._validate(entities)
@@ -224,6 +225,9 @@ class FileAPIClient:
         except Exception as e:
             logger.warning(f"API 호출 실패: {e}")
             raise HTTPException(status_code=404, detail=f"Data fetch failed: {e}")
+
+        dataframe = pd.DataFrame(raw["data"])
+        q.put_nowait({"type": "data", "content": dataframe.to_dict(orient="records")})
 
         # 4) DataFrame 반환
         return url, pd.DataFrame(raw["data"]), entity_logs, python_code, entities
