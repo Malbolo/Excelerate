@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: k12s101ss/job-service
+  repository: k12s101ss/schedule-service
   pullPolicy: Always
   tag: "latest"
 
