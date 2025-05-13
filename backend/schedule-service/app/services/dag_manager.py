@@ -6,7 +6,7 @@ from datetime import datetime
 
 from app.core.config import settings
 from app.core.log_config import logger
-from app.db.database import get_db
+# from app.db.database import get_db
 from app.services.dag_query import get_dag_detail
 from app.services.execution import toggle_dag_pause
 from app.services.metadata import save_dag_metadata, get_dag_metadata
@@ -40,12 +40,14 @@ def create_dag(
 
         # Job Service API를 통해 job 정보 가져오기
         try:
+            int_job_ids = [int(job_id) for job_id in job_ids]
+
             # auth.py의 함수 사용하여 API 호출
             response = auth.call_service_api(
                 service_url=job_service_url,
                 method="POST",
                 endpoint="/api/jobs/for-schedule/commands",
-                data={"job_ids": job_ids},
+                data={"job_ids": int_job_ids},
                 user_id=user_id
             )
 

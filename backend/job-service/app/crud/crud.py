@@ -1,3 +1,5 @@
+from typing import List
+
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from datetime import datetime
@@ -94,3 +96,6 @@ def get_job_by_id(db: Session, job_id: str):
     except Exception as e:
         print(f"Error fetching job from DB: {str(e)}")
         return None
+
+def get_jobs_by_ids(job_ids: List[int], db: Session):
+    return db.query(models.Job).filter(models.Job.id.in_(job_ids)).all()

@@ -14,10 +14,10 @@ import shutil
 import subprocess
 import glob
 import platform
-
-# Windows 테스트 용용
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.page import PageMargins
+from PIL import Image, ImageChops
 
 from fastapi.concurrency import run_in_threadpool
 
@@ -143,10 +143,21 @@ async def preview_template(
         if not soffice:
             shutil.rmtree(tmpdir, ignore_errors=True)
             raise HTTPException(500, detail="LibreOffice가 설치되어 있지 않습니다.")
+
+        ws.print_area = cell_range # 범위를 출력 범위로 설정
+        ws.page_setup.paperSize = ws.PAPERSIZE_A3 # 더 큰 용지 사용
+        ws.page_setup.scale = 75 # 75% 축소해서 다 담기게끔 설정
+        ws.page_setup.fitToWidth = 1 # 가로 폭에 맞추기
+        ws.page_margins = PageMargins(left=0.1, right=0.1, top=0.1, bottom=0.1) # PDF화의 여백 좁게 설정
+
+        ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE # 가로방향 출력
+
+        wb.save(xlsx_path) # 변경 사항 저장
+
         cmd = [
             soffice,
             "--headless",
-            "--convert-to", "png:calc_png_Export",
+            "--convert-to", "pdf:calc_pdf_Export",
             "--outdir", tmpdir,
             xlsx_path
         ]
@@ -157,19 +168,51 @@ async def preview_template(
             shutil.rmtree(tmpdir, ignore_errors=True)
             raise HTTPException(500, detail=f"LibreOffice 변환 실패: {stderr}")
 
-        # 생성된 PNG 찾아내기
-        patterns = [
-            os.path.join(tmpdir, f"{template_name}.png"),
-            os.path.join(tmpdir, f"{template_name}.*.png"),
-            os.path.join(tmpdir, "*.png"),
-        ]
-        matches = []
-        for pat in patterns:
-            matches.extend(glob.glob(pat))
-        if not matches:
+        # ② PDF→PNG 변환 (poppler-uilts 사용용)
+        pdf_path = os.path.join(tmpdir, f"{template_name}.pdf")
+        png_base = os.path.join(tmpdir, template_name)
+
+        # 4-2) PDF → PNG (첫 페이지만)
+        try:
+            subprocess.run(
+                [
+                    "pdftocairo",
+                    "-png",
+                    "-singlefile",       # 단일 파일
+                    "-cropbox",          # print area(cropbox) 기준으로 자름
+                    "-scale-to-x", "2048",  # 가로 2048px 에 맞춰 스케일
+                    "-f", "1", "-l", "1", # 1페이지만
+                    pdf_path,
+                    png_base
+                ],
+                check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
+        except subprocess.CalledProcessError as e:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+            detail = e.stderr.decode(errors="ignore")
+            raise HTTPException(500, detail=f"PDF→PNG 변환 실패: {detail}")
+        
+        # 5) 생성된 PNG 파일 찾기
+        png_files = glob.glob(os.path.join(tmpdir, "*.png"))
+        if not png_files:
             shutil.rmtree(tmpdir, ignore_errors=True)
             raise HTTPException(500, detail="변환된 PNG 파일을 찾을 수 없습니다.")
-        png_path = matches[0]
+        png_path = png_files[0]
+
+    try:
+        img = Image.open(png_path)
+        # 페이지 모서리 색(대개 흰색 또는 very light gray) 가져오기
+        bg = Image.new(img.mode, img.size, img.getpixel((0, 0)))
+        # 실제 내용과 배경의 차이 감지
+        diff = ImageChops.difference(img, bg)
+        # 차이가 있는 영역의 바운딩 박스
+        bbox = diff.getbbox()
+        if bbox:
+            cropped = img.crop(bbox)
+            cropped.save(png_path)   # 덮어쓰기
+    except Exception as e:
+        # 크롭 실패해도 그냥 원본 내보내도록 무시
+        print("자동 크롭 실패:", e)
 
     # 5) 응답 후 임시 디렉터리 삭제 스케줄
     background_tasks.add_task(shutil.rmtree, tmpdir, True)

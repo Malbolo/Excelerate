@@ -1,4 +1,7 @@
+from __future__ import annotations
 import math
+from typing import List
+
 from sqlalchemy import or_
 from sqlalchemy.orm.exc import NoResultFound
 from fastapi import HTTPException
@@ -14,6 +17,8 @@ from app.schemas.job.job_update_schema import JobUpdateRequest
 from app.core import auth
 from app.schemas.job.job_create_schema import JobCreateResponseData, JobCreateResponse
 from app.schemas.job.job_list_schema import JobListResponse
+from app.schemas.job.job_for_schedule_schema import JobForScheduleWithCommandsResponse, Command, \
+    JobListForScheduleWithCommands, JobForScheduleRequest, JobForScheduleResponse, JobListForSchedule
 
 
 async def create_job(request: JobCreateRequest, user_id: int, db: Session) -> JSONResponse:
@@ -112,3 +117,49 @@ def get_jobs(db: Session, request: JobDetailRequest, user_id: int):
     )
 
     return JSONResponse(content=response.dict())
+
+def get_jobs_for_creating_schedule(request: JobForScheduleRequest, db: Session) -> JSONResponse:
+    jobs = crud.get_jobs_by_ids(request.job_ids, db)
+
+    if not jobs:
+        raise HTTPException(status_code=404, detail="Jobs not found")
+    
+    job_list = [
+        JobListForSchedule(
+            id=str(job.id),
+            title=job.title,
+            description=job.description,
+            code=job.code
+        ) for job in jobs
+    ]
+
+    response = JobForScheduleResponse(
+        jobs=job_list
+    )
+
+    return JSONResponse(content=response.dict())
+
+def get_jobs_with_commands_for_creating_schedule(request: JobForScheduleRequest, db: Session) -> JSONResponse:
+    jobs = crud.get_jobs_by_ids(request.job_ids, db)
+
+    if not jobs:
+        raise HTTPException(status_code=404, detail="Jobs not found")
+
+    job_list = [
+        JobListForScheduleWithCommands(
+            id=str(job.id),
+            title=job.title,
+            description=job.description,
+            code=job.code,
+            commands=[
+                Command(content=cmd.content, order=cmd.order) for cmd in job.commands
+            ]
+        ) for job in jobs
+    ]
+
+    response = JobForScheduleWithCommandsResponse(
+        jobs=job_list
+    )
+
+    return JSONResponse(content=response.dict())
+

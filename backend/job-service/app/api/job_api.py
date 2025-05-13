@@ -8,6 +8,7 @@ from app.schemas.job.job_create_schema import JobCreateRequest
 from app.schemas.job.job_detail_schema import JobDetailRequest
 from app.schemas.job.job_update_schema import JobUpdateRequest
 from app.services import job_service
+from app.schemas.job.job_for_schedule_schema import JobForScheduleRequest
 
 router = APIRouter(
     prefix="/api/jobs",
@@ -47,3 +48,11 @@ def delete_job(
         user_id: int = Depends(auth.get_user_id_from_header)
 ):
     return job_service.delete_job(db, job_id, user_id)
+
+@router.post("/for-schedule")
+def get_jobs_for_creating_schedule(request: JobForScheduleRequest, db: Session = Depends(get_db)) -> JSONResponse:
+    return job_service.get_jobs_for_creating_schedule(request, db)
+
+@router.post("/for-schedule/commands")
+def get_jobs__with_commands_for_creating_schedule(request: JobForScheduleRequest, db: Session = Depends(get_db)) -> JSONResponse:
+    return job_service.get_jobs_with_commands_for_creating_schedule(request, db)

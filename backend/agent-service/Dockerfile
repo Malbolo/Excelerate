@@ -8,6 +8,8 @@ RUN apt-get update && \
       build-essential \
       python3-dev \
       libreoffice-calc \
+      poppler-utils \
+      fonts-noto-cjk fonts-noto-cjk-extra fonts-nanum \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --upgrade pip setuptools
