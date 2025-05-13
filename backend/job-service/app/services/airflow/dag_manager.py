@@ -326,7 +326,6 @@ from airflow.operators.dummy import DummyOperator
 from datetime import datetime, timedelta
 
 import requests
-from io import BytesIO
 from tempfile import mkdtemp
 import pandas as pd
 import os
@@ -380,7 +379,8 @@ def {function_name}(**kwargs):
     # 1) 데이터 로드
     resp = requests.get("{job['data_load_url']}")
     resp.raise_for_status()
-    df = pd.read_json(BytesIO(resp.content), orient="records")
+    raw = resp.json()
+    df = pd.DataFrame(raw["data"])
 
     out = None
 
