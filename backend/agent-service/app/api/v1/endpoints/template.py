@@ -143,6 +143,10 @@ async def preview_template(
         if not soffice:
             shutil.rmtree(tmpdir, ignore_errors=True)
             raise HTTPException(500, detail="LibreOffice가 설치되어 있지 않습니다.")
+
+        ws.print_area = cell_range # 범위를 출력 범위로 설정
+        wb.save(xlsx_path) # 변경 사항 저장
+
         cmd = [
             soffice,
             "--headless",
@@ -169,8 +173,7 @@ async def preview_template(
                     "-singlefile",    # 단일 PNG 파일
                     "-png",
                     "-f", "1",        # 첫 페이지
-                    "-scale-to-x", "800",
-                    "-scale-to-y", "600",
+                    "-scale-to-x", "1024",
                     pdf_path,
                     png_base
                 ],
