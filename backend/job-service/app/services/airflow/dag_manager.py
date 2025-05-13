@@ -380,7 +380,8 @@ def {function_name}(**kwargs):
     # 1) 데이터 로드
     resp = requests.get("{job['data_load_url']}")
     resp.raise_for_status()
-    df = pd.read_json(BytesIO(resp.content), orient="records")
+    raw = resp.json()
+    df = pd.DataFrame(raw["data"])
 
     out = None
 
