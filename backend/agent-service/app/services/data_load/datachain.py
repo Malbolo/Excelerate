@@ -164,7 +164,7 @@ class FileAPIClient:
             query += f"&product_code={q.product_code}"
         return self.base_url + path + query
 
-    def run(self, user_input: str, stream_id: str) -> tuple[str, pd.DataFrame, list[LogDetail]]:
+    def run(self, user_input: str, stream_id: str) -> tuple[str, pd.DataFrame, list[LogDetail], FileAPIDetail]:
         self.mlogger.set_name("LLM Call: Extract DataCall Params")
         self.mlogger.reset()
 
@@ -226,4 +226,4 @@ class FileAPIClient:
             raise HTTPException(status_code=404, detail=f"Data fetch failed: {e}")
 
         # 4) DataFrame 반환
-        return url, pd.DataFrame(raw["data"]), entity_logs, python_code
+        return url, pd.DataFrame(raw["data"]), entity_logs, python_code, entities
