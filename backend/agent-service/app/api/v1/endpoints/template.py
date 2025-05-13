@@ -17,6 +17,7 @@ import platform
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.page import PageMargins
+from PIL import Image, ImageChops
 
 from fastapi.concurrency import run_in_threadpool
 
@@ -116,10 +117,10 @@ async def preview_template(
     # 3) 시트 범위 계산
     wb = load_workbook(xlsx_path, data_only=True)
     ws = wb.active
-    max_row = min(ws.max_row or 1, 30)
+    max_row = min(ws.max_row or 1, 40)
     max_col = min(ws.max_column or 1, 20)
     end_col = get_column_letter(max_col)   # 20 → "T"
-    cell_range = f"A1:{end_col}{max_row}"  # "A1:T30"
+    cell_range = f"A1:{end_col}{max_row}"  # "A1:T40"
 
     # 4) 플랫폼별 이미지 변환
     system = platform.system()
@@ -145,7 +146,7 @@ async def preview_template(
 
         ws.print_area = cell_range # 범위를 출력 범위로 설정
         ws.page_setup.paperSize = ws.PAPERSIZE_A3 # 더 큰 용지 사용
-        ws.page_setup.scale = 50 # 50% 축소해서 다 담기게끔 설정
+        ws.page_setup.scale = 75 # 75% 축소해서 다 담기게끔 설정
         ws.page_setup.fitToWidth = 1 # 가로 폭에 맞추기
         ws.page_margins = PageMargins(left=0.1, right=0.1, top=0.1, bottom=0.1) # PDF화의 여백 좁게 설정
 
@@ -197,6 +198,21 @@ async def preview_template(
             shutil.rmtree(tmpdir, ignore_errors=True)
             raise HTTPException(500, detail="변환된 PNG 파일을 찾을 수 없습니다.")
         png_path = png_files[0]
+
+    try:
+        img = Image.open(png_path)
+        # 페이지 모서리 색(대개 흰색 또는 very light gray) 가져오기
+        bg = Image.new(img.mode, img.size, img.getpixel((0, 0)))
+        # 실제 내용과 배경의 차이 감지
+        diff = ImageChops.difference(img, bg)
+        # 차이가 있는 영역의 바운딩 박스
+        bbox = diff.getbbox()
+        if bbox:
+            cropped = img.crop(bbox)
+            cropped.save(png_path)   # 덮어쓰기
+    except Exception as e:
+        # 크롭 실패해도 그냥 원본 내보내도록 무시
+        print("자동 크롭 실패:", e)
 
     # 5) 응답 후 임시 디렉터리 삭제 스케줄
     background_tasks.add_task(shutil.rmtree, tmpdir, True)
