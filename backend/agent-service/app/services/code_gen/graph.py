@@ -302,7 +302,7 @@ class CodeGenerator:
         - 커맨드에서 템플릿 이름 추출
         - MinIO에서 템플릿 다운로드
         - 마지막 DataFrame을 템플릿에 삽입
-        - 결과 엑셀을 MinIO에 업로드하고 presigned URL 반환
+        - 결과 엑셀을 MinIO에 업로드하고 download_token 반환
         """
         self.logger.set_name("LLM Call: Manipulate Excel")
         self.logger.reset()
@@ -327,8 +327,7 @@ class CodeGenerator:
                 start_row=params["start_row"],
                 start_col=params["start_col"]
             )
-            # url = self.minio_client.upload_result(user_id="test", template_name=params["output_name"], local_path=out_path)
-            if params['output_name']:
+            if params['output_name']: # 사용자가 output name을 딱히 지정 안할 수 있음.
                 output_name = params['output_name']
             else:
                 output_name = f"{params['template_name']}_result"
