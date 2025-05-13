@@ -179,11 +179,12 @@ async def preview_template(
         try:
             subprocess.run(
                 [
-                    "pdftoppm",
-                    "-singlefile",    # 단일 PNG 파일
+                    "pdftocairo",
                     "-png",
-                    "-f", "1",        # 첫 페이지
-                    "-scale-to-x", "2048",
+                    "-singlefile",       # 단일 파일
+                    "-cropbox",          # print area(cropbox) 기준으로 자름
+                    "-scale-to-x", "2048",  # 가로 2048px 에 맞춰 스케일
+                    "-f", "1", "-l", "1", # 1페이지만
                     pdf_path,
                     png_base
                 ],
