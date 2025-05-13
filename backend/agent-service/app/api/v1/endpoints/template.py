@@ -14,10 +14,9 @@ import shutil
 import subprocess
 import glob
 import platform
-
-# Windows 테스트 용용
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.page import PageMargins
 
 from fastapi.concurrency import run_in_threadpool
 
@@ -117,10 +116,10 @@ async def preview_template(
     # 3) 시트 범위 계산
     wb = load_workbook(xlsx_path, data_only=True)
     ws = wb.active
-    max_row = min(ws.max_row or 1, 40)
+    max_row = min(ws.max_row or 1, 30)
     max_col = min(ws.max_column or 1, 20)
     end_col = get_column_letter(max_col)   # 20 → "T"
-    cell_range = f"A1:{end_col}{max_row}"  # "A1:T40"
+    cell_range = f"A1:{end_col}{max_row}"  # "A1:T30"
 
     # 4) 플랫폼별 이미지 변환
     system = platform.system()
@@ -145,6 +144,19 @@ async def preview_template(
             raise HTTPException(500, detail="LibreOffice가 설치되어 있지 않습니다.")
 
         ws.print_area = cell_range # 범위를 출력 범위로 설정
+        
+        ws.page_setup.fitToPage = True
+        ws.page_setup.fitToWidth = 1
+        # ws.page_setup.fitToHeight = 1 # 세로는 한 페이지에 담기는 대로
+
+        # ★ 여백을 좁게 설정
+        ws.page_margins = PageMargins(
+            left=0.2,    # 왼쪽 여백 0.2 인치
+            right=0.2,   # 오른쪽 여백 0.2 인치
+            top=0.2,     # 위쪽 여백 0.2 인치
+            bottom=0.2,  # 아래쪽 여백 0.2 인치
+        )
+
         wb.save(xlsx_path) # 변경 사항 저장
 
         cmd = [
