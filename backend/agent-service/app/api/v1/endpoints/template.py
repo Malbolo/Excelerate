@@ -161,6 +161,7 @@ async def preview_template(
         patterns = [
             os.path.join(tmpdir, f"{template_name}.png"),
             os.path.join(tmpdir, f"{template_name}.*.png"),
+            os.path.join(tmpdir, "*.png"),
         ]
         matches = []
         for pat in patterns:
