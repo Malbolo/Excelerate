@@ -31,7 +31,7 @@ async def command_code(
         else:
             stream_id = "check" # 확인용 
 
-        url, result, logs, code = await run_in_threadpool(
+        url, result, logs, code, params = await run_in_threadpool(
             data_loader.run,
             request.command,
             stream_id
@@ -66,7 +66,9 @@ async def command_code(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    return JSONResponse(status_code=200, content={"result" : "success", "data" : {"url": url, "dataframe" : result.to_dict(orient="records"), "log_id": log_id, "code": code}})
+    return JSONResponse(status_code=200, content={
+        "result" : "success",
+        "data" : {"url": url, "dataframe" : result.to_dict(orient="records"), "log_id": log_id, "code": code, "params": params.dict()}})
 
 
 @router.post("/make")
