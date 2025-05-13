@@ -19,8 +19,6 @@ class Job(Base):
     data_load_url = Column(String(255), nullable=False)
     data_load_code = Column(LONGTEXT)
     code = Column(LONGTEXT, nullable=False)
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
