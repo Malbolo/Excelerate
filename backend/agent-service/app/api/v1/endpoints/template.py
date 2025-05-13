@@ -153,6 +153,8 @@ async def preview_template(
             bottom=0.01,  # 아래쪽 여백 0.01 인치
         )
 
+        ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE # 가로방향 출력
+
         wb.save(xlsx_path) # 변경 사항 저장
 
         cmd = [
