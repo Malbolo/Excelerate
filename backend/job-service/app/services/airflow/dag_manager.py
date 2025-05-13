@@ -326,7 +326,6 @@ from airflow.operators.dummy import DummyOperator
 from datetime import datetime, timedelta
 
 import requests
-from io import BytesIO
 from tempfile import mkdtemp
 import pandas as pd
 import os
