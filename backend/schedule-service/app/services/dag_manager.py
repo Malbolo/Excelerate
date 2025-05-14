@@ -366,6 +366,7 @@ from airflow.operators.python import PythonOperator
 from airflow.operators.email import EmailOperator
 from airflow.operators.python import BranchPythonOperator
 from airflow.operators.dummy import DummyOperator
+from airflow.utils.trigger_rule import TriggerRule
 
 from datetime import datetime, timedelta
 
@@ -514,7 +515,7 @@ task_{idx}_cleanup = PythonOperator(
     task_id='cleanup_job_{job['id']}',
     python_callable=cleanup_file_{job['id']},
     # email 또는 skip 이후에 무조건 실행되도록
-    trigger_rule='all_success',
+    trigger_rule=TriggerRule.NONE_FAILED,
     dag=dag,
 )
 
