@@ -99,17 +99,16 @@ def build_monthly_dag_calendar(dags: List[Dict[str, Any]], year: int, month: int
                     # 오늘의 경우, 현재 시간까지의 실행 이력 처리
                     if day_start <= now <= day_end and day_runs:
                         # 오늘 이미 실행된 것이 있다면 처리
-                        all_days[idx]["total"] += 1
+                        # all_days[idx]["total"] += 1  # 이 부분 제거
 
                         success_count = sum(1 for run in day_runs if run.get("state", "").lower() == "success")
                         failed_count = sum(1 for run in day_runs if run.get("state", "").lower() in ["failed", "error"])
+                        pending_count = len(day_runs) - success_count - failed_count
 
                         all_days[idx]["success"] += success_count
                         all_days[idx]["failed"] += failed_count
-
-                        # 실행 중인 작업이 있는 경우
-                        if len(day_runs) > success_count + failed_count:
-                            all_days[idx]["pending"] += 1
+                        if pending_count > 0:
+                            all_days[idx]["pending"] += pending_count
 
                     # 현재 시간 이후 또는 미래 날짜의 크론 표현식 평가
                     try:
@@ -124,20 +123,24 @@ def build_monthly_dag_calendar(dags: List[Dict[str, Any]], year: int, month: int
                         if execution_time <= day_end:
                             # 이미 처리된 실행이 없는 경우에만 추가
                             if not day_runs:
-                                all_days[idx]["total"] += 1
+                                # all_days[idx]["total"] += 1  # 이 부분 제거
                                 all_days[idx]["pending"] += 1
                     except Exception as e:
                         logger.debug(f"Error evaluating cron for {dag_id} on {date_str}: {str(e)}")
                 else:
                     # 과거 날짜는 실제 실행 이력만 고려
                     if day_runs:
-                        all_days[idx]["total"] += 1
+                        # all_days[idx]["total"] += 1  # 이 부분 제거
 
                         success_count = sum(1 for run in day_runs if run.get("state", "").lower() == "success")
                         failed_count = sum(1 for run in day_runs if run.get("state", "").lower() in ["failed", "error"])
 
                         all_days[idx]["success"] += success_count
                         all_days[idx]["failed"] += failed_count
+
+    # 모든 DAG 처리 후 각 날짜의 total 계산
+    for idx, day_data in enumerate(all_days):
+        all_days[idx]["total"] = day_data["success"] + day_data["failed"] + day_data["pending"]
 
     return all_days
 
