@@ -8,6 +8,8 @@ class JobListForSchedule(BaseModel):
     id: str
     title: str
     description: str
+    data_load_code: str
+    data_load_url: str
     code: str
 
 class JobForScheduleResponse(BaseModel):
@@ -21,6 +23,8 @@ class JobListForScheduleWithCommands(BaseModel):
     id: str
     title: str
     description: str
+    data_load_code: str
+    data_load_url: str
     code: str
     commands: List[Command]
 
