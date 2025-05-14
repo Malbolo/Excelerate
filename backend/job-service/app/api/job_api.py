@@ -16,8 +16,8 @@ router = APIRouter(
 )
 
 @router.post("")
-async def create_job(job_request: JobCreateRequest, db: Session = Depends(get_db), user_id: int = Depends(auth.get_user_id_from_header)) -> JSONResponse:
-    return await job_service.create_job(job_request, user_id, db)
+def create_job(job_request: JobCreateRequest, db: Session = Depends(get_db), user_id: int = Depends(auth.get_user_id_from_header)) -> JSONResponse:
+    return job_service.create_job(job_request, user_id, db)
 
 @router.get("")
 def get_jobs(
@@ -28,17 +28,17 @@ def get_jobs(
     return job_service.get_jobs(db, request, user_id)
 
 @router.get("/{job_id}")
-async def get_job_detail(job_id: str, db: Session = Depends(get_db)) -> JSONResponse:
-    return await job_service.get_job_detail(job_id, db)
+def get_job_detail(job_id: str, db: Session = Depends(get_db)) -> JSONResponse:
+    return job_service.get_job_detail(job_id, db)
 
 @router.put("/{job_id}")
-async def update_job(
+def update_job(
         job_id: int,
         job_request: JobUpdateRequest,
         db: Session = Depends(get_db),
         user_id: int = Depends(auth.get_user_id_from_header)
 ) -> JSONResponse:
-    return await job_service.update_job(db, job_id, job_request, user_id)
+    return job_service.update_job(db, job_id, job_request, user_id)
 
 
 @router.delete("/{job_id}")
