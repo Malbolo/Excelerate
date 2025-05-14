@@ -14,6 +14,7 @@ export interface SaveJobRequest {
   data_load_url: string;
   commands: string[];
   code: string;
+  data_load_code?: string;
 }
 
 interface SendCommandListResponse {
@@ -23,9 +24,15 @@ interface SendCommandListResponse {
   log_id: string;
 }
 
+interface GetSourceDataRequest {
+  command: string;
+  stream_id?: string;
+}
+
 interface GetSourceDataResponse {
   url: string;
   dataframe: DataFrame;
+  data_load_code?: string;
 }
 
 interface SendCommandListRequest {
@@ -89,10 +96,10 @@ const sendCommandList = async ({
   return data;
 };
 
-const getSourceData = async (command: string) => {
+const getSourceData = async ({ command, stream_id }: GetSourceDataRequest) => {
   const { data, error, success } = await api<GetSourceDataResponse>(
     '/api/agent/data/load',
-    { method: 'POST', body: JSON.stringify({ command }) },
+    { method: 'POST', body: JSON.stringify({ command, stream_id }) },
   );
 
   if (!success) {
@@ -151,7 +158,7 @@ export const useSendCommandList = () => {
 
 export const useGetSourceData = () => {
   const { mutateAsync, isPending } = useMutation({
-    mutationFn: (command: string) => getSourceData(command),
+    mutationFn: (request: GetSourceDataRequest) => getSourceData(request),
     onError: () => {
       toast.error('Failed to get source data');
     },
