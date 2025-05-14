@@ -4,7 +4,6 @@ from app.utils.docs import CodeGenDocs
 from app.models.query import CommandRequest
 from app.services.code_gen.graph import CodeGenerator
 from app.utils.depend import get_code_gen
-from app.utils.api_utils import make_initial_query
 from fastapi.encoders import jsonable_encoder
 from app.core import auth
 
@@ -14,8 +13,8 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from app.utils.redis_client import generate_log_id, save_logs_to_redis, save_states_to_redis, get_states_from_redis
+from app.utils.api_utils import make_initial_query, get_log_queue, strip_excel_block
 from uuid import uuid4
-from app.utils.api_utils import get_log_queue
 
 router = APIRouter()
 docs = CodeGenDocs()
@@ -40,8 +39,10 @@ async def command_code(
         q = get_log_queue(stream_id)
         q.put_nowait({"type": "notice", "content": "CodeGenerator를 호출합니다."})
 
+        # 그래프 호출을 위한 기본 쿼리 생성
         query = make_initial_query(request.url, request.command_list, stream_id)
 
+        # user_id와 user_name 인증정보로 부터 가져오기. 없으면 "guest"
         try:
             user_id = auth.get_user_id_from_header(req) or "guest"
             profile = auth.get_user_info(user_id)
@@ -53,6 +54,7 @@ async def command_code(
             user_id = "guest"
             user_name = "guest"
 
+        # 세션을 불러와 관리하는 기능 - 필요하면 사용. 다만 커맨드를 edit할 경우 애매해짐
         if request.uid:
             uid = request.uid
             session_id = f"sessions:{user_id}:{uid}"
@@ -61,6 +63,13 @@ async def command_code(
         else:
             uid = uuid4().hex
         
+        # Edit 모드여서 기존 코드가 있으면 excel 조작부를 제거하고 반영
+        if request.original_code:
+            # print(request.original_code)
+            # print(strip_excel_block(request.original_code))
+            query['original_code'] = strip_excel_block(request.original_code)
+
+        # graph 별도의 쓰레드에서 실행행
         answer = await run_in_threadpool(graph.invoke, query)
 
         # answer["dataframe"] 가 이제 List[pd.DataFrame] 라면…

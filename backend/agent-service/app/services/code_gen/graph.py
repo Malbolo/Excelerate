@@ -14,7 +14,7 @@ from langgraph.graph import START, END
 
 from app.utils.memory_logger import MemoryLogger
 from app.services.code_gen.graph_util import (
-    extract_error_info, make_code_template, make_classify_template,
+    extract_error_info, make_code_template, make_code_extension_template, make_classify_template,
     make_extract_excel_params_template, insert_df_to_excel, make_excel_code_snippet
 )
 from app.utils.minio_client import MinioClient
@@ -43,6 +43,7 @@ class AgentState(MessagesState):
     logs: List[LogDetail]
     download_token: str
     stream_id: str
+    original_code: str | None
 
 class CodeGenerator:
     def __init__(self):
@@ -196,10 +197,6 @@ class CodeGenerator:
         input = state["current_unit"]["cmd"]
         self.q.put_nowait({"type": "notice", "content": f"{input}에 대한 코드를 생성 중입니다."})
 
-        code_gen_prompt = make_code_template()
-
-        schain = code_gen_prompt | self.sllm
-        
         # LLM과 도구를 사용하여 메시지에 대한 응답을 생성합니다.
         # 1) LLM 호출 전 input 준비
         df_preview = df.head(5).to_string(
@@ -207,7 +204,15 @@ class CodeGenerator:
             show_dimensions=False # 맨 마지막 shape 요약 생략
         )
 
-        llm_input = {"dftypes": df.dtypes.to_string(), "df": df_preview, "input": input}
+        if state['original_code']:
+            self.q.put_nowait({"type": "notice", "content": "기존 코드를 감지해 반영합니다."})
+            code_gen_prompt = make_code_extension_template()
+            schain = code_gen_prompt | self.sllm
+            llm_input = {"original_code":state['original_code'], "dftypes": df.dtypes.to_string(), "df": df_preview, "input": input}
+        else:
+            code_gen_prompt = make_code_template()
+            schain = code_gen_prompt | self.sllm
+            llm_input = {"dftypes": df.dtypes.to_string(), "df": df_preview, "input": input}
 
         # 2) LLM 호출
         response = schain.invoke(llm_input)

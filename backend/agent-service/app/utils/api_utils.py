@@ -3,7 +3,17 @@ import pandas as pd
 import requests
 from typing import List, Dict, Any
 
+import re
 import asyncio
+
+
+def strip_excel_block(code: str) -> str:
+    """
+    "# Excel 작업 시작"부터 "# Excel 작업 끝"까지
+    해당 블록 전체를 제거합니다.
+    """
+    pattern = r"(?s)#\s*Excel 작업 시작.*?#\s*Excel 작업 끝"
+    return re.sub(pattern, "", code)
 
 def make_initial_query(url: str, command_list: List[str], stream_id: str) -> Dict[str, Any]:
     """
@@ -29,7 +39,8 @@ def make_initial_query(url: str, command_list: List[str], stream_id: str) -> Dic
         "error_msg":         None,
         "logs":              [],
         "download_token":    "",
-        "stream_id":         stream_id
+        "stream_id":         stream_id,
+        "original_code":     None
     }
 
     return query
