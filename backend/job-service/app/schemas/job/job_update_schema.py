@@ -7,6 +7,7 @@ class JobUpdateRequest(BaseModel):
     description: str
     data_load_command: str
     data_load_url: str
+    data_load_code: Optional[str] = None
     commands: List[str]
     code: str
 
