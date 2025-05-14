@@ -370,6 +370,7 @@ from airflow.operators.dummy import DummyOperator
 from datetime import datetime, timedelta
 
 import requests
+import shutil
 from tempfile import mkdtemp
 import pandas as pd
 import os
