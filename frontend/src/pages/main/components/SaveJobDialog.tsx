@@ -1,13 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { useParams } from 'react-router-dom';
 import ClipLoader from 'react-spinners/ClipLoader';
 import { z } from 'zod';
 
 import { SaveJobRequest, useEditJob, useSaveJob } from '@/apis/job';
-import { useGetJobDetail } from '@/apis/jobManagement';
+import { JobManagement } from '@/apis/jobManagement';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -65,47 +64,27 @@ const formSchema = z.object({
   sendEmail: z.boolean().default(false).optional(),
 });
 
-const SaveJobDialog = () => {
-  const { jobId } = useParams();
-
+const SaveJobDialog = ({ job }: { job?: JobManagement }) => {
   const [open, setOpen] = useState(false);
+  const isEditMode = job ? true : false;
 
   const { sourceDataCommand, sourceDataUrl } = useSourceStore();
   const { commandList } = useCommandStore();
   const { code } = useJobResultStore();
-  const { isEditMode, canSaveJob } = useJobStore();
+  const { canSaveJob, isEditMode: isEditting } = useJobStore();
 
   const { mutate: saveJobMutation, isPending: isJobSaving } = useSaveJob();
   const { mutate: editJobMutation, isPending: isJobEditing } = useEditJob();
 
-  const getJobDetail = useGetJobDetail();
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      jobType: undefined,
-      jobName: '',
-      jobDescription: '',
+      jobType: job ? job.type : '',
+      jobName: job?.title || '',
+      jobDescription: job?.description || '',
       sendEmail: false,
     },
   });
-
-  useEffect(() => {
-    const fetchJobDetail = async () => {
-      if (!jobId) return;
-
-      const data = await getJobDetail(jobId);
-
-      form.reset({
-        jobType: data.type,
-        jobName: data.title,
-        jobDescription: data.description,
-        sendEmail: false,
-      });
-    };
-
-    fetchJobDetail();
-  }, []);
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     const { jobType, jobName, jobDescription } = values;
@@ -119,7 +98,7 @@ const SaveJobDialog = () => {
       code,
     };
 
-    if (jobId) editJobMutation({ request, jobId });
+    if (job) editJobMutation({ request, jobId: job.id });
     else saveJobMutation(request);
 
     setOpen(false);
@@ -128,14 +107,16 @@ const SaveJobDialog = () => {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger disabled={!canSaveJob || isEditMode}>
-        <Button disabled={!canSaveJob || isEditMode}>Save Job</Button>
+      <DialogTrigger disabled={!canSaveJob || isEditting}>
+        <Button disabled={!canSaveJob || isEditting}>
+          {isEditMode ? 'Edit Job' : 'Save Job'}
+        </Button>
       </DialogTrigger>
 
       <DialogContent>
         <DialogHeader>
           <DialogTitle className='pt-2 pb-4 text-center text-xl font-bold'>
-            Save Job
+            {isEditMode ? 'Edit Job' : 'Save Job'}
           </DialogTitle>
           <DialogDescription className='flex flex-col'>
             <Form {...form}>
@@ -240,12 +221,14 @@ const SaveJobDialog = () => {
                   <Button
                     type='submit'
                     className='flex-1'
-                    disabled={isJobSaving || isJobEditing}
+                    disabled={isJobSaving || isJobEditing || isEditting}
                   >
-                    {isJobSaving || isJobEditing ? (
+                    {isJobSaving || isJobEditing || isEditting ? (
                       <ClipLoader size={18} color='white' />
+                    ) : isEditMode ? (
+                      'Edit Job'
                     ) : (
-                      'Save'
+                      'Save Job'
                     )}
                   </Button>
                 </DialogFooter>

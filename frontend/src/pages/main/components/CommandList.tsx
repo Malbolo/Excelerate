@@ -17,6 +17,7 @@ import ClipLoader from 'react-spinners/ClipLoader';
 import { toast } from 'sonner';
 
 import { useSendCommandList } from '@/apis/job';
+import { JobManagement } from '@/apis/jobManagement';
 import { Button } from '@/components/ui/button';
 import { createSortableColumns } from '@/lib/createSortableColumns';
 import Command from '@/pages/main/components/Command';
@@ -29,7 +30,7 @@ import { DataFrameRow } from '@/types/dataframe';
 
 import SaveJobDialog from './SaveJobDialog';
 
-const CommandList: React.FC = () => {
+const CommandList = ({ job }: { job?: JobManagement }) => {
   const { sourceDataUrl } = useSourceStore();
 
   const { commandList, reorderCommands, updateCommandStatus } =
@@ -127,7 +128,7 @@ const CommandList: React.FC = () => {
               'Run'
             )}
           </Button>
-          <SaveJobDialog />
+          <SaveJobDialog job={job} />
         </div>
       </div>
       <div className='flex flex-1 flex-col gap-2 overflow-x-hidden overflow-y-auto'>

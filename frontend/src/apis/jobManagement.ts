@@ -5,6 +5,7 @@ import {
 } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
+import useInternalRouter from '@/hooks/useInternalRouter';
 import { Command } from '@/types/job';
 
 import { api } from './core';
@@ -62,6 +63,7 @@ const deleteJob = async (jobId: string) => {
 
 export const useDeleteJob = () => {
   const queryClient = useQueryClient();
+  const { push } = useInternalRouter();
   const { mutate } = useMutation({
     mutationFn: (jobId: string) => deleteJob(jobId),
     onError: error => {
@@ -72,6 +74,7 @@ export const useDeleteJob = () => {
       queryClient.invalidateQueries({
         queryKey: ['jobList'],
       });
+      push('/job-management');
     },
   });
 
@@ -111,13 +114,9 @@ export const useGetJobList = ({
   });
 };
 
-export const useGetJobDetail = () => {
-  const { mutateAsync } = useMutation({
-    mutationFn: (jobId: string) => getJobDetail(jobId),
-    onError: error => {
-      toast.error(error.message);
-    },
+export const useGetJobDetail = (jobId: string) => {
+  return useSuspenseQuery({
+    queryKey: ['jobDetail', jobId],
+    queryFn: () => getJobDetail(jobId),
   });
-
-  return mutateAsync;
 };

@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 
 interface AvailableJobListProps {
   selectedJobIds?: Set<string>;
-  selectedJob?: JobManagement | null;
+  selectedJobId?: string;
   onJobSelect?: (job: JobManagement, checked: boolean) => void;
   jobs: JobManagement[];
 }
@@ -14,7 +14,7 @@ interface AvailableJobListProps {
 const AvailableJobList = ({
   selectedJobIds,
   onJobSelect,
-  selectedJob,
+  selectedJobId,
   jobs,
 }: AvailableJobListProps) => {
   const handleJobSelect = async (job: JobManagement, checked: boolean) => {
@@ -30,7 +30,7 @@ const AvailableJobList = ({
               key={`${job.id}-${job.title}`}
               className={cn(
                 'flex items-center rounded-md border p-3 transition-colors',
-                selectedJob?.id === job.id && 'border-blue-500 bg-blue-100',
+                selectedJobId === job.id && 'border-blue-500 bg-blue-100',
               )}
               onClick={() => handleJobSelect(job, true)}
             >

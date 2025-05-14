@@ -79,6 +79,7 @@ const JobSearchInput = () => {
         const newParams = new URLSearchParams(prev.toString());
         newParams.delete('title');
         newParams.delete('name');
+        newParams.delete('selectedJob');
 
         const trimmedSearchValue = searchValue.trim();
         if (trimmedSearchValue) {

@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { Editor } from '@monaco-editor/react';
 
-import { JobManagement, useDeleteJob } from '@/apis/jobManagement';
+import { useDeleteJob, useGetJobDetail } from '@/apis/jobManagement';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,39 +18,25 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import useInternalRouter from '@/hooks/useInternalRouter';
 
-const CommandList = ({
-  selectedJob,
-}: {
-  selectedJob: JobManagement | null;
-}) => {
+const CommandList = ({ selectedJobId }: { selectedJobId: string }) => {
   const deleteJobMutation = useDeleteJob();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const { data: selectedJob } = useGetJobDetail(selectedJobId);
 
   const { push } = useInternalRouter();
 
   const handleOpenDeleteDialog = () => {
-    if (!selectedJob) return;
     setIsDeleteDialogOpen(true);
   };
 
   const handleConfirmDelete = () => {
-    if (!selectedJob) return;
-    deleteJobMutation(selectedJob.id);
+    deleteJobMutation(selectedJobId);
     setIsDeleteDialogOpen(false);
   };
 
   const handleJobEdit = () => {
-    if (!selectedJob) return;
-    push(`/job-management/edit/${selectedJob.id}`);
+    push(`/job-management/edit/${selectedJobId}`);
   };
-
-  if (!selectedJob) {
-    return (
-      <div className='flex h-full w-[40%] flex-col items-center justify-center border-l border-neutral-200 bg-white p-8'>
-        <p className='text-lg text-neutral-500'>Please select a job.</p>
-      </div>
-    );
-  }
 
   return (
     <>
