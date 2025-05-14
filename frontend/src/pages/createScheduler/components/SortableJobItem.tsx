@@ -2,11 +2,11 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { XIcon } from 'lucide-react';
 
-import { JobResponse } from '@/apis/jobManagement';
+import { JobManagement } from '@/apis/jobManagement';
 import { Button } from '@/components/ui/button';
 
 interface SortableJobItemProps {
-  job: JobResponse;
+  job: JobManagement;
   index: number;
   onJobDeselect: (jobId: string) => void;
 }
@@ -62,7 +62,7 @@ const SortableJobItem = ({
           </svg>
         </button>
         <span className='text-sm font-medium text-gray-500'>{index + 1}.</span>
-        <span className='truncate font-medium'>{job.title}</span>{' '}
+        <span className='truncate font-medium'>{job.title}</span>
       </div>
       <Button
         variant='ghost'

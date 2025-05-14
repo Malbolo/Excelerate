@@ -11,7 +11,7 @@ import {
   formatDate,
   formatDateTime,
   formatInterval,
-} from '../utils/formatInterval';
+} from '../../../lib/dateFormat';
 import ScheduleActions from './ScheduleActions';
 
 interface ScheduleRowProps {

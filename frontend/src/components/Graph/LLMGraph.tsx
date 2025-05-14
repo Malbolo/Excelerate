@@ -1,29 +1,26 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import React from 'react';
 
-import { Node, RootNode } from '@/components/Graph/Node';
-import { TLog } from '@/types/agent';
+import { Log, Position } from '@/types/agent';
+
+import Node from './Node';
+import RootNode from './RootNode';
 
 interface LLMGraphProps {
-  logs: TLog[];
-  onLogClick?: (log: TLog) => void;
-  jobName?: string;
+  logs: Log[];
+  onLogClick?: (log: Log) => void;
+  jobName: string;
 }
 
-const LLMGraph: React.FC<LLMGraphProps> = ({
-  logs,
-  onLogClick,
-  jobName = '',
-}) => {
+const LLMGraph: React.FC<LLMGraphProps> = ({ logs, onLogClick, jobName }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const rootNodeRef = useRef<HTMLDivElement>(null);
 
-  const [rootNodePosition, setRootNodePosition] = useState<{
-    x: number;
-    y: number;
-  }>({ x: 0, y: 0 });
+  const [rootNodePosition, setRootNodePosition] = useState<Position>({
+    x: 0,
+    y: 0,
+  });
 
-  // Line을 그리기 위해 Root Node의 위치를 계산
   useLayoutEffect(() => {
     if (!rootNodeRef.current || !containerRef.current) return;
 
@@ -40,7 +37,6 @@ const LLMGraph: React.FC<LLMGraphProps> = ({
     <section ref={containerRef} className='relative flex flex-col'>
       <RootNode jobName={jobName} ref={rootNodeRef} />
 
-      {/* Root Node로부터 아래로 뻗어나가는 세로선 */}
       {logs.length > 0 && (
         <svg className='absolute inset-0 h-full w-full'>
           <line

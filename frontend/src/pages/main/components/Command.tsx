@@ -14,36 +14,31 @@ import {
 import { cn } from '@/lib/utils';
 import { useCommandStore } from '@/store/useCommandStore';
 import { useJobStore } from '@/store/useJobStore';
-import { TCommandStatus } from '@/types/job';
+import { CommandWithStatus, Status } from '@/types/job';
 
 interface CommandProps {
-  id: string;
-  command: string;
-  status?: TCommandStatus;
+  command: CommandWithStatus;
+  index: number;
 }
 
-const statusColor = {
+const statusColor: Record<Status, string> = {
   pending: 'bg-primary/80',
-  processing: 'bg-primary/80',
+  running: 'bg-primary/80',
   success: 'bg-success/80',
-  fail: 'bg-destructive/80',
+  failed: 'bg-destructive/80',
 };
 
-const Command: React.FC<CommandProps> = ({
-  id,
-  command,
-  status = 'pending',
-}) => {
+const Command = ({ command, index }: CommandProps) => {
+  const { content, status } = command;
+
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [editingCommand, setEdtingCommand] = useState<string>(command);
+  const [editingCommand, setEdtingCommand] = useState(content);
 
   const { updateCommand, deleteCommand } = useCommandStore();
   const { isEditMode, setIsEditMode, setCanSaveJob } = useJobStore();
 
-  const commandIndex = Number(id.split('-').pop());
-
   const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id });
+    useSortable({ id: `${content}-${index}` });
 
   const sortableProps = {
     ref: isEditMode ? undefined : setNodeRef,
@@ -71,7 +66,7 @@ const Command: React.FC<CommandProps> = ({
   const handleEdit = () => {
     if (!editingCommand.trim()) return;
 
-    updateCommand(commandIndex, editingCommand);
+    updateCommand(index, editingCommand);
 
     setIsEditMode(false);
     setIsEditing(false);
@@ -79,7 +74,7 @@ const Command: React.FC<CommandProps> = ({
   };
 
   const handleDelete = () => {
-    deleteCommand(commandIndex);
+    deleteCommand(index);
 
     setIsEditMode(false);
     setIsEditing(false);
@@ -115,7 +110,7 @@ const Command: React.FC<CommandProps> = ({
             }}
           />
         ) : (
-          <p>{command}</p>
+          <p>{content}</p>
         )}
       </div>
 

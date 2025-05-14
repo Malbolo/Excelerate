@@ -1,4 +1,5 @@
-const BASE_URL = import.meta.env.VITE_BASE_URL;
+import { BASE_URL } from '@/constant/baseURL';
+
 interface DataResponse<T> {
   result: 'success' | 'error';
   data: T;

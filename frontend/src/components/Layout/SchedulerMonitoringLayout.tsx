@@ -23,13 +23,12 @@ const SchedulerMonitoringLayout = ({
   return (
     <div className='container mx-auto h-full p-8'>
       <header className='mb-6 flex items-center gap-3 border-b border-gray-200 pb-4 md:gap-4'>
-        {/* Info : month에서는 뒤로가기 버튼이 없어야 함 */}
         {backPath !== '/' && (
           <Button
             variant='outline'
             size='icon'
             onClick={handleGoBack}
-            aria-label='뒤로 가기'
+            aria-label='back'
             className='h-9 w-9 flex-shrink-0'
           >
             <ArrowLeftIcon className='h-5 w-5' />

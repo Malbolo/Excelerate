@@ -1,7 +1,7 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
 
 import { api } from '@/apis/core';
-import { TLog } from '@/types/agent';
+import { Log } from '@/types/agent';
 
 interface GetJobListRequest {
   user_name: string;
@@ -23,8 +23,6 @@ interface LogResponse {
 interface GetJobListResponse {
   logs: LogResponse[];
   pages: number;
-  size: number;
-  total: number;
 }
 
 const getJobList = async (request: GetJobListRequest) => {
@@ -40,7 +38,7 @@ const getJobList = async (request: GetJobListRequest) => {
 };
 
 const getJobLogs = async (job_id: string) => {
-  const { data, error, success } = await api<TLog[]>(
+  const { data, error, success } = await api<Log[]>(
     `/api/agent/logs/${job_id}`,
   );
 

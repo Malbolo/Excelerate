@@ -1,23 +1,23 @@
 import { CheckIcon } from 'lucide-react';
 
-import { JobResponse } from '@/apis/jobManagement';
+import { JobManagement } from '@/apis/jobManagement';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
 interface AvailableJobListProps {
   selectedJobIds?: Set<string>;
-  selectedJob?: JobResponse | null;
-  onJobSelect?: (job: JobResponse, checked: boolean) => void;
-  jobs: JobResponse[];
+  selectedJobId?: string;
+  onJobSelect?: (job: JobManagement, checked: boolean) => void;
+  jobs: JobManagement[];
 }
 
 const AvailableJobList = ({
   selectedJobIds,
   onJobSelect,
-  selectedJob,
+  selectedJobId,
   jobs,
 }: AvailableJobListProps) => {
-  const handleJobSelect = async (job: JobResponse, checked: boolean) => {
+  const handleJobSelect = async (job: JobManagement, checked: boolean) => {
     onJobSelect && onJobSelect(job, checked);
   };
 
@@ -30,7 +30,7 @@ const AvailableJobList = ({
               key={`${job.id}-${job.title}`}
               className={cn(
                 'flex items-center rounded-md border p-3 transition-colors',
-                selectedJob?.id === job.id && 'border-blue-500 bg-blue-100',
+                selectedJobId === job.id && 'border-blue-500 bg-blue-100',
               )}
               onClick={() => handleJobSelect(job, true)}
             >
@@ -46,10 +46,8 @@ const AvailableJobList = ({
                 ))}
               <div className='flex flex-col space-x-3 overflow-hidden pl-4'>
                 <span className='truncate font-medium'>{job.title}</span>
-                <span className='text-sm text-gray-500'>
-                  {job.description.length > 50
-                    ? job.description.substring(0, 50) + '...'
-                    : job.description}
+                <span className='line-clamp-1 text-sm text-gray-500'>
+                  {job.description}
                 </span>
               </div>
             </div>

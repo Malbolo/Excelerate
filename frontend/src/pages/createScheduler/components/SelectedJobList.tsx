@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 
 import {
   DndContext,
@@ -16,18 +16,16 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 
-import { JobResponse } from '@/apis/jobManagement';
+import { JobManagement } from '@/apis/jobManagement';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 import SortableJobItem from './SortableJobItem';
 
 interface SelectedJobListProps {
-  selectedJobs: JobResponse[];
-  handleJobOrderChange: (newOrder: JobResponse[]) => void;
+  selectedJobs: JobManagement[];
+  handleJobOrderChange: (newOrder: JobManagement[]) => void;
   handleJobDeselect: (jobId: string) => void;
 }
-
-// 모든 로직을 zustand로 이동 예정
 
 const SelectedJobList = ({
   selectedJobs,
@@ -53,7 +51,7 @@ const SelectedJobList = ({
     }
   };
 
-  const jobIds = useMemo(() => selectedJobs.map(job => job.id), [selectedJobs]);
+  const jobIds = selectedJobs.map(job => job.id);
 
   const onJobDeselect = useCallback((jobId: string) => {
     handleJobDeselect(jobId);

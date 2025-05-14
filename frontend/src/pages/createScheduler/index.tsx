@@ -1,25 +1,24 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 
 import { useSearchParams } from 'react-router-dom';
 
-import { JobResponse, useGetJobList } from '@/apis/jobManagement';
+import { JobManagement, useGetJobList } from '@/apis/jobManagement';
 import SchedulerMonitoringLayout from '@/components/Layout/SchedulerMonitoringLayout';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 
 import AvailableJobList from './components/AvailableJobList';
-import CreateScheduleModal from './components/CreateScheduleModal';
 import JobPagination from './components/JobPagination';
 import JobSearchInput from './components/JobSearchInput';
+import ScheduleDialog from './components/ScheduleDialog';
 import SelectedJobList from './components/SelectedJobList';
 
 const CreateSchedulerPage = () => {
-  const [selectedJobs, setSelectedJobs] = useState<JobResponse[]>([]);
+  const [selectedJobs, setSelectedJobs] = useState<JobManagement[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchParams] = useSearchParams();
 
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
-  const dep = searchParams.get('dep') || '';
   const types = searchParams.get('types') || '';
   const title = searchParams.get('title') || '';
   const name = searchParams.get('name') || '';
@@ -27,7 +26,6 @@ const CreateSchedulerPage = () => {
   const { data: jobList } = useGetJobList({
     page: currentPage,
     title,
-    dep,
     types,
     name,
     mine: false,
@@ -35,7 +33,7 @@ const CreateSchedulerPage = () => {
 
   const { total, jobs } = jobList;
 
-  const handleJobSelect = (job: JobResponse, checked: boolean) => {
+  const handleJobSelect = (job: JobManagement, checked: boolean) => {
     setSelectedJobs(prev =>
       checked
         ? prev.some(j => j.id === job.id)
@@ -49,14 +47,11 @@ const CreateSchedulerPage = () => {
     setSelectedJobs(prev => prev.filter(job => job.id !== jobId));
   };
 
-  const handleJobOrderChange = (newOrder: JobResponse[]) => {
+  const handleJobOrderChange = (newOrder: JobManagement[]) => {
     setSelectedJobs(newOrder);
   };
 
-  const selectedJobIds = useMemo(
-    () => new Set(selectedJobs.map(job => job.id)),
-    [selectedJobs],
-  );
+  const selectedJobIds = new Set(selectedJobs.map(job => job.id));
 
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
@@ -94,7 +89,7 @@ const CreateSchedulerPage = () => {
         </div>
       </div>
 
-      <CreateScheduleModal
+      <ScheduleDialog
         isOpen={isModalOpen}
         onOpenChange={setIsModalOpen}
         selectedJobs={selectedJobs}

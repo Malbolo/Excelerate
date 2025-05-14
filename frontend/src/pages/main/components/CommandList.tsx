@@ -17,19 +17,20 @@ import ClipLoader from 'react-spinners/ClipLoader';
 import { toast } from 'sonner';
 
 import { useSendCommandList } from '@/apis/job';
-import Command from '@/components/Command';
+import { JobManagement } from '@/apis/jobManagement';
 import { Button } from '@/components/ui/button';
+import { createSortableColumns } from '@/lib/createSortableColumns';
+import Command from '@/pages/main/components/Command';
 import { useCommandStore } from '@/store/useCommandStore';
 import { useJobResultStore } from '@/store/useJobResultStore';
 import { useJobStore } from '@/store/useJobStore';
 import { useSourceStore } from '@/store/useSourceStore';
 import { useStreamStore } from '@/store/useStreamStore';
 import { DataFrameRow } from '@/types/dataframe';
-import { createSortableColumns } from '@/utils/dataframe';
 
 import SaveJobDialog from './SaveJobDialog';
 
-const CommandList: React.FC = () => {
+const CommandList = ({ job }: { job?: JobManagement }) => {
   const { sourceDataUrl } = useSourceStore();
 
   const { commandList, reorderCommands, updateCommandStatus } =
@@ -75,7 +76,7 @@ const CommandList: React.FC = () => {
 
     resetLogs();
 
-    const commands = commandList.map(cmd => cmd.title);
+    const commands = commandList.map(({ content }) => content);
     const response = await commandMutation({
       command_list: commands,
       url: sourceDataUrl,
@@ -98,14 +99,14 @@ const CommandList: React.FC = () => {
     try {
       await handleSendCommandList();
 
-      commandList.forEach((_, index) => {
-        updateCommandStatus(index, 'success');
+      commandList.forEach((_, idx) => {
+        updateCommandStatus(idx, 'success');
       });
 
       setCanSaveJob(true);
     } catch (error) {
-      commandList.forEach((_, index) => {
-        updateCommandStatus(index, 'fail');
+      commandList.forEach((_, idx) => {
+        updateCommandStatus(idx, 'failed');
       });
     }
   };
@@ -127,7 +128,7 @@ const CommandList: React.FC = () => {
               'Run'
             )}
           </Button>
-          <SaveJobDialog />
+          <SaveJobDialog job={job} />
         </div>
       </div>
       <div className='flex flex-1 flex-col gap-2 overflow-x-hidden overflow-y-auto'>
@@ -137,15 +138,16 @@ const CommandList: React.FC = () => {
           onDragEnd={handleDragEnd}
         >
           <SortableContext
-            items={commandList.map((cmd, idx) => `${cmd.title}-${idx}`)}
+            items={commandList.map(
+              (command, idx) => `${command.content}-${idx}`,
+            )}
             strategy={verticalListSortingStrategy}
           >
             {commandList.map((command, index) => (
               <Command
-                key={`${command.title}-${index}`}
-                id={`${command.title}-${index}`}
-                command={command.title}
-                status={command.status}
+                key={`${command.content}-${index}`}
+                command={command}
+                index={index}
               />
             ))}
           </SortableContext>

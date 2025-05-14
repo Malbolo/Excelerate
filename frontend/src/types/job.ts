@@ -1,16 +1,14 @@
-import { DataFrameRow } from '@/types/dataframe';
+import { JOB_TYPES_CONFIG } from '@/constant/job';
 
-export interface TCommand {
-  title: string;
-  status: TCommandStatus;
+export type Status = 'pending' | 'success' | 'failed' | 'running';
+
+export interface Command {
+  content: string;
+  order: number;
 }
 
-export type TCommandStatus = 'pending' | 'processing' | 'success' | 'fail';
-
-export interface TMachine extends DataFrameRow {
-  machineId: string;
-  parameter: string;
-  value: number;
-  unit: string;
-  collectedAt: string;
+export interface CommandWithStatus extends Command {
+  status: Status;
 }
+
+export type JobType = (typeof JOB_TYPES_CONFIG)[number]['id'];

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 
 import { useParams, useSearchParams } from 'react-router-dom';
 
-import { JobResponse, useGetJobList } from '@/apis/jobManagement';
+import { JobManagement, useGetJobList } from '@/apis/jobManagement';
 import { useGetScheduleDetail } from '@/apis/schedulerManagement';
 import SchedulerMonitoringLayout from '@/components/Layout/SchedulerMonitoringLayout';
 import { Button } from '@/components/ui/button';
@@ -11,8 +11,8 @@ import { Separator } from '@/components/ui/separator';
 import AvailableJobList from '../createScheduler/components/AvailableJobList';
 import JobPagination from '../createScheduler/components/JobPagination';
 import JobSearchInput from '../createScheduler/components/JobSearchInput';
+import ScheduleDialog from '../createScheduler/components/ScheduleDialog';
 import SelectedJobList from '../createScheduler/components/SelectedJobList';
-import EditModal from './EditModal';
 
 const CreateSchedulerPage = () => {
   const { scheduleId } = useParams() as { scheduleId: string };
@@ -20,12 +20,12 @@ const CreateSchedulerPage = () => {
 
   const { jobs: responseJobs } = scheduleDetail;
 
-  const [selectedJobs, setSelectedJobs] = useState<JobResponse[]>(responseJobs);
+  const [selectedJobs, setSelectedJobs] =
+    useState<JobManagement[]>(responseJobs);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchParams] = useSearchParams();
 
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
-  const dep = searchParams.get('dep') || '';
   const types = searchParams.get('types') || '';
   const title = searchParams.get('title') || '';
   const name = searchParams.get('name') || '';
@@ -33,7 +33,6 @@ const CreateSchedulerPage = () => {
   const { data: jobList } = useGetJobList({
     page: currentPage,
     title,
-    dep,
     types,
     name,
     mine: false,
@@ -41,7 +40,7 @@ const CreateSchedulerPage = () => {
 
   const { total, jobs } = jobList;
 
-  const handleJobSelect = (job: JobResponse, checked: boolean) => {
+  const handleJobSelect = (job: JobManagement, checked: boolean) => {
     setSelectedJobs(prev =>
       checked
         ? prev.some(j => j.id === job.id)
@@ -55,7 +54,7 @@ const CreateSchedulerPage = () => {
     setSelectedJobs(prev => prev.filter(job => job.id !== jobId));
   };
 
-  const handleJobOrderChange = (newOrder: JobResponse[]) => {
+  const handleJobOrderChange = (newOrder: JobManagement[]) => {
     setSelectedJobs(newOrder);
   };
 
@@ -64,11 +63,11 @@ const CreateSchedulerPage = () => {
     [selectedJobs],
   );
 
-  const layoutTitle = `Edit Schedule`;
-  const backPath = '/scheduler-management';
-
   return (
-    <SchedulerMonitoringLayout title={layoutTitle} backPath={backPath}>
+    <SchedulerMonitoringLayout
+      title={'Edit Schedule'}
+      backPath={'/scheduler-management'}
+    >
       <div className='flex h-[calc(100vh-150px)] flex-col md:flex-row md:gap-6'>
         <div className='flex w-full flex-col overflow-hidden md:w-1/2'>
           <JobSearchInput />
@@ -98,7 +97,7 @@ const CreateSchedulerPage = () => {
         </div>
       </div>
 
-      <EditModal
+      <ScheduleDialog
         isOpen={isModalOpen}
         onOpenChange={setIsModalOpen}
         selectedJobs={selectedJobs}

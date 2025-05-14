@@ -1,24 +1,22 @@
-import { JOB_TYPES_CONFIG } from '@/constant/job';
-import { DEPARTMENT } from '@/constant/user';
+export interface Position {
+  x: number;
+  y: number;
+}
 
-export interface TLog {
+export interface Log {
   name: string;
-  input: TLogMessage[];
-  output: TLogMessage[];
+  input: LogMessage[];
+  output: LogMessage[];
   timestamp: string;
-  metadata: TLogMetadata;
-  subEvents: TLog[];
+  metadata: LogMetadata;
+  subEvents: Log[];
 }
 
-export interface TLogMetadata {
-  [key: string]: TLogMetadata | string | number | null;
+export interface LogMetadata {
+  [key: string]: LogMetadata | string | number | null;
 }
 
-export interface TLogMessage {
+export interface LogMessage {
   role: string;
   message: string;
 }
-
-export type TJobType = (typeof JOB_TYPES_CONFIG)[number]['id'];
-
-export type TDepartment = (typeof DEPARTMENT)[keyof typeof DEPARTMENT];

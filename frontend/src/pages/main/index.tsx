@@ -11,6 +11,7 @@ import {
   ResizablePanelGroup,
 } from '@/components/ui/resizable';
 import { Textarea } from '@/components/ui/textarea';
+import { createSortableColumns } from '@/lib/createSortableColumns';
 import CommandList from '@/pages/main/components/CommandList';
 import MainSideBar from '@/pages/main/components/MainSideBar';
 import SourceData from '@/pages/main/components/SourceData';
@@ -21,7 +22,6 @@ import { useJobStore } from '@/store/useJobStore';
 import { useSourceStore } from '@/store/useSourceStore';
 import { useStreamStore } from '@/store/useStreamStore';
 import { DataFrameRow } from '@/types/dataframe';
-import { createSortableColumns } from '@/utils/dataframe';
 
 const MainPage: React.FC = () => {
   const [inputCommand, setInputCommand] = useState<string>('');
@@ -108,7 +108,6 @@ const MainPage: React.FC = () => {
               <CommandList />
             </div>
 
-            {/* Command Input */}
             <div className='flex gap-2'>
               <div className='relative flex-1'>
                 <Textarea

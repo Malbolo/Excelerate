@@ -5,41 +5,44 @@ import {
 } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
+import useInternalRouter from '@/hooks/useInternalRouter';
+import { Command } from '@/types/job';
+
 import { api } from './core';
 
-interface CommandResponse {
-  content: string;
-  order: number;
-}
-
-export interface JobResponse {
-  id: string;
+export interface JobManagement extends Job {
   type: string;
-  title: string;
-  description: string;
+  user_name: string;
   data_load_command: string;
   data_load_url: string;
-  commands: CommandResponse[];
   code: string;
-  user_name?: string;
-  created_at?: string;
+  created_at: string;
+}
+
+export interface Job {
+  commands: Command[];
+  id: string;
+  title: string;
+  description: string;
 }
 
 interface JobListResponse {
-  jobs: JobResponse[];
-  page: number;
-  size: number;
+  jobs: JobManagement[];
   total: number;
 }
 
-interface DeleteJobRequestParams {
-  id: string;
-  page: string;
-  keyword: string;
+interface GetJobListParams {
+  page: number;
+  title: string;
+  mine: boolean;
+  types: string;
+  name: string;
 }
 
 const getJobDetail = async (jobId: string) => {
-  const { data, error, success } = await api<JobResponse>(`/api/jobs/${jobId}`);
+  const { data, error, success } = await api<JobManagement>(
+    `/api/jobs/${jobId}`,
+  );
 
   if (!success) {
     throw new Error(error);
@@ -48,62 +51,47 @@ const getJobDetail = async (jobId: string) => {
   return data;
 };
 
-const deleteJob = async ({ id, page, keyword }: DeleteJobRequestParams) => {
-  const { error, success } = await api<JobResponse>(
-    `/api/jobs/${id}?page=${page}&keyword=${keyword}`,
-    {
-      method: 'DELETE',
-    },
-  );
+const deleteJob = async (jobId: string) => {
+  const { error, success } = await api(`/api/jobs/${jobId}`, {
+    method: 'DELETE',
+  });
 
   if (!success) {
     throw new Error(error);
   }
-
-  return { page: Number(page), keyword, mine: true };
 };
 
 export const useDeleteJob = () => {
   const queryClient = useQueryClient();
+  const { push } = useInternalRouter();
   const { mutate } = useMutation({
-    mutationFn: (requestParams: DeleteJobRequestParams) =>
-      deleteJob(requestParams),
+    mutationFn: (jobId: string) => deleteJob(jobId),
     onError: error => {
       toast.error(error.message);
     },
-    onSuccess: ({ page, keyword, mine }) => {
-      console.log('onSuccess', { page, keyword, mine });
+    onSuccess: () => {
       toast.success('Job deleted successfully');
       queryClient.invalidateQueries({
-        queryKey: ['jobList', page, keyword],
+        queryKey: ['jobList'],
       });
+      push('/job-management');
     },
   });
 
   return mutate;
 };
 
-// 기본적으로 모두 6개씩 조회할 예정이고
-// 페이지네이션에서 데이터가 없는경우 1페이지 빈문자열로 조회하는게 좋아서 기본값을 1, 6, '' 로 설정
 const getJobList = async ({
   page = 1,
   title = '',
   mine = false,
-  dep = '',
   types = '',
   name = '',
-}: {
-  page: number;
-  title: string;
-  mine: boolean;
-  dep: string;
-  types: string;
-  name: string;
-}) => {
+}: GetJobListParams) => {
   const isMine = mine ? 'True' : 'False';
 
   const { data, error, success } = await api<JobListResponse>(
-    `/api/jobs?mine=${isMine}&page=${page}&size=6&title=${title}&types=${types}&dep=${dep === 'all' ? '' : dep}&name=${name}`,
+    `/api/jobs?mine=${isMine}&page=${page}&size=6&title=${title}&types=${types}&name=${name}`,
   );
 
   if (!success) {
@@ -116,24 +104,19 @@ const getJobList = async ({
 export const useGetJobList = ({
   page = 1,
   mine = false,
-  dep = '',
   types = '',
   title = '',
   name = '',
 }) => {
   return useSuspenseQuery({
-    queryKey: ['jobList', page, title, mine, dep, types, name],
-    queryFn: () => getJobList({ page, title, mine, dep, types, name }),
+    queryKey: ['jobList', page, title, mine, types, name],
+    queryFn: () => getJobList({ page, title, mine, types, name }),
   });
 };
 
-export const useGetJobDetail = () => {
-  const { mutateAsync } = useMutation({
-    mutationFn: (jobId: string) => getJobDetail(jobId),
-    onError: error => {
-      toast.error(error.message);
-    },
+export const useGetJobDetail = (jobId: string) => {
+  return useSuspenseQuery({
+    queryKey: ['jobDetail', jobId],
+    queryFn: () => getJobDetail(jobId),
   });
-
-  return mutateAsync;
 };

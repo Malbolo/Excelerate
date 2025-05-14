@@ -1,8 +1,9 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
 
-import { Status } from '@/types/scheduler';
+import { Status } from '@/types/job';
 
 import { api } from './core';
+import { Job } from './jobManagement';
 
 interface MonthSchedule {
   date: string;
@@ -31,20 +32,11 @@ interface GetDayScheduleResponse {
   pending: DaySchedule[];
 }
 
-export interface Command {
-  content: string;
-  order: number;
-}
-
-export interface Job {
-  commands: Command[];
-  description: string;
+export interface JobSchedule extends Job {
   end_time: string;
-  id: string;
   logs_url: string;
   start_time: string;
-  status: 'failed' | 'success' | 'pending';
-  title: string;
+  status: Status;
   error_log: JobError | null;
 }
 
@@ -55,7 +47,7 @@ export interface RunDetailResponse {
   status: string;
   start_time: string;
   end_time: string;
-  jobs: Job[];
+  jobs: JobSchedule[];
   logs_url: string;
 }
 

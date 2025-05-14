@@ -1,15 +1,15 @@
 import { create } from 'zustand';
 
-import { TCommand, TCommandStatus } from '@/types/job';
+import { Command, CommandWithStatus, Status } from '@/types/job';
 
 interface CommandState {
-  commandList: TCommand[];
+  commandList: CommandWithStatus[];
 
-  setCommandList: (commands: TCommand[]) => void;
+  setCommandList: (commands: Command[]) => void;
   addCommand: (command: string) => void;
   deleteCommand: (index: number) => void;
   updateCommand: (index: number, newCommand: string) => void;
-  updateCommandStatus: (index: number, status: TCommandStatus) => void;
+  updateCommandStatus: (index: number, status: Status) => void;
   reorderCommands: (oldIndex: number, newIndex: number) => void;
   resetCommand: () => void;
 }
@@ -18,13 +18,23 @@ export const useCommandStore = create<CommandState>(set => ({
   commandList: [],
   command: '',
 
-  setCommandList: commands => set({ commandList: commands }),
+  setCommandList: (commands: Command[]) =>
+    set({
+      commandList: commands.map(command => ({
+        ...command,
+        status: 'pending',
+      })),
+    }),
 
   addCommand: command =>
     set(state => ({
       commandList: [
         ...state.commandList,
-        { title: command, status: 'pending' },
+        {
+          content: command,
+          order: state.commandList.length,
+          status: 'pending',
+        },
       ],
     })),
 
@@ -39,7 +49,11 @@ export const useCommandStore = create<CommandState>(set => ({
     set(state => ({
       commandList: state.commandList.map((cmd, i) =>
         i === index
-          ? { title: newCommand, status: 'pending' }
+          ? {
+              content: newCommand,
+              order: index,
+              status: 'pending',
+            }
           : { ...cmd, status: 'pending' },
       ),
     })),
@@ -51,7 +65,7 @@ export const useCommandStore = create<CommandState>(set => ({
       ),
     })),
 
-  reorderCommands: (oldIndex: number, newIndex: number) =>
+  reorderCommands: (oldIndex, newIndex) =>
     set(state => {
       const newList = [...state.commandList];
       const [movedItem] = newList.splice(oldIndex, 1);

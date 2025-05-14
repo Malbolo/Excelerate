@@ -5,7 +5,7 @@ import { useGetUserInfoAPI } from '@/apis/auth';
 import { useGetTemplates } from '@/apis/templates';
 import { Button } from '@/components/ui/button';
 
-const TemplateList: React.FC = () => {
+const TemplateList = () => {
   const { data: userInfo } = useGetUserInfoAPI();
   const isAdmin = userInfo?.role === 'ADMIN';
   const { data: templates } = useGetTemplates();

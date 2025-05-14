@@ -24,8 +24,8 @@ import {
 import DayPicker from './DayPicker';
 import MonthYearSelector from './MonthYearSelector';
 
-function SchedulerNavigator() {
-  const { dayId, monthId } = useParams<{ dayId?: string; monthId?: string }>();
+const SchedulerNavigator = () => {
+  const { dayId, monthId } = useParams<{ dayId: string; monthId: string }>();
   const navigate = useNavigate();
 
   const [isDayPickerOpen, setIsDayPickerOpen] = useState(false);
@@ -56,7 +56,6 @@ function SchedulerNavigator() {
         : format(new Date(), 'MM/dd/yyyy', { locale: enUS }) +
           ' (Invalid Value)';
       if (!valid) {
-        console.error(`Invalid dayId: ${value}`);
         date = new Date();
       }
     } else if (type === 'month') {
@@ -67,7 +66,6 @@ function SchedulerNavigator() {
         : format(new Date(), 'MMMM yyyy', { locale: enUS }) +
           ' (Invalid Value)';
       if (!valid) {
-        console.error(`Invalid monthId: ${value}`);
         date = startOfMonth(new Date());
       }
     } else {
@@ -200,6 +198,6 @@ function SchedulerNavigator() {
       </Button>
     </div>
   );
-}
+};
 
 export default SchedulerNavigator;

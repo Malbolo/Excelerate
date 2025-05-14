@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Dispatch, useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format as formatDate } from 'date-fns';
@@ -8,8 +8,12 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { JobResponse } from '@/apis/jobManagement';
-import { useCreateSchedule } from '@/apis/schedulerManagement';
+import { JobManagement } from '@/apis/jobManagement';
+import {
+  Schedule,
+  useCreateSchedule,
+  useUpdateSchedule,
+} from '@/apis/schedulerManagement';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -42,101 +46,68 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import {
+  CreateScheduleFormData,
+  createScheduleSchema,
+} from '@/pages/createScheduler/components/ScheduleDialog/scheduleSchema';
 
-export interface CreateScheduleFormData {
-  scheduleTitle: string;
-  scheduleDescription: string;
-  successEmail: string[];
-  failEmail: string[];
-  interval: 'daily' | 'weekly' | 'monthly';
-  startDate: Date;
-  endDate?: Date;
-  executionTime: string;
-  selectedJobs: JobResponse[];
-}
-
-const formSchema = z
-  .object({
-    scheduleTitle: z.string().min(1, 'Please enter a schedule title.'),
-    scheduleDescription: z.string().min(1, 'Please enter a description.'),
-    successEmail: z
-      .array(
-        z.string().email({ message: 'Please enter a valid email address.' }),
-      )
-      .min(1, 'Please add at least one success notification email.'),
-    failEmail: z
-      .array(
-        z.string().email({ message: 'Please enter a valid email address.' }),
-      )
-      .min(1, 'Please add at least one failure notification email.'),
-    interval: z.enum(['daily', 'weekly', 'monthly'], {
-      required_error: 'Please select an execution interval.',
-    }),
-    startDate: z.date({
-      required_error: 'Please select a start date.',
-    }),
-    endDate: z.date().optional(),
-    executionTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, {
-      message: 'Please enter the time in HH:MM format (e.g., 09:00, 14:30).',
-    }),
-  })
-  .refine(
-    data => {
-      if (data.startDate && data.endDate) {
-        const start = new Date(data.startDate.setHours(0, 0, 0, 0));
-        const end = new Date(data.endDate.setHours(0, 0, 0, 0));
-        return end >= start;
-      }
-      return true;
-    },
-    {
-      message: 'End date must be the same as or later than the start date.',
-      path: ['endDate'],
-    },
-  );
-
-interface CreateScheduleModalProps {
+interface ScheduleDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  selectedJobs: JobResponse[];
+  selectedJobs: JobManagement[];
+  scheduleDetail?: Schedule;
 }
 
-const CreateScheduleModal = ({
+const ScheduleDialog = ({
   isOpen,
   onOpenChange,
   selectedJobs,
-}: CreateScheduleModalProps) => {
+  scheduleDetail,
+}: ScheduleDialogProps) => {
+  const isEditMode = !!scheduleDetail;
+
   const [currentSuccessEmail, setCurrentSuccessEmail] = useState('');
   const [currentFailEmail, setCurrentFailEmail] = useState('');
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const editSchedule = useUpdateSchedule();
+  const createSchedule = useCreateSchedule();
+
+  const form = useForm<CreateScheduleFormData>({
+    resolver: zodResolver(createScheduleSchema),
     defaultValues: {
-      scheduleTitle: '',
-      scheduleDescription: '',
-      successEmail: [],
-      failEmail: [],
-      interval: 'daily',
-      startDate: new Date(),
-      endDate: new Date(2099, 11, 31),
-      executionTime: '09:00',
+      scheduleTitle: isEditMode ? scheduleDetail.title : '',
+      scheduleDescription: isEditMode ? scheduleDetail.description : '',
+      successEmail: isEditMode ? scheduleDetail.success_emails : [],
+      failEmail: isEditMode ? scheduleDetail.failure_emails : [],
+      interval: isEditMode ? scheduleDetail.frequency : 'daily',
+      startDate: isEditMode ? new Date(scheduleDetail.start_date) : new Date(),
+      endDate: isEditMode
+        ? new Date(scheduleDetail.end_date)
+        : new Date(2099, 11, 31),
+      executionTime: isEditMode ? scheduleDetail.execution_time : '',
     },
   });
 
-  const createSchedule = useCreateSchedule();
-
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  const onSubmit = (values: CreateScheduleFormData) => {
     const submissionData = {
       ...values,
       selectedJobs,
     };
 
-    createSchedule(submissionData);
+    if (isEditMode) {
+      editSchedule({
+        scheduleId: scheduleDetail.schedule_id,
+        schedule: submissionData,
+      });
+    } else {
+      createSchedule(submissionData);
+    }
+
     onOpenChange(false);
     form.reset();
     setCurrentSuccessEmail('');
     setCurrentFailEmail('');
-  }
+  };
 
   const handleOpenChange = (open: boolean) => {
     onOpenChange(open);
@@ -149,7 +120,7 @@ const CreateScheduleModal = ({
 
   const handleAddEmail = (
     emailValue: string,
-    setEmailValue: React.Dispatch<React.SetStateAction<string>>,
+    setEmailValue: Dispatch<React.SetStateAction<string>>,
     fieldName: 'successEmail' | 'failEmail',
   ) => {
     if (emailValue.trim() === '') return;
@@ -186,10 +157,13 @@ const CreateScheduleModal = ({
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className='flex max-h-[100vh] flex-col sm:max-w-4xl'>
         <DialogHeader>
-          <DialogTitle>Create New Schedule</DialogTitle>
+          <DialogTitle>
+            {isEditMode ? 'Edit Schedule' : 'Create Schedule'}
+          </DialogTitle>
           <DialogDescription>
-            Configure the new schedule for the selected {selectedJobs.length}{' '}
-            JOBs. (All fields required)
+            {isEditMode
+              ? `Edit the schedule for the selected ${selectedJobs.length} JOBs.`
+              : `Create a new schedule for the selected ${selectedJobs.length} JOBs.`}
           </DialogDescription>
         </DialogHeader>
 
@@ -294,20 +268,21 @@ const CreateScheduleModal = ({
                         </div>
                         <FormMessage />
                         <div className='mt-2 flex flex-wrap gap-1'>
-                          {field.value.map((email, index) => (
-                            <Badge key={index} variant='secondary'>
-                              {email}
-                              <button
-                                type='button'
-                                className='text-destructive-foreground ml-1.5 rounded-full p-0.5 opacity-70 hover:opacity-100'
-                                onClick={() =>
-                                  handleRemoveEmail(email, 'successEmail')
-                                }
-                              >
-                                <X className='h-3 w-3' />
-                              </button>
-                            </Badge>
-                          ))}
+                          {field.value &&
+                            field.value.map((email, index) => (
+                              <Badge key={index} variant='secondary'>
+                                {email}
+                                <button
+                                  type='button'
+                                  className='text-destructive-foreground ml-1.5 rounded-full p-0.5 opacity-70 hover:opacity-100'
+                                  onClick={() =>
+                                    handleRemoveEmail(email, 'successEmail')
+                                  }
+                                >
+                                  <X className='h-3 w-3' />
+                                </button>
+                              </Badge>
+                            ))}
                         </div>
                       </FormItem>
                     )}
@@ -358,20 +333,21 @@ const CreateScheduleModal = ({
                         </div>
                         <FormMessage />
                         <div className='mt-2 flex flex-wrap gap-1'>
-                          {field.value.map((email, index) => (
-                            <Badge key={index} variant='secondary'>
-                              {email}
-                              <button
-                                type='button'
-                                className='text-destructive-foreground ml-1.5 rounded-full p-0.5 opacity-70 hover:opacity-100'
-                                onClick={() =>
-                                  handleRemoveEmail(email, 'failEmail')
-                                }
-                              >
-                                <X className='h-3 w-3' />
-                              </button>
-                            </Badge>
-                          ))}
+                          {field.value &&
+                            field.value.map((email, index) => (
+                              <Badge key={index} variant='secondary'>
+                                {email}
+                                <button
+                                  type='button'
+                                  className='text-destructive-foreground ml-1.5 rounded-full p-0.5 opacity-70 hover:opacity-100'
+                                  onClick={() =>
+                                    handleRemoveEmail(email, 'failEmail')
+                                  }
+                                >
+                                  <X className='h-3 w-3' />
+                                </button>
+                              </Badge>
+                            ))}
                         </div>
                       </FormItem>
                     )}
@@ -384,7 +360,7 @@ const CreateScheduleModal = ({
                     render={({ field }) => (
                       <FormItem className='space-y-3'>
                         <FormLabel>
-                          Execution Interval{' '}
+                          Execution Interval
                           <span className='text-red-500'>*</span>
                         </FormLabel>
                         <FormControl>
@@ -549,24 +525,21 @@ const CreateScheduleModal = ({
               </div>
             </form>
           </Form>
-          <DialogFooter className='mt-4 border-t pt-4'>
-            <DialogClose asChild>
-              <Button variant='outline' type='button'>
-                Cancel
-              </Button>
-            </DialogClose>
-            <Button
-              type='button'
-              onClick={form.handleSubmit(onSubmit)}
-              disabled={form.formState.isSubmitting}
-            >
-              {form.formState.isSubmitting ? 'Creating...' : 'Create'}
-            </Button>
-          </DialogFooter>
         </ScrollArea>
+
+        <DialogFooter className='mt-4 border-t pt-4'>
+          <DialogClose asChild>
+            <Button variant='outline' type='button'>
+              Cancel
+            </Button>
+          </DialogClose>
+          <Button type='button' onClick={form.handleSubmit(onSubmit)}>
+            {isEditMode ? 'Update' : 'Create'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 };
 
-export default CreateScheduleModal;
+export default ScheduleDialog;

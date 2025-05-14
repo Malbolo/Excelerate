@@ -18,9 +18,11 @@ import {
 } from '@/components/ui/pagination';
 import useInternalRouter from '@/hooks/useInternalRouter';
 import usePagination from '@/hooks/usePagination';
-import { formatDateTime } from '@/pages/schedulerManagement/utils/formatInterval';
+import { formatDateTime } from '@/lib/dateFormat';
 
-const JobPagination: React.FC = () => {
+// 다른 컴포넌트에서 사용하는 페이지네이션과 통일해서 하나의 로직으로 합쳐야함
+// 페이지네이션 컴포넌트는 page의 쿼리파라미터를 받아서 페이지네이션을 관리하는 로직만을 가지고 있어야함
+const JobPagination = () => {
   const [searchParams] = useSearchParams();
   const name = searchParams.get('name') || '';
   const startDate = searchParams.get('startDate') || '';

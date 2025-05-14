@@ -7,7 +7,7 @@ interface TabsProps {
   tabPanels: React.ReactNode[];
 }
 
-const Tabs: React.FC<TabsProps> = ({ tabList, tabPanels }) => {
+const Tabs = ({ tabList, tabPanels }: TabsProps) => {
   const [activeTab, setActiveTab] = useState(tabList[0]);
 
   return (

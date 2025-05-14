@@ -5,21 +5,22 @@ import { useParams } from 'react-router-dom';
 
 import { useGetJobLogs } from '@/apis/agentMonitoring';
 import LLMGraph from '@/components/Graph/LLMGraph';
-import Tabs from '@/components/Tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import useInternalRouter from '@/hooks/useInternalRouter';
-import { TLog, TLogMessage, TLogMetadata } from '@/types/agent';
+import Tabs from '@/pages/main/components/Tabs';
+import { Log, LogMessage, LogMetadata } from '@/types/agent';
 
-const JobAgentMonitoringPage: React.FC = () => {
+// 컴포넌트 분리가 어려워 컴포넌트 분리 추후 진행
+const JobAgentMonitoringPage = () => {
   const { jobId } = useParams() as { jobId: string };
   const { goBack } = useInternalRouter();
 
   const { data: logs } = useGetJobLogs(jobId);
 
-  const [selectedLog, setSelectedLog] = useState<TLog>();
+  const [selectedLog, setSelectedLog] = useState<Log | null>(null);
 
-  const handleClickLog = (log: TLog) => {
+  const handleClickLog = (log: Log) => {
     setSelectedLog(log);
   };
 
@@ -44,10 +45,12 @@ const JobAgentMonitoringPage: React.FC = () => {
           tabList={['Run', 'Metadata']}
           tabPanels={[
             <RunPanel
-              input={selectedLog?.input}
-              output={selectedLog?.output}
+              input={selectedLog ? selectedLog.input : []}
+              output={selectedLog ? selectedLog.output : []}
             />,
-            <MetadataPanel metadata={selectedLog?.metadata} />,
+            <MetadataPanel
+              metadata={selectedLog ? selectedLog.metadata : {}}
+            />,
           ]}
         />
       </section>
@@ -57,12 +60,11 @@ const JobAgentMonitoringPage: React.FC = () => {
 
 export default JobAgentMonitoringPage;
 
-interface RunPanelProps {
-  input?: TLogMessage[];
-  output?: TLogMessage[];
+interface MessageItemProps {
+  message: LogMessage;
 }
 
-const MessageItem: React.FC<{ message: TLogMessage }> = ({ message }) => {
+const MessageItem = ({ message }: MessageItemProps) => {
   return (
     <div className='flex flex-col gap-2'>
       <div className='flex items-center gap-2'>
@@ -79,7 +81,7 @@ const MessageItem: React.FC<{ message: TLogMessage }> = ({ message }) => {
   );
 };
 
-const RunPanel: React.FC<RunPanelProps> = ({ input, output }) => {
+const RunPanel = ({ input, output }: Pick<Log, 'input' | 'output'>) => {
   if ((!input || input.length === 0) && (!output || output.length === 0)) {
     return (
       <div className='flex h-full items-center justify-center rounded-tl-md rounded-b-md border bg-white p-2'>
@@ -125,15 +127,13 @@ const RunPanel: React.FC<RunPanelProps> = ({ input, output }) => {
   );
 };
 
-interface MetadataPanelProps {
-  metadata?: TLogMetadata;
+interface MetadataItemProps {
+  label: string;
+  value: LogMetadata | string | number | null;
+  depth?: number;
 }
 
-const MetadataItem: React.FC<{
-  label: string;
-  value: TLogMetadata | string | number | null;
-  depth?: number;
-}> = ({ label, value, depth = 0 }) => {
+const MetadataItem = ({ label, value, depth = 0 }: MetadataItemProps) => {
   if (value === null) return null;
 
   if (typeof value === 'object') {
@@ -163,7 +163,7 @@ const MetadataItem: React.FC<{
   );
 };
 
-const MetadataPanel: React.FC<MetadataPanelProps> = ({ metadata }) => {
+const MetadataPanel = ({ metadata }: Pick<Log, 'metadata'>) => {
   if (!metadata || Object.keys(metadata).length === 0) {
     return (
       <div className='flex h-full items-center justify-center rounded-tl-md rounded-b-md border bg-white p-2'>

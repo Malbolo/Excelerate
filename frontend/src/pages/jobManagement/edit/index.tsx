@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/resizable';
 import { Textarea } from '@/components/ui/textarea';
 import useInternalRouter from '@/hooks/useInternalRouter';
+import { createSortableColumns } from '@/lib/createSortableColumns';
 import CommandList from '@/pages/main/components/CommandList';
 import MainSideBar from '@/pages/main/components/MainSideBar';
 import SourceData from '@/pages/main/components/SourceData';
@@ -26,38 +27,62 @@ import { useJobStore } from '@/store/useJobStore';
 import { useSourceStore } from '@/store/useSourceStore';
 import { useStreamStore } from '@/store/useStreamStore';
 import { DataFrameRow } from '@/types/dataframe';
-import { createSortableColumns } from '@/utils/dataframe';
 
 const JobEditPage = () => {
-  const { jobId } = useParams();
-  const getJobDetail = useGetJobDetail();
+  const { jobId } = useParams() as { jobId: string };
+  const { goBack } = useInternalRouter();
 
   const [inputCommand, setInputCommand] = useState<string>('');
   const [step, setStep] = useState<'source' | 'command'>('command');
 
+  const { data: jobDetail, isLoading: isJobDetailLoading } =
+    useGetJobDetail(jobId);
+  const { mutateAsync: sourceDataMutation, isPending: isSourceDataLoading } =
+    useGetSourceData();
+  const { mutateAsync: commandMutation, isPending: isCommandLoading } =
+    useSendCommandList();
+
   const { setSourceDataCommand, setSourceDataUrl, resetSource } =
     useSourceStore();
-
-  const { addCommand, resetCommand, setCommandList } = useCommandStore();
-  const { dataframe, setCode } = useJobResultStore();
-
   const {
+    addCommand,
+    resetCommand,
+    setCommandList: setStoreCommandList,
+  } = useCommandStore();
+  const {
+    dataframe,
+    setCode,
     setColumns,
     setDataframe: setData,
     resetResult,
   } = useJobResultStore();
-
   const { resetJob, setCanSaveJob } = useJobStore();
-
   const { connectStream, resetStream } = useStreamStore();
 
-  const { goBack } = useInternalRouter();
+  useEffect(() => {
+    if (jobDetail) {
+      const { data_load_command, data_load_url, commands, code } = jobDetail;
 
-  const { mutateAsync: sourceDataMutation, isPending: isSourceDataLoading } =
-    useGetSourceData();
-
-  const { mutateAsync: commandMutation, isPending: isCommandLoading } =
-    useSendCommandList();
+      setSourceDataCommand(data_load_command);
+      setSourceDataUrl(data_load_url);
+      setCode(code);
+      setStoreCommandList(
+        commands.map(({ content, order }) => ({
+          content,
+          order,
+          status: 'success',
+        })),
+      );
+      setCanSaveJob(true);
+    }
+  }, [
+    jobDetail,
+    setSourceDataCommand,
+    setSourceDataUrl,
+    setCode,
+    setStoreCommandList,
+    setCanSaveJob,
+  ]);
 
   const fetchSourceData = async () => {
     const response = await sourceDataMutation(inputCommand);
@@ -87,32 +112,15 @@ const JobEditPage = () => {
         });
         break;
     }
-
     setInputCommand('');
   };
 
   useEffect(() => {
+    if (!jobDetail) return;
+
     const initialize = async () => {
-      if (!jobId) return;
-
-      const data = await getJobDetail(jobId);
-      const { data_load_command, data_load_url, commands, code } = data;
-
-      setSourceDataCommand(data_load_command);
-      setSourceDataUrl(data_load_url);
-      setCode(code);
-      setCommandList(
-        commands.map(command => ({
-          title: command.content,
-          status: 'success' as const,
-        })),
-      );
-
-      setCanSaveJob(true);
-
       connectStream();
 
-      // Stream ID가 설정될 때까지 대기
       await new Promise<void>(resolve => {
         const checkStreamId = setInterval(() => {
           if (useStreamStore.getState().streamId) {
@@ -122,44 +130,65 @@ const JobEditPage = () => {
         }, 100);
       });
 
-      const command_list = commands.map(command => command.content);
-
       const currentStreamId = useStreamStore.getState().streamId;
-
       if (!currentStreamId) {
         toast.error('Stream ID is not found');
         return;
       }
 
-      const response = await commandMutation({
-        command_list,
-        url: data_load_url,
-        stream_id: currentStreamId,
-      });
+      if (jobDetail.commands && jobDetail.data_load_url) {
+        const command_list = jobDetail.commands.map(({ content }) => content);
+        try {
+          const response = await commandMutation({
+            command_list,
+            url: jobDetail.data_load_url,
+            stream_id: currentStreamId,
+          });
 
-      setColumns(
-        response.dataframe[0][0]
-          ? createSortableColumns(response.dataframe[0][0])
-          : [],
-      );
-
-      setData(response.dataframe[response.dataframe.length - 1]);
+          setColumns(
+            response.dataframe[0]?.[0]
+              ? createSortableColumns(response.dataframe[0][0])
+              : [],
+          );
+          setData(response.dataframe[response.dataframe.length - 1]);
+        } catch (error) {
+          toast.error('Failed to execute initial commands.');
+          console.error('Error during initial command execution:', error);
+        }
+      }
     };
 
-    const cleanup = () => {
+    initialize();
+
+    return () => {
       resetResult();
       resetSource();
       resetCommand();
       resetJob();
       resetStream();
     };
+  }, [
+    jobId,
+    jobDetail,
+    connectStream,
+    commandMutation,
+    setColumns,
+    setData,
+    resetResult,
+    resetSource,
+    resetCommand,
+    resetJob,
+    resetStream,
+  ]);
 
-    initialize();
-
-    return () => {
-      cleanup();
-    };
-  }, [jobId]);
+  if (isJobDetailLoading) {
+    return (
+      <div className='flex h-screen w-full items-center justify-center'>
+        <ClipLoader size={30} color='#7d9ecd' />
+        <p className='ml-2'>Loading job details...</p>
+      </div>
+    );
+  }
 
   return (
     <div className='bg-gradient relative mx-auto flex h-screen w-full'>
@@ -183,11 +212,9 @@ const JobEditPage = () => {
                 <TemplateList />
                 <SourceData />
               </div>
-
-              <CommandList />
+              <CommandList job={jobDetail} />
             </div>
 
-            {/* Command Input */}
             <div className='flex gap-2'>
               <div className='relative flex-1'>
                 <Textarea
@@ -221,7 +248,7 @@ const JobEditPage = () => {
                 onClick={handleSubmitCommand}
                 className='min-h-[42px] self-end'
                 size='lg'
-                disabled={isSourceDataLoading}
+                disabled={isSourceDataLoading || isCommandLoading} // Added isCommandLoading here for safety
               >
                 Enter
               </Button>
@@ -232,7 +259,7 @@ const JobEditPage = () => {
         <ResizableHandle withHandle />
 
         <ResizablePanel minSize={30} maxSize={60} defaultSize={30}>
-          {!dataframe || isCommandLoading ? (
+          {!dataframe || isCommandLoading || isSourceDataLoading ? ( // Added isSourceDataLoading for consistency
             <div className='flex h-full w-full items-center justify-center border-l bg-[#FAFCFF]'>
               <ClipLoader size={18} color='#7d9ecd' />
             </div>

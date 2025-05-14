@@ -6,14 +6,10 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { CreateScheduleFormData } from '@/pages/createScheduler/components/CreateScheduleModal';
+import { CreateScheduleFormData } from '@/pages/createScheduler/components/ScheduleDialog/scheduleSchema';
 
 import { api } from './core';
-import { JobResponse } from './jobManagement';
-
-interface CreateScheduleResponse {
-  message: string;
-}
+import { JobManagement } from './jobManagement';
 
 export interface FrequencyDisplay {
   type: string;
@@ -26,7 +22,7 @@ export interface Schedule {
   schedule_id: string;
   title: string;
   description: string;
-  frequency: string;
+  frequency: 'daily' | 'weekly' | 'monthly';
   frequency_cron: string;
   frequency_display: FrequencyDisplay;
   owner: string;
@@ -38,7 +34,7 @@ export interface Schedule {
   execution_time: string;
   success_emails: string[];
   failure_emails: string[];
-  jobs: JobResponse[];
+  jobs: JobManagement[];
   last_run: null | {
     end_time: string;
   };
@@ -49,6 +45,15 @@ export interface Schedule {
 
 interface ScheduleListResponse {
   schedules: Schedule[];
+}
+
+interface CreateScheduleRequest extends CreateScheduleFormData {
+  selectedJobs: JobManagement[];
+}
+
+interface EditScheduleRequest {
+  schedule: CreateScheduleRequest;
+  scheduleId: string;
 }
 
 const getScheduleDetail = async (scheduleId: string) => {
@@ -88,33 +93,30 @@ export const useGetScheduleList = () => {
   });
 };
 
-const createSchedule = async (schedule: CreateScheduleFormData) => {
-  const { error, success } = await api<CreateScheduleResponse>(
-    '/api/schedules',
-    {
-      method: 'POST',
-      body: JSON.stringify({
-        title: schedule.scheduleTitle,
-        description: schedule.scheduleDescription,
-        jobs: schedule.selectedJobs.map((job, index) => ({
-          id: String(job.id),
-          order: index + 1,
-        })),
-        success_emails: schedule.successEmail,
-        failure_emails: schedule.failEmail,
-        start_date: new Date(schedule.startDate.getTime() + 9 * 60 * 60 * 1000)
-          .toISOString()
-          .split('.')[0],
-        end_date: schedule.endDate
-          ? new Date(schedule.endDate.getTime() + 9 * 60 * 60 * 1000)
-              .toISOString()
-              .split('.')[0]
-          : undefined,
-        execution_time: schedule.executionTime,
-        frequency: schedule.interval,
-      }),
-    },
-  );
+const createSchedule = async (schedule: CreateScheduleRequest) => {
+  const { error, success } = await api('/api/schedules', {
+    method: 'POST',
+    body: JSON.stringify({
+      title: schedule.scheduleTitle,
+      description: schedule.scheduleDescription,
+      jobs: schedule.selectedJobs.map((job, index) => ({
+        id: String(job.id),
+        order: index + 1,
+      })),
+      success_emails: schedule.successEmail,
+      failure_emails: schedule.failEmail,
+      start_date: new Date(schedule.startDate.getTime() + 9 * 60 * 60 * 1000)
+        .toISOString()
+        .split('.')[0],
+      end_date: schedule.endDate
+        ? new Date(schedule.endDate.getTime() + 9 * 60 * 60 * 1000)
+            .toISOString()
+            .split('.')[0]
+        : undefined,
+      execution_time: schedule.executionTime,
+      frequency: schedule.interval,
+    }),
+  });
 
   if (!success) {
     throw new Error(error);
@@ -123,36 +125,33 @@ const createSchedule = async (schedule: CreateScheduleFormData) => {
   return;
 };
 
-const updateSchedule = async (
-  scheduleId: string,
-  schedule: CreateScheduleFormData,
-) => {
-  const { error, success } = await api<CreateScheduleResponse>(
-    `/api/schedules/${scheduleId}`,
-    {
-      method: 'PATCH',
-      body: JSON.stringify({
-        title: schedule.scheduleTitle,
-        description: schedule.scheduleDescription,
-        jobs: schedule.selectedJobs.map((job, index) => ({
-          id: String(job.id),
-          order: index + 1,
-        })),
-        success_emails: schedule.successEmail,
-        failure_emails: schedule.failEmail,
-        start_date: new Date(schedule.startDate.getTime() + 9 * 60 * 60 * 1000)
-          .toISOString()
-          .split('.')[0],
-        end_date: schedule.endDate
-          ? new Date(schedule.endDate.getTime() + 9 * 60 * 60 * 1000)
-              .toISOString()
-              .split('.')[0]
-          : undefined,
-        execution_time: schedule.executionTime,
-        frequency: schedule.interval,
-      }),
-    },
-  );
+const updateSchedule = async ({
+  scheduleId,
+  schedule,
+}: EditScheduleRequest) => {
+  const { error, success } = await api(`/api/schedules/${scheduleId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({
+      title: schedule.scheduleTitle,
+      description: schedule.scheduleDescription,
+      jobs: schedule.selectedJobs.map((job, index) => ({
+        id: String(job.id),
+        order: index + 1,
+      })),
+      success_emails: schedule.successEmail,
+      failure_emails: schedule.failEmail,
+      start_date: new Date(schedule.startDate.getTime() + 9 * 60 * 60 * 1000)
+        .toISOString()
+        .split('.')[0],
+      end_date: schedule.endDate
+        ? new Date(schedule.endDate.getTime() + 9 * 60 * 60 * 1000)
+            .toISOString()
+            .split('.')[0]
+        : undefined,
+      execution_time: schedule.executionTime,
+      frequency: schedule.interval,
+    }),
+  });
 
   if (!success) {
     throw new Error(error);
@@ -240,7 +239,7 @@ export const useCreateSchedule = () => {
   const navigate = useNavigate();
 
   const { mutate } = useMutation({
-    mutationFn: (schedule: CreateScheduleFormData) => createSchedule(schedule),
+    mutationFn: (schedule: CreateScheduleRequest) => createSchedule(schedule),
     onSuccess: () => {
       toast.success('Schedule created successfully');
       queryClient.invalidateQueries({ queryKey: ['scheduleList'] });
@@ -280,13 +279,8 @@ export const useUpdateSchedule = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { mutate } = useMutation({
-    mutationFn: ({
-      scheduleId,
-      schedule,
-    }: {
-      scheduleId: string;
-      schedule: CreateScheduleFormData;
-    }) => updateSchedule(scheduleId, schedule),
+    mutationFn: (editScheduleRequest: EditScheduleRequest) =>
+      updateSchedule(editScheduleRequest),
     onSuccess: () => {
       toast.success('Schedule updated successfully');
       queryClient.invalidateQueries({ queryKey: ['scheduleList'] });

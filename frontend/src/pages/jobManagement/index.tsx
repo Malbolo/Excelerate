@@ -1,35 +1,24 @@
-import { useState } from 'react';
-
 import { Separator } from '@radix-ui/react-separator';
 import { useSearchParams } from 'react-router-dom';
 
-import {
-  JobResponse,
-  useGetJobDetail,
-  useGetJobList,
-} from '@/apis/jobManagement';
+import { JobManagement, useGetJobList } from '@/apis/jobManagement';
 
 import AvailableJobList from '../createScheduler/components/AvailableJobList';
 import JobPagination from '../createScheduler/components/JobPagination';
 import JobSearchInput from '../createScheduler/components/JobSearchInput';
 import CommandList from './components/CommandList';
 
-export const ITEMS_PER_PAGE = 6;
-
 const JobManagementPage = () => {
-  const [selectedJob, setSelectedJob] = useState<JobResponse | null>(null);
-  const getJobDetail = useGetJobDetail();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
+  const selectedJobId = searchParams.get('selectedJob') || '';
   const title = searchParams.get('title') || '';
-  const dep = searchParams.get('dep') || '';
   const types = searchParams.get('types') || '';
   const name = searchParams.get('name') || '';
 
   const { data: jobList } = useGetJobList({
     page: currentPage,
     title,
-    dep,
     types,
     name,
     mine: true,
@@ -37,9 +26,10 @@ const JobManagementPage = () => {
 
   const { total, jobs } = jobList;
 
-  const handleJobSelect = async (job: JobResponse) => {
-    const jobDetail = await getJobDetail(job.id);
-    setSelectedJob(jobDetail);
+  const handleJobSelect = async (job: JobManagement) => {
+    const newSearchParams = new URLSearchParams(searchParams.toString());
+    newSearchParams.set('selectedJob', job.id);
+    setSearchParams(newSearchParams);
   };
 
   return (
@@ -53,16 +43,16 @@ const JobManagementPage = () => {
         <div className='flex w-full grow flex-col overflow-hidden'>
           <JobSearchInput />
           <AvailableJobList
+            selectedJobId={selectedJobId}
             onJobSelect={handleJobSelect}
-            selectedJob={selectedJob}
             jobs={jobs}
           />
           <JobPagination total={total} />
         </div>
       </main>
       <Separator orientation='vertical' className='mx-2 hidden md:block' />
-      {selectedJob ? (
-        <CommandList selectedJob={selectedJob} />
+      {selectedJobId ? (
+        <CommandList selectedJobId={selectedJobId} />
       ) : (
         <div className='flex w-[40%] flex-col overflow-hidden bg-gray-100/50 p-8'>
           <p className='text-center text-lg font-bold'>

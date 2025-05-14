@@ -1,6 +1,6 @@
 import { useGetMonthSchedules } from '@/apis/schedulerMonitoring';
 
-import { getCalendarMatrix } from '../utils/getCalendarMatrix';
+import { getCalendarMatrix } from '../../../lib/getCalendarMatrix';
 import CalendarDay from './CalendarDay';
 
 interface CalendarGridProps {
