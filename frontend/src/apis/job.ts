@@ -105,7 +105,7 @@ const getSourceData = async (command: string) => {
 export const useSaveJob = () => {
   const queryClient = useQueryClient();
   const { push } = useInternalRouter();
-  const { mutateAsync, isPending } = useMutation({
+  const { mutate, isPending } = useMutation({
     mutationFn: (request: SaveJobRequest) => saveJob(request),
     onSuccess: () => {
       toast.success('Job saved successfully');
@@ -117,21 +117,25 @@ export const useSaveJob = () => {
     },
   });
 
-  return { mutateAsync, isPending };
+  return { mutate, isPending };
 };
 
 export const useEditJob = () => {
-  const { mutateAsync, isPending } = useMutation({
+  const queryClient = useQueryClient();
+  const { push } = useInternalRouter();
+  const { mutate, isPending } = useMutation({
     mutationFn: ({ request, jobId }: EditJobRequest) => editJob(request, jobId),
     onSuccess: () => {
       toast.success('Job edited successfully');
+      queryClient.invalidateQueries({ queryKey: ['jobList'] });
+      push('/job-management');
     },
     onError: () => {
       toast.error('Failed to edit job');
     },
   });
 
-  return { mutateAsync, isPending };
+  return { mutate, isPending };
 };
 
 export const useSendCommandList = () => {

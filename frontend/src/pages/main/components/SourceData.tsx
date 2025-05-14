@@ -1,6 +1,6 @@
 import { useSourceStore } from '@/store/useSourceStore';
 
-const SourceData: React.FC = () => {
+const SourceData = () => {
   const { sourceDataCommand } = useSourceStore();
 
   return (

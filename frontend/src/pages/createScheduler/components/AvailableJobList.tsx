@@ -46,10 +46,8 @@ const AvailableJobList = ({
                 ))}
               <div className='flex flex-col space-x-3 overflow-hidden pl-4'>
                 <span className='truncate font-medium'>{job.title}</span>
-                <span className='text-sm text-gray-500'>
-                  {job.description.length > 50
-                    ? job.description.substring(0, 50) + '...'
-                    : job.description}
+                <span className='line-clamp-1 text-sm text-gray-500'>
+                  {job.description}
                 </span>
               </div>
             </div>

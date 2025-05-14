@@ -56,7 +56,6 @@ const SchedulerNavigator = () => {
         : format(new Date(), 'MM/dd/yyyy', { locale: enUS }) +
           ' (Invalid Value)';
       if (!valid) {
-        console.error(`Invalid dayId: ${value}`);
         date = new Date();
       }
     } else if (type === 'month') {
@@ -67,7 +66,6 @@ const SchedulerNavigator = () => {
         : format(new Date(), 'MMMM yyyy', { locale: enUS }) +
           ' (Invalid Value)';
       if (!valid) {
-        console.error(`Invalid monthId: ${value}`);
         date = startOfMonth(new Date());
       }
     } else {

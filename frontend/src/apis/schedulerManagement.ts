@@ -6,7 +6,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { CreateScheduleFormData } from '@/pages/createScheduler/components/CreateScheduleModal';
+import { CreateScheduleFormData } from '@/pages/createScheduler/components/ScheduleDialog/scheduleSchema';
 
 import { api } from './core';
 import { JobManagement } from './jobManagement';
@@ -22,7 +22,7 @@ export interface Schedule {
   schedule_id: string;
   title: string;
   description: string;
-  frequency: string;
+  frequency: 'daily' | 'weekly' | 'monthly';
   frequency_cron: string;
   frequency_display: FrequencyDisplay;
   owner: string;
@@ -45,6 +45,15 @@ export interface Schedule {
 
 interface ScheduleListResponse {
   schedules: Schedule[];
+}
+
+interface CreateScheduleRequest extends CreateScheduleFormData {
+  selectedJobs: JobManagement[];
+}
+
+interface EditScheduleRequest {
+  schedule: CreateScheduleRequest;
+  scheduleId: string;
 }
 
 const getScheduleDetail = async (scheduleId: string) => {
@@ -84,7 +93,7 @@ export const useGetScheduleList = () => {
   });
 };
 
-const createSchedule = async (schedule: CreateScheduleFormData) => {
+const createSchedule = async (schedule: CreateScheduleRequest) => {
   const { error, success } = await api('/api/schedules', {
     method: 'POST',
     body: JSON.stringify({
@@ -116,10 +125,10 @@ const createSchedule = async (schedule: CreateScheduleFormData) => {
   return;
 };
 
-const updateSchedule = async (
-  scheduleId: string,
-  schedule: CreateScheduleFormData,
-) => {
+const updateSchedule = async ({
+  scheduleId,
+  schedule,
+}: EditScheduleRequest) => {
   const { error, success } = await api(`/api/schedules/${scheduleId}`, {
     method: 'PATCH',
     body: JSON.stringify({
@@ -230,7 +239,7 @@ export const useCreateSchedule = () => {
   const navigate = useNavigate();
 
   const { mutate } = useMutation({
-    mutationFn: (schedule: CreateScheduleFormData) => createSchedule(schedule),
+    mutationFn: (schedule: CreateScheduleRequest) => createSchedule(schedule),
     onSuccess: () => {
       toast.success('Schedule created successfully');
       queryClient.invalidateQueries({ queryKey: ['scheduleList'] });
@@ -270,13 +279,8 @@ export const useUpdateSchedule = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { mutate } = useMutation({
-    mutationFn: ({
-      scheduleId,
-      schedule,
-    }: {
-      scheduleId: string;
-      schedule: CreateScheduleFormData;
-    }) => updateSchedule(scheduleId, schedule),
+    mutationFn: (editScheduleRequest: EditScheduleRequest) =>
+      updateSchedule(editScheduleRequest),
     onSuccess: () => {
       toast.success('Schedule updated successfully');
       queryClient.invalidateQueries({ queryKey: ['scheduleList'] });

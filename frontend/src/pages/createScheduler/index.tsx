@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 
 import { useSearchParams } from 'react-router-dom';
 
@@ -8,9 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 
 import AvailableJobList from './components/AvailableJobList';
-import CreateScheduleModal from './components/CreateScheduleModal';
 import JobPagination from './components/JobPagination';
 import JobSearchInput from './components/JobSearchInput';
+import ScheduleDialog from './components/ScheduleDialog';
 import SelectedJobList from './components/SelectedJobList';
 
 const CreateSchedulerPage = () => {
@@ -51,10 +51,7 @@ const CreateSchedulerPage = () => {
     setSelectedJobs(newOrder);
   };
 
-  const selectedJobIds = useMemo(
-    () => new Set(selectedJobs.map(job => job.id)),
-    [selectedJobs],
-  );
+  const selectedJobIds = new Set(selectedJobs.map(job => job.id));
 
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
@@ -92,7 +89,7 @@ const CreateSchedulerPage = () => {
         </div>
       </div>
 
-      <CreateScheduleModal
+      <ScheduleDialog
         isOpen={isModalOpen}
         onOpenChange={setIsModalOpen}
         selectedJobs={selectedJobs}

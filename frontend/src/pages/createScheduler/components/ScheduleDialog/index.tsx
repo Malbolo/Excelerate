@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Dispatch, useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format as formatDate } from 'date-fns';
@@ -9,7 +9,11 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { JobManagement } from '@/apis/jobManagement';
-import { Schedule, useUpdateSchedule } from '@/apis/schedulerManagement';
+import {
+  Schedule,
+  useCreateSchedule,
+  useUpdateSchedule,
+} from '@/apis/schedulerManagement';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -42,125 +46,73 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import {
+  CreateScheduleFormData,
+  createScheduleSchema,
+} from '@/pages/createScheduler/components/ScheduleDialog/scheduleSchema';
 
-export interface EditScheduleFormData {
-  scheduleTitle: string;
-  scheduleDescription: string;
-  successEmail: string[];
-  failEmail: string[];
-  interval: 'daily' | 'weekly' | 'monthly';
-  startDate: Date;
-  endDate: Date | undefined;
-  executionTime: string;
-  selectedJobs: JobManagement[];
-}
-
-const formSchema = z
-  .object({
-    scheduleTitle: z.string().min(1, 'Please enter a schedule title.'),
-    scheduleDescription: z.string().min(1, 'Please enter a description.'),
-    successEmail: z
-      .array(
-        z.string().email({ message: 'Please enter a valid email address.' }),
-      )
-      .min(1, 'Please add at least one success notification email.'),
-    failEmail: z
-      .array(
-        z.string().email({ message: 'Please enter a valid email address.' }),
-      )
-      .min(1, 'Please add at least one failure notification email.'),
-    interval: z.enum(['daily', 'weekly', 'monthly'], {
-      required_error: 'Please select an execution interval.',
-    }),
-    startDate: z.date({
-      required_error: 'Please select a start date.',
-    }),
-    endDate: z.date().optional(),
-    executionTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, {
-      message: 'Please enter the time in HH:MM format (e.g., 09:00, 14:30).',
-    }),
-  })
-  .refine(
-    data => {
-      if (data.startDate && data.endDate) {
-        const start = new Date(data.startDate.setHours(0, 0, 0, 0));
-        const end = new Date(data.endDate.setHours(0, 0, 0, 0));
-        return end >= start;
-      }
-      return true;
-    },
-    {
-      message: 'End date must be the same as or later than the start date.',
-      path: ['endDate'],
-    },
-  );
-
-interface EditScheduleModalProps {
+interface ScheduleDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   selectedJobs: JobManagement[];
-  scheduleDetail: Schedule;
+  scheduleDetail?: Schedule;
 }
 
-const EditScheduleModal = ({
+const ScheduleDialog = ({
   isOpen,
   onOpenChange,
   selectedJobs,
   scheduleDetail,
-}: EditScheduleModalProps) => {
+}: ScheduleDialogProps) => {
+  const isEditMode = !!scheduleDetail;
+
   const [currentSuccessEmail, setCurrentSuccessEmail] = useState('');
   const [currentFailEmail, setCurrentFailEmail] = useState('');
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const editSchedule = useUpdateSchedule();
+  const createSchedule = useCreateSchedule();
+
+  const form = useForm<CreateScheduleFormData>({
+    resolver: zodResolver(createScheduleSchema),
     defaultValues: {
-      scheduleTitle: scheduleDetail.title,
-      scheduleDescription: scheduleDetail.description,
-      successEmail: scheduleDetail.success_emails,
-      failEmail: scheduleDetail.failure_emails,
-      interval: scheduleDetail.frequency as 'daily' | 'weekly' | 'monthly',
-      startDate: new Date(scheduleDetail.start_date),
-      endDate: scheduleDetail.end_date
+      scheduleTitle: isEditMode ? scheduleDetail.title : '',
+      scheduleDescription: isEditMode ? scheduleDetail.description : '',
+      successEmail: isEditMode ? scheduleDetail.success_emails : [],
+      failEmail: isEditMode ? scheduleDetail.failure_emails : [],
+      interval: isEditMode ? scheduleDetail.frequency : 'daily',
+      startDate: isEditMode ? new Date(scheduleDetail.start_date) : new Date(),
+      endDate: isEditMode
         ? new Date(scheduleDetail.end_date)
         : new Date(2099, 11, 31),
-      executionTime: scheduleDetail.execution_time,
+      executionTime: isEditMode ? scheduleDetail.execution_time : '',
     },
   });
 
-  const editSchedule = useUpdateSchedule();
-
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  const onSubmit = (values: CreateScheduleFormData) => {
     const submissionData = {
       ...values,
       selectedJobs,
     };
 
-    editSchedule({
-      scheduleId: scheduleDetail.schedule_id,
-      schedule: submissionData,
-    });
+    if (isEditMode) {
+      editSchedule({
+        scheduleId: scheduleDetail.schedule_id,
+        schedule: submissionData,
+      });
+    } else {
+      createSchedule(submissionData);
+    }
 
     onOpenChange(false);
     form.reset();
     setCurrentSuccessEmail('');
     setCurrentFailEmail('');
-  }
+  };
 
   const handleOpenChange = (open: boolean) => {
     onOpenChange(open);
     if (!open) {
-      form.reset({
-        scheduleTitle: scheduleDetail.title,
-        scheduleDescription: scheduleDetail.description,
-        successEmail: scheduleDetail.success_emails,
-        failEmail: scheduleDetail.failure_emails,
-        interval: scheduleDetail.frequency as 'daily' | 'weekly' | 'monthly',
-        startDate: new Date(scheduleDetail.start_date),
-        endDate: scheduleDetail.end_date
-          ? new Date(scheduleDetail.end_date)
-          : new Date(2099, 11, 31),
-        executionTime: scheduleDetail.execution_time,
-      });
+      form.reset();
       setCurrentSuccessEmail('');
       setCurrentFailEmail('');
     }
@@ -168,7 +120,7 @@ const EditScheduleModal = ({
 
   const handleAddEmail = (
     emailValue: string,
-    setEmailValue: React.Dispatch<React.SetStateAction<string>>,
+    setEmailValue: Dispatch<React.SetStateAction<string>>,
     fieldName: 'successEmail' | 'failEmail',
   ) => {
     if (emailValue.trim() === '') return;
@@ -205,9 +157,13 @@ const EditScheduleModal = ({
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className='flex max-h-[100vh] flex-col sm:max-w-4xl'>
         <DialogHeader>
-          <DialogTitle>Edit Schedule</DialogTitle>
+          <DialogTitle>
+            {isEditMode ? 'Edit Schedule' : 'Create Schedule'}
+          </DialogTitle>
           <DialogDescription>
-            Edit the schedule for the selected {selectedJobs.length} JOBs.
+            {isEditMode
+              ? `Edit the schedule for the selected ${selectedJobs.length} JOBs.`
+              : `Create a new schedule for the selected ${selectedJobs.length} JOBs.`}
           </DialogDescription>
         </DialogHeader>
 
@@ -404,7 +360,7 @@ const EditScheduleModal = ({
                     render={({ field }) => (
                       <FormItem className='space-y-3'>
                         <FormLabel>
-                          Execution Interval{' '}
+                          Execution Interval
                           <span className='text-red-500'>*</span>
                         </FormLabel>
                         <FormControl>
@@ -577,12 +533,8 @@ const EditScheduleModal = ({
               Cancel
             </Button>
           </DialogClose>
-          <Button
-            type='button'
-            onClick={form.handleSubmit(onSubmit)}
-            disabled={form.formState.isSubmitting}
-          >
-            {form.formState.isSubmitting ? 'Updating...' : 'Update'}
+          <Button type='button' onClick={form.handleSubmit(onSubmit)}>
+            {isEditMode ? 'Update' : 'Create'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -590,4 +542,4 @@ const EditScheduleModal = ({
   );
 };
 
-export default EditScheduleModal;
+export default ScheduleDialog;

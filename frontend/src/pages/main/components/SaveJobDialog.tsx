@@ -65,7 +65,7 @@ const formSchema = z.object({
   sendEmail: z.boolean().default(false).optional(),
 });
 
-const SaveJobDialog: React.FC = () => {
+const SaveJobDialog = () => {
   const { jobId } = useParams();
 
   const [open, setOpen] = useState(false);
@@ -75,9 +75,8 @@ const SaveJobDialog: React.FC = () => {
   const { code } = useJobResultStore();
   const { isEditMode, canSaveJob } = useJobStore();
 
-  const { mutateAsync: saveJobMutation, isPending: isJobSaving } = useSaveJob();
-  const { mutateAsync: editJobMutation, isPending: isJobEditing } =
-    useEditJob();
+  const { mutate: saveJobMutation, isPending: isJobSaving } = useSaveJob();
+  const { mutate: editJobMutation, isPending: isJobEditing } = useEditJob();
 
   const getJobDetail = useGetJobDetail();
 
@@ -108,7 +107,7 @@ const SaveJobDialog: React.FC = () => {
     fetchJobDetail();
   }, []);
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
     const { jobType, jobName, jobDescription } = values;
     const request: SaveJobRequest = {
       type: jobType,
@@ -120,8 +119,8 @@ const SaveJobDialog: React.FC = () => {
       code,
     };
 
-    if (jobId) await editJobMutation({ request, jobId });
-    else await saveJobMutation(request);
+    if (jobId) editJobMutation({ request, jobId });
+    else saveJobMutation(request);
 
     setOpen(false);
     form.reset();

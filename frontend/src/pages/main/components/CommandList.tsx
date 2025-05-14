@@ -98,14 +98,14 @@ const CommandList: React.FC = () => {
     try {
       await handleSendCommandList();
 
-      commandList.forEach(({ order }) => {
-        updateCommandStatus(order, 'success');
+      commandList.forEach((_, idx) => {
+        updateCommandStatus(idx, 'success');
       });
 
       setCanSaveJob(true);
     } catch (error) {
-      commandList.forEach(({ order }) => {
-        updateCommandStatus(order, 'failed');
+      commandList.forEach((_, idx) => {
+        updateCommandStatus(idx, 'failed');
       });
     }
   };

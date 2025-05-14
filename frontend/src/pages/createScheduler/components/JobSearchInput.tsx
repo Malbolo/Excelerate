@@ -31,26 +31,15 @@ const JobSearchInput = () => {
   const initialSelectedTypes = initialTypesString
     ? initialTypesString.split(',')
     : [];
+  const determinedInitialSearchField = searchParams.has('title')
+    ? 'title'
+    : 'name';
+  const determinedInitialSearchQuery =
+    searchParams.get(determinedInitialSearchField) || '';
 
-  let determinedInitialSearchField = 'title';
-  let determinedInitialSearchQuery = '';
-
-  if (searchParams.has('title')) {
-    determinedInitialSearchField = 'title';
-    determinedInitialSearchQuery = searchParams.get('title') || '';
-  } else if (searchParams.has('name')) {
-    determinedInitialSearchField = 'user';
-    determinedInitialSearchQuery = searchParams.get('name') || '';
-  }
-
-  const [selectedTypes, setSelectedTypes] =
-    useState<string[]>(initialSelectedTypes);
-  const [searchField, setSearchField] = useState<string>(
-    determinedInitialSearchField,
-  );
-  const [searchValue, setSearchValue] = useState<string>(
-    determinedInitialSearchQuery,
-  );
+  const [selectedTypes, setSelectedTypes] = useState(initialSelectedTypes);
+  const [searchField, setSearchField] = useState(determinedInitialSearchField);
+  const [searchValue, setSearchValue] = useState(determinedInitialSearchQuery);
 
   useEffect(() => {
     const currentTypesString = searchParams.get('types') || '';
@@ -58,32 +47,33 @@ const JobSearchInput = () => {
       ? currentTypesString.split(',')
       : [];
 
-    let currentInferredSearchField = 'title';
-    let currentInferredSearchValue = '';
-
-    if (searchParams.has('title')) {
-      currentInferredSearchField = 'title';
-      currentInferredSearchValue = searchParams.get('title') || '';
-    } else if (searchParams.has('name')) {
-      currentInferredSearchField = 'user';
-      currentInferredSearchValue = searchParams.get('name') || '';
-    }
-
     if (
       JSON.stringify(selectedTypes.sort()) !==
       JSON.stringify(currentSelectedTypesFromParams.sort())
     ) {
       setSelectedTypes(currentSelectedTypesFromParams);
     }
-    if (searchField !== currentInferredSearchField) {
-      setSearchField(currentInferredSearchField);
+
+    let newSearchFieldState = searchField;
+    let newSearchValueState = '';
+
+    if (searchParams.has('title')) {
+      newSearchFieldState = 'title';
+      newSearchValueState = searchParams.get('title') || '';
+    } else if (searchParams.has('name')) {
+      newSearchFieldState = 'name';
+      newSearchValueState = searchParams.get('name') || '';
     }
-    if (searchValue !== currentInferredSearchValue) {
-      setSearchValue(currentInferredSearchValue);
+
+    if (searchField !== newSearchFieldState) {
+      setSearchField(newSearchFieldState);
+    }
+    if (searchValue !== newSearchValueState) {
+      setSearchValue(newSearchValueState);
     }
   }, [searchParams]);
 
-  const updateSearchParams = (updatedTypes: string[]) => {
+  const updateSearchParams = (currentUpdatedTypes: string[]) => {
     setSearchParams(
       prev => {
         const newParams = new URLSearchParams(prev.toString());
@@ -92,18 +82,15 @@ const JobSearchInput = () => {
 
         const trimmedSearchValue = searchValue.trim();
         if (trimmedSearchValue) {
-          if (searchField === 'user') {
+          if (searchField === 'name') {
             newParams.set('name', trimmedSearchValue);
           } else {
             newParams.set('title', trimmedSearchValue);
           }
-        } else {
-          newParams.delete('name');
-          newParams.delete('title');
         }
 
-        if (updatedTypes.length > 0) {
-          newParams.set('types', updatedTypes.join(','));
+        if (currentUpdatedTypes.length > 0) {
+          newParams.set('types', currentUpdatedTypes.join(','));
         } else {
           newParams.delete('types');
         }
@@ -116,10 +103,10 @@ const JobSearchInput = () => {
   };
 
   const handleSelectedTypesChange = (typeId: string, checked: boolean) => {
-    let newSelectedTypes: string[];
+    let newSelectedTypesArray: string[];
 
     if (typeId === ALL_TYPES_OPTION.id) {
-      newSelectedTypes = checked
+      newSelectedTypesArray = checked
         ? [...JOB_TYPES_CONFIG.map(t => t.id), ALL_TYPES_OPTION.id]
         : [];
     } else {
@@ -134,42 +121,27 @@ const JobSearchInput = () => {
         new Set(currentIndividualSelections),
       );
 
-      const allOtherTypesSelected = JOB_TYPES_CONFIG.every(t =>
-        currentIndividualSelections.includes(t.id),
-      );
+      const allOtherTypesSelected =
+        JOB_TYPES_CONFIG.length > 0 &&
+        JOB_TYPES_CONFIG.every(t => currentIndividualSelections.includes(t.id));
 
       if (allOtherTypesSelected) {
-        newSelectedTypes = [
+        newSelectedTypesArray = [
           ...currentIndividualSelections,
           ALL_TYPES_OPTION.id,
         ];
       } else {
-        newSelectedTypes = currentIndividualSelections;
+        newSelectedTypesArray = currentIndividualSelections;
       }
     }
 
-    const finalSelectedTypes = Array.from(new Set(newSelectedTypes));
+    const finalSelectedTypes = Array.from(new Set(newSelectedTypesArray));
     setSelectedTypes(finalSelectedTypes);
-    updateSearchParams(finalSelectedTypes);
   };
 
   const handleSearchFieldChange = (value: string) => {
     setSearchField(value);
     setSearchValue('');
-    setSearchParams(
-      prev => {
-        const newParams = new URLSearchParams(prev.toString());
-        newParams.delete('title');
-        newParams.delete('name');
-        if (value === 'user' && searchValue.trim())
-          newParams.set('name', searchValue.trim());
-        else if (value === 'title' && searchValue.trim())
-          newParams.set('title', searchValue.trim());
-        newParams.set('page', '1');
-        return newParams;
-      },
-      { replace: true },
-    );
   };
 
   const handleSearchValueChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -248,7 +220,7 @@ const JobSearchInput = () => {
             <SelectItem value='title' className='text-xs sm:text-sm'>
               Title
             </SelectItem>
-            <SelectItem value='user' className='text-xs sm:text-sm'>
+            <SelectItem value='name' className='text-xs sm:text-sm'>
               User
             </SelectItem>
           </SelectContent>

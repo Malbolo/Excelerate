@@ -6,7 +6,7 @@ import {
 import { toast } from 'sonner';
 
 import useInternalRouter from '@/hooks/useInternalRouter';
-import { LoginFormValues, SignupFormValues } from '@/pages/auth';
+import { LoginFormValues, SignupFormValues } from '@/pages/auth/authSchema';
 
 import { api } from './core';
 
@@ -74,7 +74,7 @@ export const useLoginAPI = () => {
     mutationFn: (request: LoginFormValues) => login(request),
     onSuccess: data => {
       localStorage.setItem('token', data.token);
-      toast.success('로그인이 완료되었습니다.');
+      toast.success('Successfully logged in');
       queryClient.invalidateQueries({ queryKey: ['userInfo'] });
       replace('/');
     },
@@ -90,7 +90,7 @@ export const useSignupAPI = () => {
   const { mutate } = useMutation({
     mutationFn: (request: SignupFormValues) => signup(request),
     onSuccess: () => {
-      toast.success('회원가입이 완료되었습니다.');
+      toast.success('Successfully signed up');
     },
     onError: () => {
       toast.error('Failed to signup');

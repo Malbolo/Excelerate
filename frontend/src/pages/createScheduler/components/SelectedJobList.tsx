@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 
 import {
   DndContext,
@@ -27,8 +27,6 @@ interface SelectedJobListProps {
   handleJobDeselect: (jobId: string) => void;
 }
 
-// 모든 로직을 zustand로 이동 예정
-
 const SelectedJobList = ({
   selectedJobs,
   handleJobOrderChange,
@@ -53,7 +51,7 @@ const SelectedJobList = ({
     }
   };
 
-  const jobIds = useMemo(() => selectedJobs.map(job => job.id), [selectedJobs]);
+  const jobIds = selectedJobs.map(job => job.id);
 
   const onJobDeselect = useCallback((jobId: string) => {
     handleJobDeselect(jobId);

@@ -14,8 +14,6 @@ import JobPagination from '../createScheduler/components/JobPagination';
 import JobSearchInput from '../createScheduler/components/JobSearchInput';
 import CommandList from './components/CommandList';
 
-export const ITEMS_PER_PAGE = 6;
-
 const JobManagementPage = () => {
   const [selectedJob, setSelectedJob] = useState<JobManagement | null>(null);
   const getJobDetail = useGetJobDetail();

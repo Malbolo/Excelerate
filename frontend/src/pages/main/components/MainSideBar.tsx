@@ -5,6 +5,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import { DownloadIcon, Expand } from 'lucide-react';
 
 import LLMGraph from '@/components/Graph/LLMGraph';
+import { BASE_URL } from '@/constant/baseURL';
 import Tabs from '@/pages/main/components/Tabs';
 import { useJobResultStore } from '@/store/useJobResultStore';
 import { useStreamStore } from '@/store/useStreamStore';
@@ -12,8 +13,6 @@ import { DataFrame, DataFrameRow } from '@/types/dataframe';
 
 import DataTable from './DataTable';
 import ExpandModal from './ExpandModal';
-
-const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const MainSideBar = memo(() => {
   const { dataframe, columns, code, downloadToken } = useJobResultStore();
