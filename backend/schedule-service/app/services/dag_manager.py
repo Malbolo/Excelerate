@@ -2,7 +2,7 @@ import os
 import shutil
 import requests
 from typing import List, Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.core.config import settings
 from app.core.log_config import logger
@@ -28,7 +28,7 @@ def create_dag(
     """새로운 DAG를 생성합니다."""
     # DAG ID는 고유해야 함
     # DAG ID는 userid_time 형식으로 생성 (밀리초까지 포함하여 추가 고유성 확보)
-    timestamp = datetime.now().strftime('%Y%m%d%H%M%S%f')[:18]  # 년월일시분초밀리초(3자리)
+    timestamp = datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')[:18]  # 년월일시분초밀리초(3자리)
     dag_id = f"{owner}_{timestamp}"
 
     try:
