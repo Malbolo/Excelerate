@@ -2,7 +2,7 @@ from __future__ import annotations
 import math
 from typing import List
 
-from sqlalchemy import or_
+from sqlalchemy import or_, desc
 from sqlalchemy.orm.exc import NoResultFound
 from fastapi import HTTPException
 from sqlalchemy.orm import Session, joinedload
@@ -76,7 +76,7 @@ def is_admin_user(user_info):
     return True
 
 def get_filtered_query(db: Session, request: JobDetailRequest, user_id: int):
-    query = db.query(models.Job).options(joinedload(models.Job.commands))
+    query = crud.get_all_jobs(db).order_by(desc(models.Job.created_at))
     if request.mine:
         query = query.filter(models.Job.user_id == user_id)
     else:

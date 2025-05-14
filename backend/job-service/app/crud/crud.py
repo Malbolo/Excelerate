@@ -1,7 +1,7 @@
 from typing import List
 
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from datetime import datetime
 from app.models import models
 from app.models.models import JobCommand, Job
@@ -58,6 +58,8 @@ def update_job(db: Session, job_id: int, job_request: JobUpdateRequest, user_id:
         data=data
     )
 
+def get_all_jobs(db: Session):
+    return db.query(models.Job).options(joinedload(models.Job.commands))
 
 def delete_job(db: Session, job_id: int, user_id: int):
     job = db.query(Job).filter(Job.id == job_id, Job.user_id == user_id).first()
