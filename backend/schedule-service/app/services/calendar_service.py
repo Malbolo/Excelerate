@@ -10,14 +10,12 @@ from app.services.utils.time import get_month_date_range
 
 def build_monthly_dag_calendar(dags: List[Dict[str, Any]], year: int, month: int) -> List[Dict[str, Any]]:
     """
-    월별 DAG 실행 통계 생성 (pending 포함: 예상 실행일 기준)
-
-    참고: 활성 상태인 DAG만 처리하며, DAG의 시작일 이후 날짜만 고려합니다.
+    월별 DAG 실행 통계 생성 (현재까지는 실제 실행 이력, 미래는 예측 실행 기반)
     """
     # 타임존을 명시적으로 설정 (UTC 사용)
     first_day, last_day = get_month_date_range(year, month)
 
-    # 현재 날짜
+    # 현재 날짜와 시간
     now = datetime.now(timezone.utc)
 
     # 월의 모든 날짜를 미리 딕셔너리로 초기화
@@ -44,7 +42,7 @@ def build_monthly_dag_calendar(dags: List[Dict[str, Any]], year: int, month: int
 
         dag_id = dag["dag_id"]
 
-        # 스케줄 표현식 추출 (객체인 경우와 문자열인 경우 모두 처리)
+        # 스케줄 표현식 추출
         raw_interval = dag.get("schedule_interval")
         cron_expr = ""
 
@@ -72,11 +70,75 @@ def build_monthly_dag_calendar(dags: List[Dict[str, Any]], year: int, month: int
             logger.debug(f"{dag_id} effective_start {effective_start} > effective_end {effective_end}")
             continue
 
-        # 실행 예정일 계산 및 실행 이력 처리
-        _process_dag_runs_for_calendar(dag_id, cron_expr, effective_start, effective_end,
-                                       first_day, last_day, date_index, all_days)
+        # 실행 이력 조회 (월 전체)
+        dag_runs = get_dag_runs(dag_id, start_date=first_day.isoformat(), end_date=last_day.isoformat())
 
-    # 최종 결과 반환 (날짜별로 정렬된 상태로 유지)
+        # 날짜별 실행 이력 구성
+        executed_runs_by_date = {}
+        for run in dag_runs:
+            run_date_str = run.get("start_date", "").split("T")[0]
+            if run_date_str:
+                if run_date_str not in executed_runs_by_date:
+                    executed_runs_by_date[run_date_str] = []
+                executed_runs_by_date[run_date_str].append(run)
+
+        # 해당 월의 각 날짜에 대해 데이터 처리
+        for date_str, idx in date_index.items():
+            # 해당 날짜의 datetime 객체 생성
+            date_dt = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            day_start = date_dt.replace(hour=0, minute=0, second=0)
+            day_end = date_dt.replace(hour=23, minute=59, second=59)
+
+            # 해당 날짜가 effective_start와 effective_end 사이에 있는지 확인
+            if effective_start <= date_dt <= effective_end:
+                # 실행 이력 확인
+                day_runs = executed_runs_by_date.get(date_str, [])
+
+                # 날짜가 오늘이고 아직 실행 시간이 오지 않았거나, 미래 날짜인 경우 크론 표현식 평가
+                if day_end > now:
+                    # 오늘의 경우, 현재 시간까지의 실행 이력 처리
+                    if day_start <= now <= day_end and day_runs:
+                        # 오늘 이미 실행된 것이 있다면 처리
+                        all_days[idx]["total"] += 1
+
+                        success_count = sum(1 for run in day_runs if run.get("state", "").lower() == "success")
+                        failed_count = sum(1 for run in day_runs if run.get("state", "").lower() in ["failed", "error"])
+
+                        all_days[idx]["success"] += success_count
+                        all_days[idx]["failed"] += failed_count
+
+                        # 실행 중인 작업이 있는 경우
+                        if len(day_runs) > success_count + failed_count:
+                            all_days[idx]["pending"] += 1
+
+                    # 현재 시간 이후 또는 미래 날짜의 크론 표현식 평가
+                    try:
+                        # 시작 시간 설정 (오늘의 경우 현재 시간, 미래의 경우 해당 날짜의 시작)
+                        start_time = now if day_start <= now <= day_end else day_start
+
+                        # 해당 날짜에 남은 시간에 실행되는 시간 찾기
+                        cron_iter = croniter(cron_expr, start_time)
+                        execution_time = cron_iter.get_next(datetime)
+
+                        # 같은 날짜 내에 실행 시간이 있는지 확인
+                        if execution_time <= day_end:
+                            # 이미 처리된 실행이 없는 경우에만 추가
+                            if not day_runs:
+                                all_days[idx]["total"] += 1
+                                all_days[idx]["pending"] += 1
+                    except Exception as e:
+                        logger.debug(f"Error evaluating cron for {dag_id} on {date_str}: {str(e)}")
+                else:
+                    # 과거 날짜는 실제 실행 이력만 고려
+                    if day_runs:
+                        all_days[idx]["total"] += 1
+
+                        success_count = sum(1 for run in day_runs if run.get("state", "").lower() == "success")
+                        failed_count = sum(1 for run in day_runs if run.get("state", "").lower() in ["failed", "error"])
+
+                        all_days[idx]["success"] += success_count
+                        all_days[idx]["failed"] += failed_count
+
     return all_days
 
 def _extract_dag_dates(dag: Dict[str, Any], dag_id: str, now: datetime) -> tuple:
