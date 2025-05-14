@@ -504,7 +504,10 @@ def cleanup_file_{job['id']}(**kwargs):
     # run_job 태스크에서 반환한 out 경로
     path = kwargs['ti'].xcom_pull(task_ids='{task_id}')
     if path and os.path.exists(path):
-        os.remove(path)
+        workdir = os.path.dirname(path)
+        # 디렉터리가 존재하면 통째로 삭제
+        if os.path.isdir(workdir):
+            shutil.rmtree(workdir)
 
 task_{idx}_cleanup = PythonOperator(
     task_id='cleanup_job_{job['id']}',
