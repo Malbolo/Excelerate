@@ -275,44 +275,15 @@ def get_schedule_run_detail_with_logs(schedule_id: str, run_id: str, user_id: in
         logger.error(f"Error getting schedule run detail: {str(e)}")
         raise e
 
-
 def get_all_schedules_with_details(
-        status: Optional[str] = None,
-        search: Optional[str] = None,
-        include_job_status: bool = False,
         user_id: int = None
 ) -> List[Dict[str, Any]]:
     """모든 스케줄(DAG) 목록을 상세 정보와 함께 반환"""
     # 모든 DAG 기본 정보 조회
     dags = dag_query.get_all_dags(limit=1000)
 
-    # 상태별 필터링
-    if status:
-        if status.lower() == "active":
-            dags = [dag for dag in dags if not dag.get("is_paused", False)]
-        elif status.lower() == "paused":
-            dags = [dag for dag in dags if dag.get("is_paused", False)]
-
-    # 제목 검색
-    if search:
-        search = search.lower()
-        filtered_dags = []
-        for dag in dags:
-            # 태그에서 title 추출
-            dag_title = extract_title_from_tags(dag.get("tags", []))
-            if not dag_title:
-                dag_title = dag.get("name", dag.get("dag_id", ""))
-
-            # 검색어가 dag_id, title, description에 포함되어 있는지 확인
-            if (search in dag.get("dag_id", "").lower() or
-                    search in dag_title.lower() or
-                    search in dag.get("description", "").lower()):
-                filtered_dags.append(dag)
-        dags = filtered_dags
-
     # 각 DAG의 상세 정보 조회
     schedule_list = []
-    # db = next(get_db())
     try:
         for dag in dags:
             dag_id = dag.get("dag_id", "")
@@ -332,6 +303,7 @@ def get_all_schedules_with_details(
 
                 # 최근 실행 정보 조회 (마지막 실행 정보를 위해)
                 recent_runs = dag_query.get_dag_runs(dag_id, limit=1)
+                schedule_data["owner"] = owner
 
                 if recent_runs:
                     recent_run = recent_runs[0]
@@ -345,38 +317,6 @@ def get_all_schedules_with_details(
                         "end_time": recent_run.get("end_date")
                     }
 
-                    schedule_data["owner"] = owner
-                    # 작업 상태 포함 여부에 따라 작업 상태 정보 추가
-                    if include_job_status:
-                        # 작업 실행 상태 조회
-                        task_instances = dag_query.get_task_instances(dag_id, run_id)
-
-                        # 작업 정보에 상태 추가
-                        tasks_with_status = []
-                        for job in schedule_data.get("jobs", []):
-                            job_id = job.get("id")
-                            # 해당 job_id와 일치하는 태스크 인스턴스 찾기
-                            matching_task = None
-                            for task in task_instances:
-                                task_id = task.get("task_id", "")
-                                if task_id == f"job_{job_id}":
-                                    matching_task = task
-                                    break
-
-                            # 작업 정보에 상태 추가
-                            job_with_status = job.copy()
-                            if matching_task:
-                                job_with_status["status"] = matching_task.get("state", "unknown")
-                                job_with_status["start_time"] = matching_task.get("start_date")
-                                job_with_status["end_time"] = matching_task.get("end_date")
-                                job_with_status["duration"] = matching_task.get("duration")
-                            else:
-                                job_with_status["status"] = "not_run"
-
-                            tasks_with_status.append(job_with_status)
-
-                        # 원래 jobs 배열 교체
-                        schedule_data["jobs"] = tasks_with_status
 
                 # 다음 실행 예정 정보 조회
                 next_run_info = dag_query.get_next_dag_run(dag_id)

@@ -363,18 +363,12 @@ async def update_schedule(
 
 @router.get("")
 async def get_all_schedules(
-        status: Optional[str] = Query(None, description="Filter by status (active/paused)"),
-        search: Optional[str] = Query(None, description="Search by title"),
-        include_job_status: bool = Query(False, description="Include job status from recent run"),
         user_id: int = Depends(check_admin_permission)
 ) -> JSONResponse:
     """모든 스케줄(DAG) 목록을 반환하는 API"""
     try:
         # 서비스 함수 호출
         schedules = detail_service.get_all_schedules_with_details(
-            status=status,
-            search=search,
-            include_job_status=include_job_status,
             user_id=user_id
         )
 
