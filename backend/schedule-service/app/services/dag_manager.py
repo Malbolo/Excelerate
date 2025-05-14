@@ -44,7 +44,7 @@ def create_dag(
                 service_url=job_service_url,
                 method="POST",
                 endpoint="/api/jobs/for-schedule",
-                data={"job_ids": job_ids},
+                data={"job_ids": [str(job_id) for job_id in job_ids]},
                 user_id=user_id
             )
 
@@ -204,15 +204,12 @@ def update_dag(
 
         # 새로운 job ID 목록이 제공된 경우 - Job Service API 호출
         try:
-            # 문자열 job_ids를 정수로 변환
-            int_job_ids = [int(job_id) for job_id in job_ids]
-
             # auth.py의 함수 사용하여 API 호출
             job_data_response = auth.call_service_api(
                 service_url=job_service_url,
                 method="POST",
                 endpoint="/api/jobs/for-schedule",
-                data={"job_ids": int_job_ids},
+                data={"job_ids": [str(job_id) for job_id in job_ids]},
                 user_id=user_id
             )
 
