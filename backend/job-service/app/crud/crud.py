@@ -97,5 +97,5 @@ def get_job_by_id(db: Session, job_id: str):
         print(f"Error fetching job from DB: {str(e)}")
         return None
 
-def get_jobs_by_ids(job_ids: List[int], db: Session):
+def get_jobs_by_ids(job_ids: List[str], db: Session):
     return db.query(models.Job).filter(models.Job.id.in_(job_ids)).all()
