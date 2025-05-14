@@ -238,7 +238,7 @@ async def get_schedule_run_detail(
 ) -> JSONResponse:
     try:
         # 서비스 레이어에서 상세 정보와 로그를 함께 조회
-        run_data = detail_service.get_schedule_run_detail_with_logs(schedule_id, run_id)
+        run_data = detail_service.get_schedule_run_detail_with_logs(schedule_id, run_id, user_id)
 
         return JSONResponse(content={
             "result": "success",
@@ -374,7 +374,8 @@ async def get_all_schedules(
         schedules = detail_service.get_all_schedules_with_details(
             status=status,
             search=search,
-            include_job_status=include_job_status
+            include_job_status=include_job_status,
+            user_id=user_id
         )
 
         return JSONResponse(content={

@@ -152,7 +152,7 @@ def get_job_details(job_ids: List[str], user_id: int = None) -> Dict[str, Any]:
             }
         return empty_details
 
-def get_schedule_run_detail_with_logs(schedule_id: str, run_id: str) -> Dict[str, Any]:
+def get_schedule_run_detail_with_logs(schedule_id: str, run_id: str, user_id: int) -> Dict[str, Any]:
     """스케줄 실행 상세 정보와 작업별 에러 로그를 함께 조회"""
     try:
         # DAG 상세 정보 조회
@@ -181,7 +181,7 @@ def get_schedule_run_detail_with_logs(schedule_id: str, run_id: str) -> Dict[str
                     pass
 
         # job 상세 정보 조회
-        job_details = get_job_details(job_ids)
+        job_details = get_job_details(job_ids, user_id)
 
         # 태스크 데이터 구성 (job_id를 키로 사용)
         jobs_data = {}
@@ -246,7 +246,7 @@ def get_schedule_run_detail_with_logs(schedule_id: str, run_id: str) -> Dict[str
                     pass
 
         # 스케줄 정보 조회 (description 포함)
-        schedule_data = get_schedule_detail(schedule_id)
+        schedule_data = get_schedule_detail(schedule_id, user_id)
 
         # 작업 요약 정보 구성
         summary = {
@@ -279,7 +279,8 @@ def get_schedule_run_detail_with_logs(schedule_id: str, run_id: str) -> Dict[str
 def get_all_schedules_with_details(
         status: Optional[str] = None,
         search: Optional[str] = None,
-        include_job_status: bool = False
+        include_job_status: bool = False,
+        user_id: int = None
 ) -> List[Dict[str, Any]]:
     """모든 스케줄(DAG) 목록을 상세 정보와 함께 반환"""
     # 모든 DAG 기본 정보 조회
@@ -323,7 +324,7 @@ def get_all_schedules_with_details(
 
             try:
                 # 상세 정보 조회
-                schedule_data = get_schedule_detail(dag_id)
+                schedule_data = get_schedule_detail(dag_id, user_id)
 
                 # 기본적으로 마지막 실행과 다음 실행 정보를 초기화
                 schedule_data["last_run"] = None
