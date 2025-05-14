@@ -432,14 +432,15 @@ def {function_name}(**kwargs):
     # Job {job['id']} - {job['name']}
 
     # 0) url 날짜 변환
+    url = "{job['data_load_url']}"
+    
     if {has_code}:
 {indented_data_code}
         # 기존 URL의 start_date=, end_date=값 교체
-        url = re.sub(r"(start_date=)[^&]+", "\\\\1" + startdate, "{job['data_load_url']}")
+        if startdate:
+            url = re.sub(r"(start_date=)[^&]+", "\\\\1" + startdate, url)
         if enddate:
-            url = re.sub(r"(end_date=)[^&]+", "\\\\1" + enddate, "{job['data_load_url']}")
-    else:
-        url = "{job['data_load_url']}"
+            url = re.sub(r"(end_date=)[^&]+", "\\\\1" + enddate, url)
 
     # 1) 데이터 로드
     resp = requests.get(url)
