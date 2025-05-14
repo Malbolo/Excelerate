@@ -53,7 +53,8 @@ async def create_schedule(
             start_date=schedule_request.start_date,
             end_date=schedule_request.end_date,
             success_emails=schedule_request.success_emails,
-            failure_emails=schedule_request.failure_emails
+            failure_emails=schedule_request.failure_emails,
+            user_id=user_id
         )
 
         return JSONResponse(status_code=200, content={
@@ -341,7 +342,8 @@ async def update_schedule(
             start_date=schedule_request.start_date,
             end_date=schedule_request.end_date,
             success_emails=schedule_request.success_emails,
-            failure_emails=schedule_request.failure_emails
+            failure_emails=schedule_request.failure_emails,
+            user_id=user_id
         )
 
         return JSONResponse(content={
