@@ -2,7 +2,7 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 class JobForScheduleRequest(BaseModel):
-    job_ids: List[int]
+    job_ids: List[str]
 
 class JobListForSchedule(BaseModel):
     id: str
