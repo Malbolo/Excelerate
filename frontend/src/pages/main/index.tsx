@@ -27,8 +27,12 @@ const MainPage: React.FC = () => {
   const [inputCommand, setInputCommand] = useState<string>('');
   const [step, setStep] = useState<'source' | 'command'>('source');
 
-  const { setSourceDataCommand, setSourceDataUrl, resetSource } =
-    useSourceStore();
+  const {
+    setSourceDataCommand,
+    setSourceDataUrl,
+    setSourceDataCode,
+    resetSource,
+  } = useSourceStore();
 
   const { addCommand, resetCommand } = useCommandStore();
 
@@ -46,7 +50,10 @@ const MainPage: React.FC = () => {
   const { connectStream, resetStream } = useStreamStore();
 
   const fetchSourceData = async () => {
-    const response = await sourceDataMutation(inputCommand);
+    const response = await sourceDataMutation({
+      command: inputCommand,
+      stream_id: useStreamStore.getState().streamId ?? '',
+    });
 
     const columns: ColumnDef<DataFrameRow>[] = response.dataframe[0]
       ? createSortableColumns(response.dataframe[0])
@@ -56,6 +63,7 @@ const MainPage: React.FC = () => {
     setData(response.dataframe);
     setSourceDataUrl(response.url);
     setColumns(columns);
+    setSourceDataCode(response.data_load_code ?? '');
   };
 
   const handleSubmitCommand = async () => {

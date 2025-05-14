@@ -68,7 +68,7 @@ const SaveJobDialog = ({ job }: { job?: JobManagement }) => {
   const [open, setOpen] = useState(false);
   const isEditMode = job ? true : false;
 
-  const { sourceDataCommand, sourceDataUrl } = useSourceStore();
+  const { sourceDataCommand, sourceDataUrl, sourceDataCode } = useSourceStore();
   const { commandList } = useCommandStore();
   const { code } = useJobResultStore();
   const { canSaveJob, isEditMode: isEditting } = useJobStore();
@@ -96,6 +96,7 @@ const SaveJobDialog = ({ job }: { job?: JobManagement }) => {
       data_load_url: sourceDataUrl,
       commands: commandList.map(({ content }) => content),
       code,
+      data_load_code: sourceDataCode,
     };
 
     if (job) editJobMutation({ request, jobId: job.id });
