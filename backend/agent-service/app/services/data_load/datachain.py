@@ -153,6 +153,28 @@ class FileAPIClient:
             logger.error(f"검증 중 오류 발생: {e}")
             raise HTTPException(status_code=400, detail=f"Data fetch failed: {e}")
 
+    def _transform_date_field(self, start_expr: str, end_expr: str, q, queue):       
+        queue.put_nowait({"type":"notice","content":f"날짜 표현을 ISO-7801으로 변환 중"})
+        self.mlogger.set_name(f"LLM Call: Transform Date Params")
+
+        # 2-1) 날짜 계산용 템플릿 꺼내기
+        prompt = make_date_code_template()
+        date_chain = prompt | self.llm
+
+        # 2-2) expr 에 원본 텍스트 넣고 코드 스니펫 받기
+        code_snippet: str = date_chain.invoke({"start_expr": start_expr, "end_expr": end_expr}).content
+
+        # 2-3) exec 으로 실행해서 namespace 에서 startdate 꺼내기
+        namespace: dict = {}
+        exec(code_snippet, namespace)
+        setattr(q, "start_date", namespace["startdate"])
+        setattr(q, "end_date", namespace["enddate"])
+
+        queue.put_nowait({"type":"code","content": code_snippet})
+        queue.put_nowait({"type":"log","content":self.mlogger.get_logs()[-1].model_dump_json()})
+        return code_snippet
+
+
     def _assemble_url(self, q: FileAPIDetail) -> str:
         # 예시 URL: /{system_name}/factory-data/{metric}?product_code=...&start_date=...
         path = f"/{q.system_name}/factory-data/{q.metric}"
@@ -160,6 +182,8 @@ class FileAPIClient:
             f"?factory_id={q.factory_id}"
             f"&start_date={q.start_date}"
         )
+        if q.end_date:
+            query += f"&end_date={q.end_date}"
         if q.product_code:
             query += f"&product_code={q.product_code}"
         return self.base_url + path + query
@@ -175,16 +199,11 @@ class FileAPIClient:
 
         # 1) 엔티티 추출
         if self.retriever:
-            result = create_retrieval_chain(self.retriever, self.extractor_chain).invoke({
-                "input": user_input
-            })
+            result = create_retrieval_chain(self.retriever, self.extractor_chain).invoke({"input": user_input})
             entities: FileAPIDetail = result['answer']
         else:
             # retriever가 없는 경우 직접 추출
-            result = self.extractor_chain.invoke({
-                "context": "",
-                "input": user_input
-            })
+            result = self.extractor_chain.invoke({"context": "", "input": user_input})
             entities: FileAPIDetail = result
 
         entity_logs: list[LogDetail] = self.mlogger.get_logs()
@@ -194,31 +213,14 @@ class FileAPIClient:
         if entities.start_date is None:
             raise HTTPException(status_code=400, detail=f"Start date is required")
 
-        # 2) start_date가 ISO 포맷이 아니면 → LLM으로 코드 생성 후 exec
-        if not is_iso_date(entities.start_date):
-            q.put_nowait({"type": "notice", "content": f"{entities.start_date} -> date 형태로 변환 중입니다."})
-            self.mlogger.set_name("LLM Call: Transfrom Date Param")
-            # 2-1) 날짜 계산용 템플릿 꺼내기
-            prompt = make_date_code_template()
-            date_chain = prompt | self.llm
+        # 2) date가 ISO 포맷이 아니면 → LLM으로 코드 생성 후 exec
+        if not is_iso_date(entities.start_date) or (entities.end_date and not is_iso_date(entities.end_date)):
+            python_code = self._transform_date_field(entities.start_date, entities.end_date, entities, q)
 
-            # 2-2) expr 에 원본 텍스트 넣고 코드 스니펫 받기
-            code_snippet: str = date_chain.invoke({"expr": entities.start_date}).content
-            # 2-3) exec 으로 실행해서 namespace 에서 startdate 꺼내기
-            namespace: dict = {}
-            exec(code_snippet, namespace)
-            entities.start_date = namespace["startdate"]
-            python_code = code_snippet
-
-            entity_logs: list[LogDetail] = self.mlogger.get_logs()
-            # 로그 스트리밍
-            q.put_nowait({"type": "code", "content": python_code})
-            q.put_nowait({"type": "log", "content": entity_logs[-1].model_dump_json()})
-
-        # 2) 검증
+        # 3) 검증
         self._validate(entities)
 
-        # 3) URL 생성 & 호출
+        # 4) URL 생성 & 호출
         url = self._assemble_url(entities)
         logger.info(f"API 호출 URL: {url}")
         q.put_nowait({"type": "notice", "content": "서버에서 데이터를 불러오는 중..."})
@@ -233,5 +235,5 @@ class FileAPIClient:
         q.put_nowait({"type": "data", "content": dataframe.to_dict(orient="records")})
         q.put_nowait({"type": "notice", "content": "data를 불러왔습니다."})
 
-        # 4) DataFrame 반환
+        # 5) DataFrame 반환
         return url, pd.DataFrame(raw["data"]), entity_logs, python_code, entities
