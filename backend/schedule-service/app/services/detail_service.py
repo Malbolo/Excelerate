@@ -104,26 +104,27 @@ def get_job_details(job_ids: List[str], user_id: int = None) -> Dict[str, Any]:
         if not job_service_url:
             raise Exception("JOB_SERVICE_URL 환경 변수가 설정되지 않았습니다.")
 
-        # 기존 API 엔드포인트 호출
         try:
             # 요청 형식 - 단순히 job_ids 리스트 전달
             response = auth.call_service_api(
                 service_url=job_service_url,
                 method="POST",
                 endpoint="/api/jobs/for-schedule/commands",
-                data={"job_ids": job_ids},  # 기존과 동일한 형식
+                data={"job_ids": job_ids},
                 user_id=user_id
             )
 
             # 응답 형식에 맞게 처리
-            if response and "job_details" in response:
+            if response and "jobs" in response:
                 # 배열을 딕셔너리로 변환
-                for job in response["job_details"]:
+                for job in response["jobs"]:
                     job_id = job.get("id")
                     if job_id:
+                        if "commands" not in job or not isinstance(job["commands"], list):
+                            job["commands"] = []
                         job_details[job_id] = job
             else:
-                logger.warning("Job Service API 응답에 job_details 필드가 없습니다.")
+                logger.warning("Job Service API 응답에 'jobs' 필드가 없습니다.")
 
         except Exception as e:
             logger.error(f"Job Service API 호출 중 오류 발생: {str(e)}")
