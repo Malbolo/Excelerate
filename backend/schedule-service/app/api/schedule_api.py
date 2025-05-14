@@ -15,7 +15,7 @@ from app.core.log_config import logger
 
 router = APIRouter(
     prefix="/api/schedules",
-    # dependencies=[Depends(auth.get_user_id_from_header)]
+    dependencies=[Depends(auth.get_user_id_from_header)]
 )
 
 # ADMIN 권한 체크 함수
