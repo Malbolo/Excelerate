@@ -513,7 +513,7 @@ task_{idx}_cleanup = PythonOperator(
     task_id='cleanup_job_{job['id']}',
     python_callable=cleanup_file_{job['id']},
     # email 또는 skip 이후에 무조건 실행되도록
-    trigger_rule='all_success',
+    trigger_rule='all_done',
     dag=dag,
 )
 
