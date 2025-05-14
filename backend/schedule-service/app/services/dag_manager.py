@@ -12,7 +12,6 @@ from app.services.execution import toggle_dag_pause
 from app.services.metadata import save_dag_metadata, get_dag_metadata
 from app.core import auth
 
-
 def create_dag(
         name: str,
         description: str,
@@ -24,7 +23,7 @@ def create_dag(
         success_emails: List[str] = None,
         failure_emails: List[str] = None,
         execution_time: str = None,
-        user_id: int = None  # 사용자 ID 매개변수 추가
+        user_id: int = None
 ) -> str:
     """새로운 DAG를 생성합니다."""
     # DAG ID는 고유해야 함
