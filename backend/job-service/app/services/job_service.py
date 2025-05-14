@@ -129,6 +129,8 @@ def get_jobs_for_creating_schedule(request: JobForScheduleRequest, db: Session) 
             id=str(job.id),
             title=job.title,
             description=job.description,
+            data_load_code=job.data_load_code,
+            data_load_url=job.data_load_url,
             code=job.code
         ) for job in jobs
     ]
@@ -150,6 +152,8 @@ def get_jobs_with_commands_for_creating_schedule(request: JobForScheduleRequest,
             id=str(job.id),
             title=job.title,
             description=job.description,
+            data_load_code=job.data_load_code,
+            data_load_url=job.data_load_url,
             code=job.code,
             commands=[
                 Command(content=cmd.content, order=cmd.order) for cmd in job.commands
