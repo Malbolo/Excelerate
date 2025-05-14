@@ -65,8 +65,6 @@ async def command_code(
         
         # Edit 모드여서 기존 코드가 있으면 excel 조작부를 제거하고 반영
         if request.original_code:
-            # print(request.original_code)
-            # print(strip_excel_block(request.original_code))
             query['original_code'] = strip_excel_block(request.original_code)
 
         # graph 별도의 쓰레드에서 실행행

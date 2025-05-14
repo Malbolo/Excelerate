@@ -6,6 +6,42 @@ from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTempla
 import pandas as pd
 from openpyxl import load_workbook
 
+from app.utils.redis_client import redis_client
+from app.utils.redis_chatprompt import PromptStore
+
+prompt_store = PromptStore(redis_client)
+
+def load_chat_template(name: str) -> ChatPromptTemplate:
+    """
+    Redis 에서 name 으로 불러온 메시지 리스트를
+    LangChain 의 ChatPromptTemplate 으로 변환하여 반환합니다.
+    role 은 반드시 'system', 'human', 'ai' 중 하나여야 합니다.
+    """
+    messages_data = prompt_store.load(name)
+    if messages_data is None:
+        raise ValueError(f"Prompt '{name}' not found in Redis")
+
+    prompt_messages = []
+    for msg in messages_data:
+        role = msg["role"]
+        text = msg["text"]
+        if role == "system":
+            prompt_messages.append(
+                SystemMessagePromptTemplate.from_template(text)
+            )
+        elif role == "human":
+            prompt_messages.append(
+                HumanMessagePromptTemplate.from_template(text)
+            )
+        elif role == "ai":
+            prompt_messages.append(
+                AIMessagePromptTemplate.from_template(text)
+            )
+        else:
+            raise ValueError(f"Unknown role '{role}' in prompt '{name}'")
+
+    return ChatPromptTemplate.from_messages(prompt_messages)
+
 def make_code_template() -> ChatPromptTemplate:
     # 2) 시스템 메시지: df와 파라미터를 받아 필터링 코드를 생성한다는 역할 정의
     system_template = SystemMessagePromptTemplate.from_template(

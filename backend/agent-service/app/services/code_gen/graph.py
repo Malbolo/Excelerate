@@ -14,6 +14,7 @@ from langgraph.graph import START, END
 
 from app.utils.memory_logger import MemoryLogger
 from app.services.code_gen.graph_util import (
+    load_chat_template,
     extract_error_info, make_code_template, make_code_extension_template, make_classify_template,
     make_extract_excel_params_template, insert_df_to_excel, make_excel_code_snippet
 )
@@ -99,7 +100,8 @@ class CodeGenerator:
             }
 
         cmds = new_cmds
-        prompt = make_classify_template()
+        # prompt = make_classify_template()
+        prompt = load_chat_template("classify_commands")
         # invoke
         cng_chain = prompt | self.sllm
         resp = cng_chain.invoke({"cmd_list": json.dumps(cmds, ensure_ascii=False)})
@@ -210,7 +212,8 @@ class CodeGenerator:
             schain = code_gen_prompt | self.sllm
             llm_input = {"original_code":state['original_code'], "dftypes": df.dtypes.to_string(), "df": df_preview, "input": input}
         else:
-            code_gen_prompt = make_code_template()
+            # code_gen_prompt = make_code_template()
+            code_gen_prompt = load_chat_template("make_code")
             schain = code_gen_prompt | self.sllm
             llm_input = {"dftypes": df.dtypes.to_string(), "df": df_preview, "input": input}
 
