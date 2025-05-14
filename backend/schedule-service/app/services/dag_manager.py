@@ -40,18 +40,16 @@ def create_dag(
 
         # Job Service API를 통해 job 정보 가져오기
         try:
-            int_job_ids = [int(job_id) for job_id in job_ids]
-
             # auth.py의 함수 사용하여 API 호출
             response = auth.call_service_api(
                 service_url=job_service_url,
                 method="POST",
-                endpoint="/api/jobs/for-schedule/commands",
-                data={"job_ids": int_job_ids},
+                endpoint="/api/jobs/for-schedule",
+                data={"job_ids": job_ids},
                 user_id=user_id
             )
 
-            if not response or "job_details" not in response:
+            if not response or "jobs" not in response:
                 raise Exception("Job 정보를 가져오지 못했습니다.")
 
             # 응답에서 job 정보 추출하여 job_details 구성
@@ -59,7 +57,7 @@ def create_dag(
             job_details_map = {}
 
             # 배열을 딕셔너리로 변환
-            for job in response["job_details"]:
+            for job in response["jobs"]:
                 job_id = job.get("id")
                 if job_id:
                     job_details_map[job_id] = job
@@ -201,73 +199,65 @@ def update_dag(
 
         # job 정보 가져오기
         job_details = []
-        if job_ids:
-            # 새로운 job ID 목록이 제공된 경우 - Job Service API 호출
+        if not job_ids:
+            # job_ids가 제공되지 않은 경우 - 오류 발생
+            raise Exception("스케줄 업데이트에는 최소 하나 이상의 Job ID가 필요합니다.")
+
+        # 새로운 job ID 목록이 제공된 경우 - Job Service API 호출
+        try:
+            # 문자열 job_ids를 정수로 변환
+            int_job_ids = [int(job_id) for job_id in job_ids]
+
+            # auth.py의 함수 사용하여 API 호출
             job_data_response = auth.call_service_api(
                 service_url=job_service_url,
                 method="POST",
                 endpoint="/api/jobs/for-schedule",
-                data={"job_ids": job_ids},
+                data={"job_ids": int_job_ids},
                 user_id=user_id
             )
 
-            job_data_map = job_data_response.get("data", {})
+            # 응답 로깅 (디버깅용)
+            logger.debug(f"Job Service API 응답: {job_data_response}")
 
+            # 응답 형식 확인 및 처리
+            if not job_data_response or "jobs" not in job_data_response:
+                raise Exception("Job 정보를 가져오지 못했습니다.")
+
+            # 배열을 딕셔너리로 변환
+            job_details_map = {}
+            for job in job_data_response["jobs"]:
+                job_id = job.get("id")
+                if job_id:
+                    job_details_map[job_id] = job
+
+            # job_ids 순서에 맞게 job_details 배열 구성
             for job_id in job_ids:
-                job_info = job_data_map.get(str(job_id))
+                job_info = job_details_map.get(str(job_id))
                 if not job_info:
                     raise Exception(f"Job ID {job_id}를 찾을 수 없습니다.")
 
                 job_details.append({
                     "id": job_id,
-                    "name": job_info.get("title"),
-                    "code": job_info.get("code"),
-                    "data_load_url": job_info.get("data_load_url")
+                    "name": job_info.get("title", f"Job {job_id}"),
+                    "code": job_info.get("code", ""),
+                    "data_load_url": job_info.get("data_load_url", "")
                 })
-        else:
-            # 기존 메타 파일에서 job 목록 가져오기
-            try:
-                metadata = get_dag_metadata(dag_id)
-                existing_job_ids = metadata.get("job_ids", [])
-
-                if existing_job_ids:
-                    # 기존 job ID로 Job Service API 호출
-                    job_data_response = auth.call_service_api(
-                        service_url=job_service_url,
-                        method="POST",
-                        endpoint="/api/jobs/batch",
-                        data={"job_ids": existing_job_ids},
-                        user_id=user_id
-                    )
-
-                    job_data_map = job_data_response.get("data", {})
-
-                    for job_id in existing_job_ids:
-                        job_info = job_data_map.get(str(job_id))
-                        if job_info:
-                            job_details.append({
-                                "id": job_id,
-                                "name": job_info.get("title"),
-                                "code": job_info.get("code"),
-                                "data_load_url": job_info.get("data_load_url")
-                            })
-            except Exception as e:
-                logger.error(f"기존 job 정보 조회 실패: {str(e)}")
-                raise Exception(f"기존 job 정보 조회 실패: {str(e)}")
+        except Exception as e:
+            logger.error(f"Job 정보 조회 중 오류 발생: {str(e)}")
+            raise Exception(f"Job 정보 조회 중 오류 발생: {str(e)}")
 
         # 시작일과 종료일 문자열로 변환
         start_date_str = update_start_date.strftime("%Y-%m-%d")
         end_date_str = update_end_date.strftime("%Y-%m-%d") if update_end_date else "None"
 
         # 태그 및 설명 설정
-        tags_str = f"['custom', '{owner}', 'start_date:{start_date_str}', 'title:{name}'"
-        if end_date:
+        tags_str = f"['custom', '{owner}', 'start_date:{start_date_str}', 'title:{update_name}'"
+        if update_end_date:
             tags_str += f", 'end_date:{end_date_str}'"
         tags_str += "]"
 
-        enhanced_description = f"{update_description} (Start: {start_date_str})"
-        if update_end_date:
-            enhanced_description += f", End: {end_date_str}"
+        enhanced_description = f"{update_description}"
 
         # DAG 코드 생성
         dag_code = _generate_dag_code(
@@ -293,10 +283,12 @@ def update_dag(
         save_dag_metadata(
             dag_id=dag_id,
             job_ids=[str(job["id"]) for job in job_details],
-            start_date=start_date_str,
-            end_date=end_date_str if update_end_date else None,
+            start_date=update_start_date.isoformat(),
+            end_date=update_end_date.isoformat() if update_end_date else None,
             success_emails=success_emails,
-            failure_emails=failure_emails
+            failure_emails=failure_emails,
+            title=update_name,
+            description=update_description
         )
 
         # 현재 DAG 상태 유지

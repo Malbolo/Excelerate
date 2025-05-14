@@ -12,6 +12,7 @@ spec:
       labels:
         app: schedule-service
     spec:
+#      test
 #      initContainers:
 #        - name: wait-for-mysql
 #          image: busybox
