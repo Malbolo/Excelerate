@@ -21,6 +21,7 @@ const TemplateList = () => {
   const getTemplateImage = useGetTemplateImage();
 
   const handleGetTemplateImage = async (templateName: string) => {
+    setTemplateImage(null);
     setOpenModal(true);
     const image = await getTemplateImage(templateName);
     setTemplateImage(image);
