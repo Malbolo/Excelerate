@@ -12,7 +12,7 @@ from app.services.airflow_client import airflow_client
 from app.services.dag_service import DagService
 from app.services.schedule_service import ScheduleService
 from app.services.calendar_service import build_monthly_dag_calendar
-from app.services.utils import cron
+from app.utils import cron_utils
 from app.core import auth
 from app.core.log_config import logger
 
@@ -36,7 +36,7 @@ async def create_schedule(
 ) -> JSONResponse:
     try:
         # frequency를 cron 표현식으로 변환
-        cron_expression = cron.convert_frequency_to_cron(
+        cron_expression = cron_utils.convert_frequency_to_cron(
             schedule_request.frequency,
             schedule_request.execution_time,
             schedule_request.start_date
@@ -47,7 +47,7 @@ async def create_schedule(
         job_ids = [job.id for job in sorted_jobs]
 
         # Airflow DAG 생성
-        dag_id = dag_manager.create_dag(
+        dag_id = DagService.create_dag(
             name=schedule_request.title,
             description=schedule_request.description,
             cron_expression=cron_expression,
@@ -81,8 +81,8 @@ async def get_monthly_statistics(
         user_id: int = Depends(check_admin_permission)
 ) -> JSONResponse:
     try:
-        dags = dag_query.get_all_dags()
-        calendar_data = calendar_service.build_monthly_dag_calendar(dags, year, month)
+        dags = airflow_client.get_all_dags()
+        calendar_data = build_monthly_dag_calendar(dags, year, month)
 
         return JSONResponse(content={
             "result": "success",
@@ -102,7 +102,7 @@ async def get_schedule_detail_route(
 ) -> JSONResponse:
     try:
         # 서비스 함수 호출
-        schedule_data = detail_service.get_schedule_detail(schedule_id, user_id=user_id)
+        schedule_data = ScheduleService.get_schedule_detail(schedule_id, user_id=user_id)
 
         return JSONResponse(content={
             "result": "success",
@@ -122,7 +122,7 @@ async def delete_schedule(
 ) -> JSONResponse:
     try:
         # DAG 삭제
-        result = dag_manager.delete_dag(schedule_id)
+        result = DagService.delete_dag(schedule_id)
 
         if result:
             return JSONResponse(content={
@@ -159,8 +159,8 @@ async def get_schedule_executions_by_date(
                 "message": "유효하지 않은 날짜입니다. 올바른 날짜를 입력해주세요."
             })
 
-        dags = dag_query.get_all_dags()
-        executions = detail_service.get_dag_runs_by_date(dags, date_str)
+        dags = airflow_client.get_all_dags()  # dag_query → airflow_client
+        executions = ScheduleService.get_dag_runs_by_date(dags, date_str)
 
         return JSONResponse(content={
             "result": "success",
@@ -185,7 +185,7 @@ async def get_schedule_runs(
 ) -> JSONResponse:
     try:
         # DAG 실행 목록 조회
-        dag_runs = dag_query.get_dag_runs(
+        dag_runs = airflow_client.get_dag_runs(
             schedule_id,
             limit=page * size,
             start_date=start_date,
@@ -193,7 +193,7 @@ async def get_schedule_runs(
         )
 
         # DAG 상세 정보 조회
-        dag_detail = dag_query.get_dag_detail(schedule_id)
+        dag_detail = airflow_client.get_dag_detail(schedule_id)
 
         # 페이징 처리
         total = len(dag_runs)
@@ -241,7 +241,7 @@ async def get_schedule_run_detail(
 ) -> JSONResponse:
     try:
         # 서비스 레이어에서 상세 정보와 로그를 함께 조회
-        run_data = detail_service.get_schedule_run_detail_with_logs(schedule_id, run_id, user_id)
+        run_data = ScheduleService.get_schedule_run_detail_with_logs(schedule_id, run_id, user_id)
 
         return JSONResponse(content={
             "result": "success",
@@ -261,7 +261,7 @@ async def execute_schedule(
 ) -> JSONResponse:
     try:
         # DAG 실행
-        result = execution.trigger_dag(schedule_id)
+        result = airflow_client.trigger_dag(schedule_id)
 
         return JSONResponse(content={
             "result": "success",
@@ -287,14 +287,14 @@ async def toggle_schedule(
 ) -> JSONResponse:
     try:
         # DAG 상세 정보 조회
-        dag_detail = dag_query.get_dag_detail(schedule_id)
+        dag_detail = airflow_client.get_dag_detail(schedule_id)
 
         # 현재 상태 확인 및 토글
         current_state = dag_detail.get("is_paused", False)
         new_state = not current_state
 
         # DAG 상태 업데이트
-        result = execution.toggle_dag_pause(schedule_id, new_state)
+        result = airflow_client.toggle_dag_pause(schedule_id, new_state)
 
         status_message = "일시 중지됨" if new_state else "활성화됨"
 
@@ -323,7 +323,7 @@ async def update_schedule(
         # cron 표현식 변환 (frequency가 제공된 경우)
         cron_expression = None
         if schedule_request.frequency and schedule_request.execution_time:
-            cron_expression = cron.convert_frequency_to_cron(
+            cron_expression = cron_utils.convert_frequency_to_cron(
                 schedule_request.frequency,
                 schedule_request.execution_time
             )
@@ -335,7 +335,7 @@ async def update_schedule(
             job_ids = [job.id for job in sorted_jobs]
 
         # DAG 업데이트 - description 제외
-        result = dag_manager.update_dag(
+        result = DagService.update_dag(
             dag_id=schedule_id,
             name=schedule_request.title,
             # description 필드 제외 (Airflow API에서 읽기 전용)
@@ -371,7 +371,7 @@ async def get_all_schedules(
     """모든 스케줄(DAG) 목록을 반환하는 API"""
     try:
         # 서비스 함수 호출
-        schedules = detail_service.get_all_schedules_with_details(
+        schedules = ScheduleService.get_all_schedules_with_details(
             user_id=user_id
         )
 
