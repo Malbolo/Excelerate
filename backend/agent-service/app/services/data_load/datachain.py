@@ -34,7 +34,7 @@ class FileAPIClient:
             port: int = settings.MILVUS_PORT,
             collection_name: str = "factory_catalog",
             k: int = 3,
-            model_name: str = "gpt-4.1-nano",
+            model_name: str = "gpt-4.1-mini",
             base_url: str = settings.FILESYSTEM_URL,
     ):
         self.mlogger = MemoryLogger()
