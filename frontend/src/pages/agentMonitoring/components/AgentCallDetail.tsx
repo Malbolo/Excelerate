@@ -21,7 +21,7 @@ const AgentCallDetail = ({ logs }: { logs: Log[] }) => {
             {selectedLog?.name}
           </p>
         )}
-        <div className='flex h-full w-full flex-col gap-6 @lg/agent-call-detail:flex-row'>
+        <div className='flex h-full w-full flex-col gap-6 @xl/agent-call-detail:flex-row'>
           <section className='p-4'>
             {logs.length > 0 && (
               <LLMGraph
@@ -31,7 +31,7 @@ const AgentCallDetail = ({ logs }: { logs: Log[] }) => {
               />
             )}
           </section>
-          <section className='flex-1 overflow-x-clip overflow-y-auto border-t pt-4 @lg/agent-call-detail:border-t-0 @lg/agent-call-detail:border-l'>
+          <section className='flex-1 overflow-x-clip overflow-y-auto border-t pt-4 @xl/agent-call-detail:border-t-0 @xl/agent-call-detail:border-l'>
             {selectedLog ? (
               <>
                 <RunPanel
