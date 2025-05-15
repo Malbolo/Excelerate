@@ -39,9 +39,11 @@ const CommandList = ({ job }: { job?: JobManagement }) => {
   const {
     setDataframe: setData,
     code,
+    errorMsg,
     setCode,
     setColumns,
     setDownloadToken,
+    setErrorMsg,
   } = useJobResultStore();
 
   const { isEditMode, setCanSaveJob } = useJobStore();
@@ -95,6 +97,7 @@ const CommandList = ({ job }: { job?: JobManagement }) => {
     setCode(response.codes[response.codes.length - 1]);
     setColumns(columns);
     setDownloadToken(response.download_token);
+    setErrorMsg(response.error_msg || null);
   };
 
   const handleRun = async () => {
@@ -106,6 +109,11 @@ const CommandList = ({ job }: { job?: JobManagement }) => {
       commandList.forEach((_, idx) => {
         updateCommandStatus(idx, 'success');
       });
+
+      if (errorMsg) {
+        const errorIndex = errorMsg.command_index;
+        updateCommandStatus(errorIndex, 'failed');
+      }
 
       setCanSaveJob(true);
     } catch (error) {

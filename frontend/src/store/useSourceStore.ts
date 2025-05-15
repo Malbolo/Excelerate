@@ -7,7 +7,6 @@ interface SourceState {
   sourceParams: Record<string, string>;
 
   setSourceDataCode: (code: string) => void;
-
   setSourceDataCommand: (command: string) => void;
   setSourceDataUrl: (url: string) => void;
   setSourceParams: (params: Record<string, string>) => void;
