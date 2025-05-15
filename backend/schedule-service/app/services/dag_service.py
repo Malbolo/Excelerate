@@ -370,6 +370,8 @@ dag = DAG(
     default_args=default_args,
     description='{description}',
     schedule_interval='{schedule_interval}',
+    start_date: datetime({start_date.year}, {start_date.month}, {start_date.day}),
+    end_date: {f"datetime({end_date.year}, {end_date.month}, {end_date.day})" if end_date else "None"},
     tags={tags},
     catchup=False,
     is_paused_upon_creation=False
