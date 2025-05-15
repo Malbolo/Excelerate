@@ -14,6 +14,7 @@ from app.utils.api_utils import get_log_queue
 from fastapi.concurrency import run_in_threadpool
 
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 router = APIRouter()
 docs = DataDocs()
@@ -26,7 +27,7 @@ async def command_code(
     data_loader: FileAPIClient = Depends(get_data_load)
 ):
     try:
-        api_start = datetime.now()
+        api_start = datetime.now(ZoneInfo("UTC"))
 
         # 나중엔 Optional이 아닌 필수로 연결하도록 요청
         if request.stream_id:
@@ -56,7 +57,7 @@ async def command_code(
 
         log_id = generate_log_id(user_name)
 
-        api_end = datetime.now()
+        api_end = datetime.now(ZoneInfo("UTC"))
         api_latency = (api_end - api_start).total_seconds()
 
         q.put_nowait({"type": "notice", "content": "Log를 저장 중입니다..."})

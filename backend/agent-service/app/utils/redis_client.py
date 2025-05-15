@@ -2,6 +2,7 @@ import redis
 import os
 import json
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from app.models.log import LogDetail
 from uuid import uuid4
 import pandas as pd
@@ -17,7 +18,7 @@ def generate_log_id(user_name: str, uid: str = None) -> str:
 
 def save_logs_to_redis(log_id: str, logs: list[LogDetail], metadata: dict | None = None, ttl_minutes: int = 60*24*7): # 1주 보관
     meta = metadata.copy() if metadata else {}
-    meta["created_at"] = datetime.now().isoformat()
+    meta["created_at"] = datetime.now(ZoneInfo("UTC")).isoformat()
 
     payload = {
         "metadata": meta,
