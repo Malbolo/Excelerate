@@ -44,7 +44,7 @@ const LLMGraph: React.FC<LLMGraphProps> = ({ logs, onLogClick, jobName }) => {
             y1={rootNodePosition.y}
             x2={rootNodePosition.x}
             y2={10000}
-            stroke='#AEAEAE'
+            stroke='#e5e7eb'
             strokeWidth={1}
           />
         </svg>
