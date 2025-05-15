@@ -37,6 +37,7 @@ export interface Schedule {
   jobs: JobManagement[];
   last_run: null | {
     end_time: string;
+    status: 'success' | 'failed';
   };
   next_run: null | {
     data_interval_end: string;

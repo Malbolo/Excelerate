@@ -24,8 +24,8 @@ const ScheduleTable = () => {
             <TableHead>Owner</TableHead>
             <TableHead>Interval</TableHead>
 
-            <TableHead>Last Run Time</TableHead>
-            <TableHead>Next Run Time</TableHead>
+            <TableHead>Last Run</TableHead>
+            <TableHead>Next Run</TableHead>
             <TableHead>End Date</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>

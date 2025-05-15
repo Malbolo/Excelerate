@@ -6,6 +6,7 @@ import { Schedule } from '@/apis/schedulerManagement';
 import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from '@/components/ui/table';
 import JobDisplay from '@/pages/scheduleDetail/components/JobDisplay';
+import StatusIcon from '@/pages/scheduleDetail/components/StatusIcon';
 import { useLocalDate } from '@/store/useLocalDate';
 
 import {
@@ -57,10 +58,19 @@ const ScheduleRow = ({ schedule }: ScheduleRowProps) => {
           {formatInterval(schedule.frequency_display, locale, place)}
         </TableCell>
 
-        <TableCell>
-          {schedule.last_run && schedule.last_run.end_time
-            ? formatDateTime(schedule.last_run.end_time, locale, place)
-            : '-'}
+        <TableCell className='flex items-center gap-2'>
+          <span className='text-sm'>
+            {schedule.last_run?.status ? (
+              <StatusIcon status={schedule.last_run.status} />
+            ) : (
+              '-'
+            )}
+          </span>
+          <span className='text-sm'>
+            {schedule.last_run?.end_time
+              ? formatDateTime(schedule.last_run.end_time, locale, place)
+              : '-'}
+          </span>
         </TableCell>
         <TableCell>
           {schedule.next_run && schedule.next_run.data_interval_end
