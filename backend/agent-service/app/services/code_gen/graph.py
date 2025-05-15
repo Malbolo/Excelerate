@@ -265,6 +265,7 @@ class CodeGenerator:
             compiled = compile(code_body, "<user_code>", "exec")
             exec(compiled, namespace)
         except Exception as e:
+            self.q.put_nowait({"type": "notice", "content": "코드를 실행 중 에러가 발생했습니다."})
             return extract_error_info(e, code_body, "exec", commands)
 
         # 2) invoke 단계 → 스크립트 실행 직후 intermediate 변수에서 결과 목록 추출
@@ -274,6 +275,7 @@ class CodeGenerator:
             if not isinstance(dfs, list):
                 raise ValueError("`intermediate` 리스트가 없습니다.")
         except Exception as e:
+            self.q.put_nowait({"type": "notice", "content": "결과 추출 중 에러가 발생했습니다."})
             return extract_error_info(e, code_body, "invoke", commands)
         
         # 3) dataframes와 codes 갱신

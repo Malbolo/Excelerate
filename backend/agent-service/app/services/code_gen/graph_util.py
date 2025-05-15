@@ -107,10 +107,12 @@ def extract_error_info(exc: Exception, code_body: str, stage: str, commands: lis
     err_idx = min(raw_lineno - 1, total - 1)
 
     # 4) 블록 시작 찾기: err_idx 바로 위부터 검색해 최초의 빈 줄 이후를 블록 시작으로
-    block_start = 0
-    for idx in range(err_idx - 1, -1, -1):
-        if lines[idx].strip() == "":
-            block_start = idx + 1
+    block_start: int = 0
+    for idx in range(err_idx, -1, -1):
+        line_strip = lines[idx].lstrip()
+        # (1) 주석으로 시작하고, (2) 바로 위가 빈 줄이거나 맨 앞이면 블록 시작
+        if line_strip.startswith("#") and (idx == 0 or lines[idx-1].strip() == ""):
+            block_start = idx
             break
 
     # 5) 블록 시작 줄(주석)에서 command 추출
