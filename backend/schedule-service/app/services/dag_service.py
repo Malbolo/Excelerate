@@ -2,14 +2,15 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 import os
 import shutil
-from croniter import croniter
+from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.log_config import logger
 from app.services.airflow_client import airflow_client
-from app.services.metadata import get_dag_metadata, save_dag_metadata
 from app.utils import date_utils, cron_utils, log_utils
 from app.core import auth
+from app.db import database
+from app.crud import schedule_crud
 
 class DagService:
     """DAG 관련 서비스 클래스"""
@@ -26,15 +27,21 @@ class DagService:
             success_emails: List[str] = None,
             failure_emails: List[str] = None,
             execution_time: str = None,
-            user_id: int = None
+            user_id: int = None,
+            db: Session = None,
     ) -> str:
         """새로운 DAG를 생성합니다."""
-        # DAG ID는 고유해야 함
-        # DAG ID는 userid_time 형식으로 생성 (밀리초까지 포함하여 추가 고유성 확보)
-        timestamp = date_utils.get_now_utc().strftime('%Y%m%d%H%M%S%f')[:18]
-        dag_id = f"{owner}_{timestamp}"
+        close_db = False
+        if db is None:
+            db = next(database.get_db())
+            close_db = True
 
         try:
+            # DAG ID는 고유해야 함
+            # DAG ID는 userid_time 형식으로 생성 (밀리초까지 포함하여 추가 고유성 확보)
+            timestamp = date_utils.get_now_utc().strftime('%Y%m%d%H%M%S%f')[:18]
+            dag_id = f"{owner}_{timestamp}"
+
             # Job Service에서 job 정보 가져오기
             job_details = DagService._get_job_basic_info(job_ids, user_id)
 
@@ -57,24 +64,30 @@ class DagService:
             # DAG 파일 저장
             DagService._save_dag_file(dag_id, dag_code)
 
-            # 메타데이터 파일 생성
-            save_dag_metadata(
-                dag_id=dag_id,
-                job_ids=job_ids,
-                start_date=start_date.isoformat(),
-                end_date=end_date.isoformat() if end_date else None,
-                success_emails=success_emails,
-                failure_emails=failure_emails,
-                execution_time=execution_time,
-                title=name,
-                description=description
-            )
+            schedule_data = {
+                "title": name,
+                "description": description,
+                "cron_expression": cron_expression,
+                "execution_time": execution_time,
+                "start_date": start_date,
+                "end_date": end_date,
+                "success_emails": success_emails or [],
+                "failure_emails": failure_emails or [],
+                "owner": owner,
+                "job_ids": job_ids
+            }
+
+            schedule_crud.create_schedule(db, dag_id, schedule_data, user_id)
 
             return dag_id
 
         except Exception as e:
             logger.error(f"Error creating DAG: {str(e)}")
             raise Exception(f"DAG 생성에 실패했습니다: {str(e)}")
+
+        finally:
+            if close_db:
+                db.close()
 
     @staticmethod
     def update_dag(
@@ -87,7 +100,8 @@ class DagService:
             end_date: Optional[datetime] = None,
             success_emails: Optional[List[str]] = None,
             failure_emails: Optional[List[str]] = None,
-            user_id: int = None
+            user_id: int = None,
+            db: Session = None
     ) -> bool:
         """기존 DAG 업데이트 - 동일한 DAG ID를 유지하면서 내용만 교체"""
         try:
@@ -150,14 +164,9 @@ class DagService:
             if update_start_date is None:
                 raise Exception("시작일을 찾을 수 없습니다.")
 
-            # job 정보 가져오기
+            # job_ids는 필수 항목입니다
             if not job_ids:
-                # job_ids가 제공되지 않은 경우, 기존 메타데이터에서 가져옵니다
-                metadata = get_dag_metadata(dag_id)
-                job_ids = metadata.get("job_ids", [])
-
-                if not job_ids:
-                    raise Exception("스케줄 업데이트에는 최소 하나 이상의 Job ID가 필요합니다.")
+                raise Exception("스케줄 업데이트에는 최소 하나 이상의 Job ID가 필요합니다.")
 
             # Job 상세 정보 조회
             job_details = DagService._get_job_basic_info(job_ids, user_id)
@@ -192,16 +201,18 @@ class DagService:
                 f.write(dag_code)
                 logger.info(f"Updated DAG file at {dag_file_path}")
 
-            # 메타데이터 파일 업데이트
-            save_dag_metadata(
+            schedule_crud.update_schedule_metadata(
+                db,
                 dag_id=dag_id,
-                job_ids=[str(job["id"]) for job in job_details],
-                start_date=update_start_date.isoformat(),
-                end_date=update_end_date.isoformat() if update_end_date else None,
-                success_emails=success_emails,
-                failure_emails=failure_emails,
-                title=update_name,
-                description=update_description
+                data={
+                    "job_ids": [str(job["id"]) for job in job_details],
+                    "start_date": update_start_date,
+                    "end_date": update_end_date,
+                    "success_emails": success_emails,
+                    "failure_emails": failure_emails,
+                    "title": update_name,
+                    "description": update_description
+                }
             )
 
             # 현재 DAG 상태 유지
@@ -240,23 +251,11 @@ class DagService:
             # 파일 시스템에서도 삭제
             try:
                 dag_file_path = os.path.join(settings.AIRFLOW_DAGS_PATH, f"{dag_id}.py")
-                meta_file_path = os.path.join(settings.AIRFLOW_DAGS_PATH, f"{dag_id}.meta.json")
-                old_meta_file_path = os.path.join(settings.AIRFLOW_DAGS_PATH, f"{dag_id}.meta")
 
                 # Python 파일 삭제
                 if os.path.exists(dag_file_path):
                     os.remove(dag_file_path)
                     logger.info(f"Deleted DAG file: {dag_file_path}")
-
-                # 메타데이터 파일 삭제 (JSON 형식)
-                if os.path.exists(meta_file_path):
-                    os.remove(meta_file_path)
-                    logger.info(f"Deleted metadata file: {meta_file_path}")
-
-                # 이전 형식 메타데이터 파일 삭제
-                if os.path.exists(old_meta_file_path):
-                    os.remove(old_meta_file_path)
-                    logger.info(f"Deleted old metadata file: {old_meta_file_path}")
 
             except Exception as file_error:
                 logger.warning(f"Failed to delete DAG files: {str(file_error)}")
