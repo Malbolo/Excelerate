@@ -53,6 +53,10 @@ export const useStreamStore = create<StreamState>((set, get) => ({
       set({ notice: event.data });
     });
 
+    eventSource.addEventListener('stop', () => {
+      set({ notice: '' });
+    });
+
     eventSource.onerror = error => {
       set({ isConnected: false });
       toast.error(`Connection error: ${error}`);

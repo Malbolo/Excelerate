@@ -6,7 +6,7 @@ const SourceData = () => {
   return (
     <section className='flex flex-1 flex-col justify-between'>
       <p className='py-1 text-lg font-bold'>Source Data</p>
-      <div className='card-gradient flex h-34 flex-col items-center justify-center overflow-y-auto rounded-xl border p-4'>
+      <div className='card-gradient flex h-38 flex-col items-center justify-center overflow-y-auto rounded-xl border p-4'>
         {sourceDataCommand ? (
           <p>{sourceDataCommand}</p>
         ) : (
