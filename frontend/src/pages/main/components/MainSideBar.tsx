@@ -136,6 +136,7 @@ const CodePanel: React.FC<{
 };
 
 const TracePanel: React.FC = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { logs } = useStreamStore();
 
   if (!logs || logs.length === 0)
@@ -146,6 +147,18 @@ const TracePanel: React.FC = () => {
   return (
     <div className='h-full'>
       <AgentCallDetail logs={logs} />
+      <div className='absolute bottom-2 left-1 z-10 cursor-pointer rounded-full border bg-white p-3'>
+        <Expand
+          color='#374151'
+          size={18}
+          onClick={() => {
+            setIsModalOpen(true);
+          }}
+        />
+      </div>
+      <ExpandModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+        <AgentCallDetail logs={logs} />
+      </ExpandModal>
     </div>
   );
 };
