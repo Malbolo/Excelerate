@@ -177,7 +177,7 @@ class ChatDocs:
             }
         },
         "template" : {
-            "template_name": "Code_Generator:Split_Command_List",
+            "template_name": "Code Generator:Split Command List",
             "variables": {
                 "cmd_list": [
                 "불량률 1 이상만 필터링해줘",
