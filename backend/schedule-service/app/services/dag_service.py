@@ -36,7 +36,7 @@ class DagService:
 
         try:
             # Job Service에서 job 정보 가져오기
-            job_details = DagService._get_job_details(job_ids, user_id)
+            job_details = DagService._get_job_basic_info(job_ids, user_id)
 
             # 시작일과 종료일 문자열로 변환
             start_date_str = start_date.strftime("%Y-%m-%d")
@@ -160,7 +160,7 @@ class DagService:
                     raise Exception("스케줄 업데이트에는 최소 하나 이상의 Job ID가 필요합니다.")
 
             # Job 상세 정보 조회
-            job_details = DagService._get_job_details(job_ids, user_id)
+            job_details = DagService._get_job_basic_info(job_ids, user_id)
 
             # 시작일과 종료일 문자열로 변환
             start_date_str = update_start_date.strftime("%Y-%m-%d")
@@ -267,7 +267,7 @@ class DagService:
             return False
 
     @staticmethod
-    def _get_job_details(job_ids: List[str], user_id: int) -> List[Dict[str, Any]]:
+    def _get_job_basic_info(job_ids: List[str], user_id: int) -> List[Dict[str, Any]]:
         """Job Service API를 통해 job 정보 가져오기"""
         job_service_url = settings.JOB_SERVICE_URL
         if not job_service_url:
