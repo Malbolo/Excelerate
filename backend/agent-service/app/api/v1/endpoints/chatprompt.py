@@ -7,15 +7,33 @@ from app.models.chatprompt import PromptSchema, InvokeRequest, InvokeTemplateReq
 
 from app.utils.docs import ChatDocs
 from app.utils.redis_client import redis_client
-from app.utils.redis_chatprompt import PromptStore, load_chat_template
+from app.utils.redis_chatprompt import PromptStore
 
-from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate, AIMessagePromptTemplate
+from app.services.chatprompt_service import (
+    list_grouped_prompts,
+    get_prompt,
+    invoke_with_messages,
+    invoke_with_template,
+)
 
 docs = ChatDocs()
 router = APIRouter()
 store  = PromptStore(redis_client)
 
 llm = ChatOpenAI(model_name="gpt-4.1-mini", temperature=0)
+
+@router.get("/", response_model=Dict[str, List[str]])
+def list_prompts_grouped():
+    """
+    Agent별로 템플릿 이름 리스트를 그룹화하여 반환합니다.
+    예시:
+    {
+      "Code_Generator": ["Manipulate_Excel", "AnotherTemplate"],
+      "Data_Loader": ["LoadFromAPI"]
+    }
+    """
+    data = list_grouped_prompts()
+    return JSONResponse(status_code=200, content={"result": "success", "data": data})
 
 @router.get("/{agent}/{template_name}", response_model=PromptSchema)
 def get_prompt_by_agent_template(agent: str, template_name: str):
@@ -28,24 +46,7 @@ def get_prompt_by_agent_template(agent: str, template_name: str):
         raise HTTPException(404, "Prompt not found")
     return JSONResponse(status_code=200, content={"result": "success", "data": {"name": name, "messages": msgs}})
 
-@router.get("/", response_model=Dict[str, List[str]])
-def list_prompts_grouped() -> Dict[str, List[str]]:
-    """
-    Agent별로 템플릿 이름 리스트를 그룹화하여 반환합니다.
-    예시:
-    {
-      "Code_Generator": ["Manipulate_Excel", "AnotherTemplate"],
-      "Data_Loader": ["LoadFromAPI"]
-    }
-    """
-    names = store.list_names()
-    grouped: Dict[str, List[str]] = {}
-    for full_name in names:
-        agent, template = full_name.split(":", 1)
-        grouped.setdefault(agent, []).append(template)
-    return JSONResponse(status_code=200, content={"result": "success", "data": grouped})
-
-@router.post("/invoke", response_model=Any)
+@router.post("/invoke/messages", response_model=Any)
 def invoke_messages(req: InvokeRequest = docs.invoke["split"]) -> JSONResponse:
     """
     사용자로부터 받은 messages 리스트와 variables로
@@ -56,33 +57,11 @@ def invoke_messages(req: InvokeRequest = docs.invoke["split"]) -> JSONResponse:
     플레이스홀더 {key}를 메시지 내에서 교체하지 않고,
     ChatPromptTemplate의 input_variables로 설정합니다.
     """
-    # 1) 메시지 템플릿 생성
-    message_templates = []
-    for m in req.messages:
-        if m.role.lower() == "system":
-            message_templates.append(
-                SystemMessagePromptTemplate.from_template(m.text)
-            )
-        elif m.role.lower() == "human":
-            message_templates.append(
-                HumanMessagePromptTemplate.from_template(m.text)
-            )
-        elif m.role.lower() == "ai":
-            message_templates.append(
-                AIMessagePromptTemplate.from_template(m.text)
-            )
-        else:
-            raise HTTPException(400, f"Unsupported role: {m.role}")
-    # 2) ChatPromptTemplate 구성
-    prompt = ChatPromptTemplate.from_messages(message_templates)
-    # 3) LangChain 체인 생성 및 호출
-    chain = prompt | llm
     try:
-        response = chain.invoke(req.variables)
-    except Exception as e:
-        raise HTTPException(500, f"LLM 호출 실패: {e}")
-    # 4) 결과 반환
-    return JSONResponse(status_code=200, content={"result": "success", "data": response.content})
+        content = invoke_with_messages([m.dict() for m in req.messages], req.variables)
+    except HTTPException as e:
+        raise e
+    return JSONResponse(status_code=200, content={"result": "success", "data": content})
 
 @router.post("/invoke/template", response_model=Any)
 def invoke_template(req: InvokeTemplateRequest = docs.invoke["template"]) -> JSONResponse:
@@ -90,20 +69,11 @@ def invoke_template(req: InvokeTemplateRequest = docs.invoke["template"]) -> JSO
     저장된 template_name에 variables를 넣어 LLM 호출 결과를 반환합니다.
     load_chat_template 함수를 사용하여 ChatPromptTemplate을 생성합니다.
     """
-    # template_name 정규화
-    norm_name = req.template_name.replace(" ", "_")
-    # ChatPromptTemplate 로드
     try:
-        prompt = load_chat_template(norm_name)
-    except Exception as e:
-        raise HTTPException(404, f"Prompt load 실패: {e}")
-    # LangChain 체인 호출
-    chain = prompt | llm
-    try:
-        response = chain.invoke(req.variables)
-    except Exception as e:
-        raise HTTPException(500, f"LLM 호출 실패: {e}")
-    return JSONResponse(status_code=200, content={"result": "success", "data": response.content})
+        content = invoke_with_template(req.template_name, req.variables)
+    except HTTPException as e:
+        raise e
+    return JSONResponse(status_code=200, content={"result": "success", "data": content})
 
 # 개발자 관리용 API -------------------------------
 @router.get("/dev/fetch/list", response_model=list[str])
