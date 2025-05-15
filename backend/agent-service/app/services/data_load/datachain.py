@@ -37,10 +37,9 @@ class FileAPIClient:
             model_name: str = "gpt-4.1-nano",
             base_url: str = settings.FILESYSTEM_URL,
     ):
-        # 임베딩 초기화
-        self.emb = OpenAIEmbeddings()
-
         self.mlogger = MemoryLogger()
+        self.llm = ChatOpenAI(model_name=model_name, temperature=0, callbacks=[self.mlogger])
+        self.emb = OpenAIEmbeddings()
         # Milvus 초기화 시도
         self.store = self._initialize_milvus(host, port, collection_name)
 
@@ -51,24 +50,7 @@ class FileAPIClient:
         else:
             logger.warning("Milvus 연결 실패. 검색 기능이 제한됩니다.")
             self.retriever = None
-
-        # Entity extractor chain
-        prompt = load_chat_template("Data_Loader:extract_url_params")
-        self.llm = ChatOpenAI(model_name=model_name, temperature=0, callbacks=[self.mlogger])
-        structured = self.llm.with_structured_output(FileAPIDetail)
         
-        today_chain = TransformChain(
-            input_variables=[],
-            output_variables=["today"],
-            transform=lambda _: {"today": date.today().isoformat()}
-        )
-        
-        flatten = TransformChain(
-            input_variables=["context"],
-            output_variables=["context"],
-            transform=lambda i: {"context": "\n".join(d.page_content for d in i["context"])}
-        )
-        self.extractor_chain = today_chain | flatten | prompt | structured
         self.base_url = base_url
 
     def _initialize_milvus(self, host, port, collection_name):
@@ -118,6 +100,25 @@ class FileAPIClient:
 
         logger.error(f"Milvus 연결 모두 실패 ({max_retries}회 시도)")
         return None
+
+    def extract_params_chain(self):
+        # Entity extractor chain
+        prompt = load_chat_template("Data_Loader:extract_url_params")
+        structured = self.llm.with_structured_output(FileAPIDetail)
+        
+        today_chain = TransformChain(
+            input_variables=[],
+            output_variables=["today"],
+            transform=lambda _: {"today": date.today().isoformat()}
+        )
+        
+        flatten = TransformChain(
+            input_variables=["context"],
+            output_variables=["context"],
+            transform=lambda i: {"context": "\n".join(d.page_content for d in i["context"])}
+        )
+        extractor_chain = today_chain | flatten | prompt | structured
+        return extractor_chain
 
     def fetch_data(self, url: str) -> dict:
         resp = requests.get(url)
@@ -174,7 +175,6 @@ class FileAPIClient:
         queue.put_nowait({"type":"log","content":self.mlogger.get_logs()[-1].model_dump_json()})
         return code_snippet
 
-
     def _assemble_url(self, q: FileAPIDetail) -> str:
         # 예시 URL: /{system_name}/factory-data/{metric}?product_code=...&start_date=...
         path = f"/{q.system_name}/factory-data/{q.metric}"
@@ -197,13 +197,15 @@ class FileAPIClient:
 
         python_code = None
 
+        extract_chain = self.extract_params_chain()
+
         # 1) 엔티티 추출
         if self.retriever:
-            result = create_retrieval_chain(self.retriever, self.extractor_chain).invoke({"input": user_input})
+            result = create_retrieval_chain(self.retriever, extract_chain).invoke({"input": user_input})
             entities: FileAPIDetail = result['answer']
         else:
             # retriever가 없는 경우 직접 추출
-            result = self.extractor_chain.invoke({"context": "", "input": user_input})
+            result = extract_chain.invoke({"context": "", "input": user_input})
             entities: FileAPIDetail = result
 
         entity_logs: list[LogDetail] = self.mlogger.get_logs()

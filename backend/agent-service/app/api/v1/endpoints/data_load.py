@@ -1,12 +1,14 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from app.utils.docs import DataDocs
 from app.models.query import DataRequest, RagRequest
 from app.services.data_load.datachain import FileAPIClient
 from app.services.data_load.makerag import CatalogIngestor
-from app.core.config import settings
-from app.utils.redis_client import generate_log_id, save_logs_to_redis
 from app.core import auth
+from app.core.config import settings
+
+from app.utils.redis_client import generate_log_id, save_logs_to_redis
+from app.utils.depend import get_data_load
 from app.utils.api_utils import get_log_queue
 
 from fastapi.concurrency import run_in_threadpool
@@ -16,16 +18,14 @@ from zoneinfo import ZoneInfo
 
 router = APIRouter()
 docs = DataDocs()
-# data_loader = FileAPIClient()
 
 # FastAPI 엔드포인트: 사용자의 질의를 받고 graph를 통해 답변 생성
 @router.post("/load")
 async def command_code(
     req: Request,
-    request: DataRequest = docs.base["data"]
+    request: DataRequest = docs.base["data"],
+    data_loader: FileAPIClient = Depends(get_data_load)
 ):
-    data_loader = FileAPIClient() # 요청 보낼 때 마다 변화를 반영
-
     try:
         api_start = datetime.now(ZoneInfo("Asia/Seoul"))
 
