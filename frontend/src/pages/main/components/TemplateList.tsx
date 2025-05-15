@@ -7,6 +7,7 @@ import ClipLoader from 'react-spinners/ClipLoader';
 import { useGetUserInfoAPI } from '@/apis/auth';
 import { useGetTemplateImage, useGetTemplates } from '@/apis/templates';
 import { Button } from '@/components/ui/button';
+import { BASE_URL } from '@/constant/baseURL';
 
 import ExpandModal from './ExpandModal';
 
@@ -69,7 +70,11 @@ const TemplateList = () => {
                   <Eye />
                 </Button>
                 <Button variant='ghost' size='icon'>
-                  <Download />
+                  <a
+                    href={`${BASE_URL}/api/agent/template/${template}/download`}
+                  >
+                    <Download />
+                  </a>
                 </Button>
               </div>
             </li>
