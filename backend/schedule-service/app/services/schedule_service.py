@@ -305,81 +305,110 @@ class ScheduleService:
     @staticmethod
     def get_all_schedules_with_details(user_id: int = None, db=None) -> List[Dict[str, Any]]:
         """모든 스케줄(DAG) 목록을 상세 정보와 함께 반환"""
+        # 1. DB에서 기본 데이터 가져오기
+        db_schedules = ScheduleService._get_schedules_from_db(db)
+
+        # 2. Airflow API에서 추가 데이터 가져오기
+        schedule_list = ScheduleService._enrich_schedules_with_airflow_data(db_schedules, user_id)
+
+        return schedule_list
+
+    @staticmethod
+    def _get_schedules_from_db(db=None) -> List[Dict[str, Any]]:
+        """DB에서 스케줄 기본 정보를 가져옵니다"""
         close_db = False
         try:
-            # DB 세션을 외부에서 받지 않았을 경우에만 새로 생성
             if db is None:
                 db = SessionLocal()
                 close_db = True
 
-            # 모든 DAG 기본 정보 조회
+            # DB에서 스케줄 정보 가져오기
+            schedules = schedule_crud.get_all_schedules(db)
+
+            # DB 객체를 딕셔너리로 변환
+            result = []
+            for schedule in schedules:
+                # Schedule 모델 객체를 딕셔너리로 변환
+                schedule_dict = {
+                    "dag_id": schedule.dag_id,
+                    "title": schedule.title,
+                    "description": schedule.description,
+                    "frequency": schedule.frequency,
+                    "owner": schedule.owner,
+                    "created_at": schedule.created_at.isoformat(),
+                    # 다른 필요한 필드들...
+                }
+                result.append(schedule_dict)
+
+            return result
+        finally:
+            if close_db and db is not None:
+                db.close()
+
+    @staticmethod
+    def _enrich_schedules_with_airflow_data(db_schedules: List[Dict[str, Any]], user_id: int = None) -> List[
+        Dict[str, Any]]:
+        """DB에서 가져온 스케줄 정보에 Airflow API 데이터를 추가합니다"""
+        try:
+            # Airflow에서 모든 DAG 정보 조회
             dags = airflow_client.get_all_dags(limit=1000)
+            dag_dict = {dag.get("dag_id"): dag for dag in dags}
 
-            # 각 DAG의 상세 정보 조회
             schedule_list = []
+            for schedule in db_schedules:
+                dag_id = schedule["dag_id"]
 
-            for dag in dags:
-                dag_id = dag.get("dag_id", "")
-                owner = dag.get("owners", ["unknown"])[0]
-                # 태그에서 title 추출
-                title = ScheduleService.extract_title_from_tags(dag.get("tags", []))
-                if not title:
-                    title = dag.get("name", dag_id)
+                # 기본 정보로 결과 객체 초기화
+                schedule_data = {
+                    "schedule_id": dag_id,
+                    "title": schedule["title"],
+                    "description": schedule["description"],
+                    "frequency": schedule["frequency"],
+                    "owner": schedule["owner"],
+                    "created_at": schedule["created_at"],
+                    "is_paused": False,  # Airflow에서 업데이트 예정
+                    "last_run": None,
+                    "next_run": None,
+                    "jobs": []  # jobs 정보 초기화
+                }
 
-                try:
-                    # 상세 정보 조회
-                    schedule_data = ScheduleService.get_schedule_detail(dag_id, user_id, db)
+                # Airflow에서 추가 정보 가져오기
+                if dag_id in dag_dict:
+                    dag = dag_dict[dag_id]
+                    schedule_data["is_paused"] = dag.get("is_paused", False)
 
-                    # 기본적으로 마지막 실행과 다음 실행 정보를 초기화
-                    schedule_data["last_run"] = None
-                    schedule_data["next_run"] = None
+                    try:
+                        # 최근 실행 정보 조회
+                        recent_runs = airflow_client.get_dag_runs(dag_id, limit=1)
+                        if recent_runs:
+                            recent_run = recent_runs[0]
+                            schedule_data["last_run"] = {
+                                "run_id": recent_run.get("dag_run_id"),
+                                "status": recent_run.get("state"),
+                                "start_time": recent_run.get("start_date"),
+                                "end_time": recent_run.get("end_date")
+                            }
+                    except Exception as e:
+                        logger.error(f"Error getting recent runs for {dag_id}: {str(e)}")
 
-                    # 최근 실행 정보 조회 (마지막 실행 정보를 위해)
-                    recent_runs = airflow_client.get_dag_runs(dag_id, limit=1)
-                    schedule_data["owner"] = owner
+                    try:
+                        # 다음 실행 예정 조회
+                        next_run_info = airflow_client.get_next_dag_run(dag_id)
+                        if next_run_info:
+                            schedule_data["next_run"] = next_run_info
+                    except Exception as e:
+                        logger.error(f"Error getting next run for {dag_id}: {str(e)}")
 
-                    if recent_runs:
-                        recent_run = recent_runs[0]
-                        run_id = recent_run.get("dag_run_id")
-
-                        # 마지막 실행 정보 설정
-                        schedule_data["last_run"] = {
-                            "run_id": run_id,
-                            "status": recent_run.get("state"),
-                            "start_time": recent_run.get("start_date"),
-                            "end_time": recent_run.get("end_date")
-                        }
-
-                    # 다음 실행 예정 정보 조회
-                    next_run_info = airflow_client.get_next_dag_run(dag_id)
-                    if next_run_info:
-                        schedule_data["next_run"] = next_run_info
-
-                    schedule_list.append(schedule_data)
-                except Exception as detail_err:
-                    logger.error(f"Error getting detail for {dag_id}: {str(detail_err)}")
-                    # 오류 시 기본 정보만 추가
-                    schedule_list.append({
-                        "schedule_id": dag_id,
-                        "title": title,
-                        "description": dag.get("description", ""),
-                        "is_paused": dag.get("is_paused", False),
-                        "frequency": "unknown",
-                        "jobs": [],
-                        "last_run": None,
-                        "next_run": None,
-                        "owner": owner,
-                    })
+                schedule_list.append(schedule_data)
 
             # 생성일 기준으로 정렬 (최신순)
             schedule_list.sort(key=lambda x: x.get("created_at", ""), reverse=True)
 
             return schedule_list
-        finally:
-            logger.debug(f"Found {len(schedule_list) if 'schedule_list' in locals() else 0} schedules")
-            # 생성한 경우에만 세션 닫기
-            if close_db and db is not None:
-                db.close()
+        except Exception as e:
+            logger.error(f"Error enriching schedules with Airflow data: {str(e)}")
+            # 기본 DB 데이터만 반환
+            return db_schedules
 
     @staticmethod
     def get_dag_runs_by_date(dags: List[Dict[str, Any]], target_date: str, db=None) -> Dict[str, Any]:
