@@ -17,12 +17,11 @@ export const useSourceStore = create<SourceState>(set => ({
   sourceDataCommand: '',
   sourceDataUrl: '',
   sourceDataCode: '',
+  sourceParams: {},
 
   setSourceDataCommand: command => set({ sourceDataCommand: command }),
   setSourceDataUrl: url => set({ sourceDataUrl: url }),
   setSourceDataCode: code => set({ sourceDataCode: code }),
-  sourceParams: {},
-
   setSourceParams: params => set({ sourceParams: params }),
   resetSource: () =>
     set({

@@ -4,8 +4,8 @@ import Editor from '@monaco-editor/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { DownloadIcon, Expand, TriangleAlert } from 'lucide-react';
 
-import LLMGraph from '@/components/Graph/LLMGraph';
 import { BASE_URL } from '@/constant/baseURL';
+import AgentCallDetail from '@/pages/agentMonitoring/components/AgentCallDetail';
 import Tabs from '@/pages/main/components/Tabs';
 import { useJobResultStore } from '@/store/useJobResultStore';
 import { useStreamStore } from '@/store/useStreamStore';
@@ -136,6 +136,7 @@ const CodePanel: React.FC<{
 };
 
 const TracePanel: React.FC = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { logs } = useStreamStore();
 
   if (!logs || logs.length === 0)
@@ -144,8 +145,20 @@ const TracePanel: React.FC = () => {
     );
 
   return (
-    <div className='h-full grow overflow-auto p-4'>
-      <LLMGraph jobName='Current Job' logs={logs ?? []} />
+    <div className='h-full'>
+      <AgentCallDetail logs={logs} />
+      <div className='absolute bottom-2 left-1 z-10 cursor-pointer rounded-full border bg-white p-3'>
+        <Expand
+          color='#374151'
+          size={18}
+          onClick={() => {
+            setIsModalOpen(true);
+          }}
+        />
+      </div>
+      <ExpandModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+        <AgentCallDetail logs={logs} />
+      </ExpandModal>
     </div>
   );
 };

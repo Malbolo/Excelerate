@@ -2,7 +2,9 @@ import { useState } from 'react';
 
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 
+import { useGetJobLogs } from '@/apis/agentMonitoring';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
@@ -35,6 +37,11 @@ const AgentMonitoringPage: React.FC = () => {
   const [name, setName] = useState<string>('');
 
   const { push } = useInternalRouter();
+
+  const [searchParams] = useSearchParams();
+  const logId = searchParams.get('logId') || '';
+
+  const { data: logs } = useGetJobLogs(logId);
 
   const handleSearchJobList = () => {
     const searchParams = new URLSearchParams();
@@ -128,7 +135,7 @@ const AgentMonitoringPage: React.FC = () => {
         <AgentCallList />
       </section>
 
-      <AgentCallDetail />
+      <AgentCallDetail logs={logs} />
     </div>
   );
 };

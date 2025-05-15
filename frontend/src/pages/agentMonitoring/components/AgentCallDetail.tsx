@@ -1,19 +1,12 @@
 import { useState } from 'react';
 
-import { useSearchParams } from 'react-router-dom';
+import { MousePointerClick } from 'lucide-react';
 
-import { useGetJobLogs } from '@/apis/agentMonitoring';
 import LLMGraph from '@/components/Graph/LLMGraph';
 import { Badge } from '@/components/ui/badge';
-import Tabs from '@/pages/main/components/Tabs';
 import { Log, LogMessage, LogMetadata } from '@/types/agent';
 
-const AgentCallDetail = () => {
-  const [searchParams] = useSearchParams();
-  const logId = searchParams.get('logId') || '';
-
-  const { data: logs } = useGetJobLogs(logId);
-
+const AgentCallDetail = ({ logs }: { logs: Log[] }) => {
   const [selectedLog, setSelectedLog] = useState<Log | null>(null);
 
   const handleClickLog = (log: Log) => {
@@ -21,30 +14,48 @@ const AgentCallDetail = () => {
   };
 
   return (
-    <div className='flex h-screen w-full flex-col gap-5 border-l bg-[#FAFCFF] p-8'>
-      <section>
-        {logs.length > 0 && (
-          <LLMGraph
-            jobName='job name'
-            logs={logs}
-            onLogClick={handleClickLog}
-          />
+    <div className='@container/agent-call-detail h-full w-full overflow-clip'>
+      <div className='flex h-full w-full flex-col divide-y'>
+        {selectedLog && (
+          <p className='text-accent-foreground px-6 py-4 text-xs font-bold'>
+            {selectedLog?.name}
+          </p>
         )}
-      </section>
-      <section className='flex-1 overflow-hidden'>
-        <Tabs
-          tabList={['Run', 'Metadata']}
-          tabPanels={[
-            <RunPanel
-              input={selectedLog ? selectedLog.input : []}
-              output={selectedLog ? selectedLog.output : []}
-            />,
-            <MetadataPanel
-              metadata={selectedLog ? selectedLog.metadata : {}}
-            />,
-          ]}
-        />
-      </section>
+        <div className='flex h-full w-full flex-col gap-6 @xl/agent-call-detail:flex-row'>
+          <section className='p-4'>
+            {logs.length > 0 && (
+              <LLMGraph
+                jobName='Current Job'
+                logs={logs}
+                onLogClick={handleClickLog}
+              />
+            )}
+          </section>
+          <section className='flex-1 overflow-x-clip overflow-y-auto border-t pt-4 @xl/agent-call-detail:border-t-0 @xl/agent-call-detail:border-l'>
+            {selectedLog ? (
+              <>
+                <RunPanel
+                  input={selectedLog ? selectedLog.input : []}
+                  output={selectedLog ? selectedLog.output : []}
+                />
+                <MetadataPanel
+                  metadata={selectedLog ? selectedLog.metadata : {}}
+                />
+              </>
+            ) : (
+              <div className='flex h-full flex-col items-center justify-center gap-2'>
+                <MousePointerClick
+                  size={20}
+                  className='text-accent-foreground'
+                />
+                <p className='text-sm'>
+                  Select a node from the graph to view details
+                </p>
+              </div>
+            )}
+          </section>
+        </div>
+      </div>
     </div>
   );
 };
@@ -63,8 +74,8 @@ const MessageItem = ({ message }: MessageItemProps) => {
           {message.role}
         </Badge>
       </div>
-      <div className='ml-4 rounded-md bg-gray-50 p-4'>
-        <p className='text-sm whitespace-pre-wrap text-gray-600'>
+      <div className='ml-4 rounded-md border bg-slate-50/50 p-4'>
+        <p className='text-xs break-words whitespace-pre-wrap text-gray-600'>
           {message.message}
         </p>
       </div>
@@ -75,15 +86,15 @@ const MessageItem = ({ message }: MessageItemProps) => {
 const RunPanel = ({ input, output }: Pick<Log, 'input' | 'output'>) => {
   if ((!input || input.length === 0) && (!output || output.length === 0)) {
     return (
-      <div className='flex h-full items-center justify-center rounded-tl-md rounded-b-md bg-white p-2'>
+      <div className='flex items-center justify-center rounded-tl-md rounded-b-md'>
         <p className='text-sm text-gray-500'>No data available</p>
       </div>
     );
   }
 
   return (
-    <div className='flex h-full overflow-y-auto rounded-tl-md rounded-b-md bg-white p-2'>
-      <div className='flex w-full flex-col gap-4 px-4 py-5'>
+    <div className='flex overflow-y-auto rounded-tl-md rounded-b-md'>
+      <div className='flex w-full flex-col gap-4 px-4'>
         {input && input.length > 0 && (
           <div className='flex flex-col gap-4'>
             <div className='flex items-center gap-2'>
@@ -91,7 +102,7 @@ const RunPanel = ({ input, output }: Pick<Log, 'input' | 'output'>) => {
                 Input
               </Badge>
             </div>
-            <div className='ml-4 flex flex-col gap-4 border-l-2 border-gray-200 pl-4'>
+            <div className='ml-4 flex flex-col gap-4 border-l border-gray-200 pl-4'>
               {input.map((message, index) => (
                 <MessageItem key={`input-${index}`} message={message} />
               ))}
@@ -106,7 +117,7 @@ const RunPanel = ({ input, output }: Pick<Log, 'input' | 'output'>) => {
                 Output
               </Badge>
             </div>
-            <div className='ml-4 flex flex-col gap-4 border-l-2 border-gray-200 pl-4'>
+            <div className='ml-4 flex flex-col gap-4 border-l border-gray-200 pl-4'>
               {output.map((message, index) => (
                 <MessageItem key={`output-${index}`} message={message} />
               ))}
@@ -135,7 +146,7 @@ const MetadataItem = ({ label, value, depth = 0 }: MetadataItemProps) => {
             {label}
           </Badge>
         </div>
-        <div className='ml-4 flex flex-col gap-2 border-l-2 border-gray-200 pl-4'>
+        <div className='ml-4 flex flex-col gap-2 border-l border-gray-200 pl-4'>
           {Object.entries(value).map(([key, val]) => (
             <MetadataItem key={key} label={key} value={val} depth={depth + 1} />
           ))}
@@ -146,10 +157,10 @@ const MetadataItem = ({ label, value, depth = 0 }: MetadataItemProps) => {
 
   return (
     <div className='flex items-center gap-2'>
-      <Badge variant='outline' className='font-medium'>
+      <Badge variant='secondary' className='font-medium'>
         {label}
       </Badge>
-      <span className='text-sm text-gray-600'>{String(value)}</span>
+      <span className='text-xs text-gray-600'>{String(value)}</span>
     </div>
   );
 };
@@ -157,18 +168,27 @@ const MetadataItem = ({ label, value, depth = 0 }: MetadataItemProps) => {
 const MetadataPanel = ({ metadata }: Pick<Log, 'metadata'>) => {
   if (!metadata || Object.keys(metadata).length === 0) {
     return (
-      <div className='flex h-full items-center justify-center rounded-tl-md rounded-b-md bg-white p-2'>
+      <div className='flex items-center justify-center rounded-tl-md rounded-b-md'>
         <p className='text-sm text-gray-500'>No metadata available</p>
       </div>
     );
   }
 
   return (
-    <div className='flex h-full overflow-y-auto rounded-tl-md rounded-b-md bg-white p-2'>
-      <div className='flex flex-col gap-4 px-4 py-5'>
-        {Object.entries(metadata).map(([key, value]) => (
-          <MetadataItem key={key} label={key} value={value} />
-        ))}
+    <div className='flex overflow-y-auto rounded-tl-md rounded-b-md'>
+      <div className='flex w-full flex-col gap-4 px-4 py-5'>
+        <div className='flex flex-col gap-4'>
+          <div className='flex items-center gap-2'>
+            <Badge variant='outline' className='font-medium'>
+              Metadata
+            </Badge>
+          </div>
+          <div className='ml-4 flex flex-col gap-4 border-l border-gray-200 pl-4'>
+            {Object.entries(metadata).map(([key, value]) => (
+              <MetadataItem key={key} label={key} value={value} />
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
