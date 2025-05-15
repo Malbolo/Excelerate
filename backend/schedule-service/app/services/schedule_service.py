@@ -413,8 +413,10 @@ class ScheduleService:
                 "pending": []
             }
 
-            # 이미 처리된 DAG ID 추적
+            # 이미 처리된 DAG ID 추적 (프로세싱 용도)
             processed_dag_ids = set()
+            # 대기 목록에 추가되면 안되는 DAG ID (이미 실제 실행 이력이 있는 경우)
+            already_processed_for_pending = set()
 
             # 모든 DAG를 순회하며 처리
             for dag in dags:
@@ -450,6 +452,9 @@ class ScheduleService:
 
                 # 실행 기록이 있는 경우 처리
                 if dag_runs:
+                    # DAG에 실행 이력이 있으면 대기 목록에 추가하지 않도록 표시
+                    already_processed_for_pending.add(dag_id)
+
                     for run in dag_runs:
                         state = run.get("state", "").lower()
                         run_info = {
@@ -473,8 +478,8 @@ class ScheduleService:
                             already_added_as_pending = True
                             logger.debug(f"DAG {dag_id} 기존 실행 상태로 pending 추가: {state}")
 
-                # 실행 이력과 관계없이 미래 예정된 실행 확인
-                if not already_added_as_pending:
+                # 미래 예정된 실행 확인 (이미 실행 이력이 있으면 추가하지 않음)
+                if not already_added_as_pending and dag_id not in already_processed_for_pending:
                     # 시작일 추출 - DAG ID에서 날짜 부분 추출
                     dag_start_date = date_utils.extract_date_from_dag_id(dag_id)
 
