@@ -12,7 +12,6 @@ from app.schemas.schedule_schema import (
 from app.services.airflow_client import airflow_client
 from app.services.dag_service import DagService
 from app.services.schedule_service import ScheduleService
-from app.services.calendar_service import build_monthly_dag_calendar
 from app.utils import cron_utils
 from app.core import auth
 from app.core.log_config import logger
