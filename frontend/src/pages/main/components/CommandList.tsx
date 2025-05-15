@@ -39,7 +39,6 @@ const CommandList = ({ job }: { job?: JobManagement }) => {
   const {
     setDataframe: setData,
     code,
-    errorMsg,
     setCode,
     setColumns,
     setDownloadToken,
@@ -98,13 +97,15 @@ const CommandList = ({ job }: { job?: JobManagement }) => {
     setColumns(columns);
     setDownloadToken(response.download_token);
     setErrorMsg(response.error_msg || null);
+
+    return response.error_msg;
   };
 
   const handleRun = async () => {
     setCanSaveJob(false);
 
     try {
-      await handleSendCommandList();
+      const errorMsg = await handleSendCommandList();
 
       commandList.forEach((_, idx) => {
         updateCommandStatus(idx, 'success');
