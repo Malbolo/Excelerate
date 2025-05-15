@@ -76,18 +76,12 @@ async def command_code(
         df_list = answer["dataframe"]
 
         # df list의 각 df의 nan, inf 제거
-        df_list = [
-            df.replace([np.nan, np.inf, -np.inf], None)
-            for df in df_list
-        ]
-
-
-        # 레코드 목록 리스트로 직렬화
-        serialized = [
-            single_df.to_dict(orient="records")
-            # single_df.to_dict()
-            for single_df in df_list
-        ]
+        # ① df_list가 비어있지 않다면 마지막 df만 꺼내서 NaN/Inf 처리
+        if df_list:
+            last_df = df_list[-1].replace([np.nan, np.inf, -np.inf], None)
+            serialized = last_df.to_dict(orient="records")
+        else:
+            serialized = []
 
         log_id = generate_log_id(user_name, uid)
 
