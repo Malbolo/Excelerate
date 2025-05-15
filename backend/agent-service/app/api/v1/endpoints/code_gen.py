@@ -75,10 +75,12 @@ async def command_code(
         # answer["dataframe"] 가 이제 List[pd.DataFrame] 라면…
         df_list = answer["dataframe"]
 
-        # df list의 각 df의 결측치 제거
-        for df in df_list:
-            # NaN, inf 처리를 한 번에
-            df = df.replace([np.nan, np.inf, -np.inf], None)
+        # df list의 각 df의 nan, inf 제거
+        df_list = [
+            df.replace([np.nan, np.inf, -np.inf], None)
+            for df in df_list
+        ]
+
 
         # 레코드 목록 리스트로 직렬화
         serialized = [
