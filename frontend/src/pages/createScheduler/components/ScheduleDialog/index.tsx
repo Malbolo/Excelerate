@@ -89,12 +89,40 @@ const ScheduleDialog = ({
   });
 
   const onSubmit = (values: CreateScheduleFormData) => {
+    const k_startDate = new Date(
+      values.startDate.getFullYear(),
+      values.startDate.getMonth(),
+      values.startDate.getDate(),
+      parseInt(values.executionTime.split(':')[0]),
+      parseInt(values.executionTime.split(':')[1]),
+      0,
+    );
+
+    const k_endDate = new Date(
+      values.endDate.getFullYear(),
+      values.endDate.getMonth(),
+      values.endDate.getDate(),
+      0,
+      0,
+      0,
+    );
+
+    const server_start_date = k_startDate.toISOString().split('.')[0];
+    const server_execution_time = server_start_date.substring(11, 16);
+    const server_end_date = k_endDate.toISOString().split('.')[0];
+
+    console.log(server_start_date, server_execution_time, server_end_date);
+
     const submissionData = {
       ...values,
       selectedJobs,
+      start_date: server_start_date,
+      end_date: server_end_date,
+      executionTime: server_execution_time,
+      frequency: values.interval,
     };
 
-    if (isEditMode) {
+    if (isEditMode && scheduleDetail) {
       editSchedule({
         scheduleId: scheduleDetail.schedule_id,
         schedule: submissionData,
