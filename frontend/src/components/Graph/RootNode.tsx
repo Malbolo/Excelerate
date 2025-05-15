@@ -12,7 +12,7 @@ const RootNode = forwardRef<HTMLDivElement, RootNodeProps>(
       <div className='flex items-center gap-2'>
         <div
           ref={ref}
-          className='bg-primary flex h-8 w-8 items-center justify-center rounded-md'
+          className='bg-primary z-10 flex h-8 w-8 items-center justify-center rounded-md'
         >
           <Book color='white' className='h-4 w-4' />
         </div>
