@@ -355,8 +355,6 @@ from utils.code_util import insert_df_to_excel
 default_args = {{
     'owner': '{owner}',
     'depends_on_past': False,
-    'start_date': datetime({start_date.year}, {start_date.month}, {start_date.day}),
-    'end_date': {f"datetime({end_date.year}, {end_date.month}, {end_date.day})" if end_date else "None"},
     'email': [{', '.join([f"'{email}'" for email in (success_emails or [])])}],
     'email_on_failure': {bool(failure_emails or [])},
     'email_on_retry': False,
