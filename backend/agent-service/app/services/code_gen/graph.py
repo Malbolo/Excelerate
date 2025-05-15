@@ -202,7 +202,7 @@ class CodeGenerator:
         )
 
         if state['original_code']:
-            self.q.put_nowait({"type": "notice", "content": "기존 코드를 감지해 반영합니다."})
+            self.q.put_nowait({"type": "notice", "content": f"{input}에 대한 코드를 기존 코드와 함께 생성 중입니다."})
             code_gen_prompt = load_chat_template("Code Generator:Generate Code Extension")
             schain = code_gen_prompt | self.sllm
             llm_input = {"original_code":state['original_code'], "dftypes": df.dtypes.to_string(), "df": df_preview, "input": input}
