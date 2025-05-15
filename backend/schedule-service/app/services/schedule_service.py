@@ -397,25 +397,7 @@ class ScheduleService:
                     "failure_emails": []
                 }
 
-                # 태그에서 title 추출 (fallback)
-                title_from_tag = ScheduleService.extract_title_from_tags(dag.get("tags", []))
-                if title_from_tag:
-                    schedule_data["title"] = title_from_tag
-
-                # 크론 표현식 및 주기 처리
-                schedule_interval = dag.get("schedule_interval")
-                cron_expr = ""
-                if isinstance(schedule_interval, dict) and "__type" in schedule_interval:
-                    cron_expr = schedule_interval.get("__type", "")
-                else:
-                    cron_expr = str(schedule_interval) if schedule_interval else ""
-
-                schedule_data["frequency_cron"] = cron_expr
-                schedule_data["frequency"] = cron_utils.convert_cron_to_frequency(cron_expr)
-                schedule_data["frequency_display"] = cron_utils.parse_cron_to_friendly_format(cron_expr)
-                schedule_data["execution_time"] = cron_utils.extract_execution_time_from_cron(cron_expr)
-
-                # DB에서 스케줄 정보 가져오기
+                # DB에서 스케줄 정보 가져오기 - DB 정보 우선 사용
                 db_schedule = db_schedules.get(dag_id)
                 if db_schedule:
                     # DB에 저장된 정보 사용
@@ -423,6 +405,22 @@ class ScheduleService:
                     schedule_data["description"] = db_schedule.description
                     schedule_data["success_emails"] = db_schedule.success_emails or []
                     schedule_data["failure_emails"] = db_schedule.failure_emails or []
+
+                    # 주요 추가: frequency, frequency_cron, execution_time은 DB에서 가져오기
+                    schedule_data["frequency"] = db_schedule.frequency
+                    schedule_data["frequency_cron"] = db_schedule.frequency_cron
+                    schedule_data["execution_time"] = db_schedule.execution_time
+
+                    # frequency_display는 frequency_cron에서 계산
+                    if db_schedule.frequency_cron:
+                        try:
+                            schedule_data["frequency_display"] = cron_utils.parse_cron_to_friendly_format(
+                                db_schedule.frequency_cron)
+                        except Exception as e:
+                            logger.error(f"Error parsing cron expression for {dag_id}: {str(e)}")
+                            schedule_data["frequency_display"] = None
+                    else:
+                        schedule_data["frequency_display"] = None
 
                     # 생성/수정 일자
                     if hasattr(db_schedule, 'created_at') and db_schedule.created_at:
@@ -465,14 +463,28 @@ class ScheduleService:
                                     })
                             schedule_data["jobs"] = jobs
                 else:
-                    # DB에 정보가 없는 경우, 태그에서 시작/종료일 추출 시도
-                    for tag in dag.get("tags", []):
-                        tag_name = tag.get("name", "")
-                        if tag_name.startswith("start_date:"):
-                            schedule_data["start_date"] = tag_name[11:]
-                        elif tag_name.startswith("end_date:"):
-                            end_date = tag_name[9:]
-                            schedule_data["end_date"] = None if end_date == "None" else end_date
+                    # DB에 정보가 없는 경우, Airflow API에서 가능한 정보 추출
+                    # 크론 표현식 및 주기 처리
+                    schedule_interval = dag.get("schedule_interval")
+                    cron_expr = ""
+                    if isinstance(schedule_interval, dict) and "__type" in schedule_interval:
+                        cron_expr = schedule_interval.get("__type", "")
+                    else:
+                        cron_expr = str(schedule_interval) if schedule_interval else ""
+
+                    schedule_data["frequency_cron"] = cron_expr
+                    schedule_data["frequency"] = cron_utils.convert_cron_to_frequency(cron_expr)
+                    schedule_data["frequency_display"] = cron_utils.parse_cron_to_friendly_format(cron_expr)
+                    schedule_data["execution_time"] = cron_utils.extract_execution_time_from_cron(cron_expr)
+
+                    # API 응답에서 시작일/종료일 확인
+                    start_date_str = dag.get("start_date")
+                    if start_date_str:
+                        schedule_data["start_date"] = start_date_str
+
+                    end_date_str = dag.get("end_date")
+                    if end_date_str:
+                        schedule_data["end_date"] = end_date_str
 
                     # 생성 시간은 Airflow에서 가져옴
                     schedule_data["created_at"] = dag.get("last_parsed_time", "")

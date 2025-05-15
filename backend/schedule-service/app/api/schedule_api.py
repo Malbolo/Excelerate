@@ -60,6 +60,7 @@ async def create_schedule(
             end_date=schedule_request.end_date,
             success_emails=schedule_request.success_emails,
             failure_emails=schedule_request.failure_emails,
+            execution_time=schedule_request.execution_time,
             user_id=user_id,
             db=db
         )
@@ -350,6 +351,7 @@ async def update_schedule(
             end_date=schedule_request.end_date,
             success_emails=schedule_request.success_emails,
             failure_emails=schedule_request.failure_emails,
+            execution_time=schedule_request.execution_time,
             user_id=user_id
         )
 
