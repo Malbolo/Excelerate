@@ -13,7 +13,7 @@ from app.models import models
 from app.schemas.job import job_detail_schema, job_list_schema, job_create_schema
 from app.schemas.job.job_create_schema import JobCreateRequest
 from app.schemas.job.job_detail_schema import JobDetailResponse, JobDetailRequest
-from app.schemas.job.job_update_schema import JobUpdateRequest
+from app.schemas.job.job_update_schema import JobUpdateRequest, JobUpdateResponseData, JobUpdateResponse
 from app.core import auth
 from app.schemas.job.job_create_schema import JobCreateResponseData, JobCreateResponse
 from app.schemas.job.job_list_schema import JobListResponse
@@ -21,10 +21,10 @@ from app.schemas.job.job_for_schedule_schema import JobForScheduleWithCommandsRe
     JobListForScheduleWithCommands, JobForScheduleRequest, JobForScheduleResponse, JobListForSchedule
 
 
-async def create_job(request: JobCreateRequest, user_id: int, db: Session) -> JSONResponse:
+def create_job(request: JobCreateRequest, user_id: int, db: Session) -> JSONResponse:
     try:
         user_info = auth.get_user_info(user_id)
-        job = await crud.create_job(db, request, user_id, user_info.get("name"), user_info.get("department"))
+        job = crud.create_job(db, request, user_id, user_info.get("name"), user_info.get("department"))
 
         data = JobCreateResponseData(
             job_id=str(job.id),
@@ -38,9 +38,9 @@ async def create_job(request: JobCreateRequest, user_id: int, db: Session) -> JS
         response = JobCreateResponse(result="fail", data=None)
         return JSONResponse(content=response.dict())
 
-async def get_job_detail(job_id: str, db: Session) -> JSONResponse:
+def get_job_detail(job_id: str, db: Session) -> JSONResponse:
     try:
-        job = crud.get_job_detail_by_id(db, job_id)
+        job = crud.get_job_by_id(db, job_id)
         job_data = job_detail_schema.create_job_detail_schema(job)
 
         response = JobDetailResponse(result="success", data=job_data)
@@ -52,8 +52,18 @@ async def get_job_detail(job_id: str, db: Session) -> JSONResponse:
         response = JobDetailResponse(result="fail", data=None)
         return JSONResponse(content=response.dict())
 
-async def update_job(db: Session, job_id: int, job_request: JobUpdateRequest, user_id: int):
-    return JSONResponse(content=crud.update_job(db, job_id, job_request, user_id).dict())
+def update_job(db: Session, job_id: str, job_request: JobUpdateRequest, user_id: int):
+    updated_job = crud.update_job(db, job_id, job_request, user_id)
+
+    data = JobUpdateResponseData(
+        job_id=str(updated_job.id),
+        updated_at=str(updated_job.updated_at)
+    )
+
+    return JobUpdateResponse(
+        result="success",
+        data=data
+    )
 
 def delete_job(db: Session, job_id: int, user_id: int):
     return JSONResponse(content=crud.delete_job(db, job_id, user_id).dict())
@@ -166,4 +176,3 @@ def get_jobs_with_commands_for_creating_schedule(request: JobForScheduleRequest,
     )
 
     return JSONResponse(content=response.dict())
-
