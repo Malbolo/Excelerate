@@ -20,7 +20,9 @@ const createScheduleSchema = z
     startDate: z.date({
       required_error: 'Please select a start date.',
     }),
-    endDate: z.date().optional(),
+    endDate: z.date({
+      required_error: 'Please select an end date.',
+    }),
     executionTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, {
       message: 'Please enter the time in HH:MM format (e.g., 09:00, 14:30).',
     }),

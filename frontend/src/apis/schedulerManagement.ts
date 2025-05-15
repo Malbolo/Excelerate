@@ -105,14 +105,8 @@ const createSchedule = async (schedule: CreateScheduleRequest) => {
       })),
       success_emails: schedule.successEmail,
       failure_emails: schedule.failEmail,
-      start_date: new Date(schedule.startDate.getTime() + 9 * 60 * 60 * 1000)
-        .toISOString()
-        .split('.')[0],
-      end_date: schedule.endDate
-        ? new Date(schedule.endDate.getTime() + 9 * 60 * 60 * 1000)
-            .toISOString()
-            .split('.')[0]
-        : undefined,
+      start_date: schedule.startDate,
+      end_date: schedule.endDate,
       execution_time: schedule.executionTime,
       frequency: schedule.interval,
     }),

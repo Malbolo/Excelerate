@@ -32,6 +32,7 @@ const MainPage: React.FC = () => {
     setSourceDataCommand,
     setSourceDataUrl,
     setSourceDataCode,
+    setSourceParams,
     resetSource,
   } = useSourceStore();
 
@@ -63,6 +64,7 @@ const MainPage: React.FC = () => {
     setSourceDataCommand(inputCommand);
     setData(response.dataframe);
     setSourceDataUrl(response.url);
+    setSourceParams(response.params);
     setColumns(columns);
     setSourceDataCode(response.data_load_code ?? '');
   };

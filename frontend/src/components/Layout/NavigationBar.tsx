@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ADMIN_NAV_ITEMS, USER_NAV_ITEMS } from '@/constant/navigation';
 import { cn } from '@/lib/utils';
 
+import LocaleSelector from './LocaleSelector';
 import LogoutButton from './LogoutButton';
 
 const NavigationBar = () => {
@@ -51,6 +52,8 @@ const NavigationBar = () => {
       </ul>
 
       <div className='mt-auto border-t p-4'>
+        <LocaleSelector />
+
         {name ? (
           <LogoutButton name={name} />
         ) : (
