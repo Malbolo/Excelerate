@@ -6,6 +6,7 @@ import { Schedule } from '@/apis/schedulerManagement';
 import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from '@/components/ui/table';
 import JobDisplay from '@/pages/scheduleDetail/components/JobDisplay';
+import { useLocalDate } from '@/store/useLocalDate';
 
 import {
   formatDate,
@@ -20,6 +21,7 @@ interface ScheduleRowProps {
 
 const ScheduleRow = ({ schedule }: ScheduleRowProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { locale, place } = useLocalDate();
 
   const toggleExpansion = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -51,18 +53,22 @@ const ScheduleRow = ({ schedule }: ScheduleRowProps) => {
 
         <TableCell>{schedule.owner}</TableCell>
 
-        <TableCell>{formatInterval(schedule.frequency_display)}</TableCell>
+        <TableCell>
+          {formatInterval(schedule.frequency_display, locale, place)}
+        </TableCell>
 
         <TableCell>
-          {schedule.last_run ? formatDateTime(schedule.last_run.end_time) : '-'}
+          {schedule.last_run
+            ? formatDateTime(schedule.last_run.end_time, locale, place)
+            : '-'}
         </TableCell>
         <TableCell>
           {schedule.next_run
-            ? formatDateTime(schedule.next_run.data_interval_end)
+            ? formatDateTime(schedule.next_run.data_interval_end, locale, place)
             : '-'}
         </TableCell>
 
-        <TableCell>{formatDate(schedule.end_date)}</TableCell>
+        <TableCell>{formatDate(schedule.end_date, locale, place)}</TableCell>
 
         <TableCell className='w-[150px]'>
           <ScheduleActions schedule={schedule} />
