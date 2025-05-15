@@ -87,11 +87,11 @@ const CommandList = ({ job }: { job?: JobManagement }) => {
 
     const response = await commandMutation(request);
 
-    const columns: ColumnDef<DataFrameRow>[] = response.dataframe[0][0]
-      ? createSortableColumns(response.dataframe[0][0])
+    const columns: ColumnDef<DataFrameRow>[] = response.dataframe[0]
+      ? createSortableColumns(response.dataframe[0])
       : [];
 
-    setData(response.dataframe[response.dataframe.length - 1]);
+    setData(response.dataframe);
     setCode(response.codes[response.codes.length - 1]);
     setColumns(columns);
     setDownloadToken(response.download_token);

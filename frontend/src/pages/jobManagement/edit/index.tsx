@@ -123,11 +123,11 @@ const JobEditPage = () => {
           });
 
           setColumns(
-            response.dataframe[0]?.[0]
-              ? createSortableColumns(response.dataframe[0][0])
+            response.dataframe[0]
+              ? createSortableColumns(response.dataframe[0])
               : [],
           );
-          setData(response.dataframe[response.dataframe.length - 1]);
+          setData(response.dataframe);
         } catch (error) {
           toast.error('Failed to execute initial commands.');
           console.error('Error during initial command execution:', error);
