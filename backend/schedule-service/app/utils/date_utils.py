@@ -2,14 +2,21 @@ from datetime import datetime, timezone, timedelta
 import calendar
 from typing import Tuple, Optional
 
-def get_month_date_range(year: int, month: int) -> Tuple[datetime, datetime]:
-    """월의 시작일과 종료일 반환, UTC 타임존 적용"""
-    if not (1 <= month <= 12):
-        raise ValueError(f"Invalid month: {month}. Month must be between 1 and 12.")
 
+def get_month_date_range(year: int, month: int) -> Tuple[datetime, datetime]:
+    """해당 월의 첫날과 마지막 날을 UTC timezone으로 반환"""
+    # 해당 월의 첫 날 (1일)
     first_day = datetime(year, month, 1, tzinfo=timezone.utc)
-    _, last_day_num = calendar.monthrange(year, month)
-    last_day = datetime(year, month, last_day_num, 23, 59, 59, tzinfo=timezone.utc)
+
+    # 해당 월의 마지막 날 계산
+    if month == 12:
+        next_month_first_day = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+    else:
+        next_month_first_day = datetime(year, month + 1, 1, tzinfo=timezone.utc)
+
+    # 마지막 날은 다음 달 첫 날에서 1일을 뺀 날짜
+    last_day = next_month_first_day - timedelta(days=1)
+
     return first_day, last_day
 
 def format_date_for_airflow(dt: datetime, as_zulu: bool = True) -> str:
