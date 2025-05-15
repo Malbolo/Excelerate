@@ -2,7 +2,6 @@ import redis
 import os
 import json
 from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
 from app.models.log import LogDetail
 from uuid import uuid4
 import pandas as pd
@@ -12,14 +11,13 @@ redis_client = redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, d
 
 # 로그 관리 ------------------------------------------
 def generate_log_id(user_name: str, uid: str = None) -> str:
-    # timestamp = datetime.now(ZoneInfo("Asia/Seoul")).isoformat(timespec="seconds")
     if uid:
         return f"logs:{user_name}:{uid}" # uid 명시할 경우 그걸로 저장
     return f"logs:{user_name}:{uuid4().hex}" # 없으면 생성해주며 저장
 
 def save_logs_to_redis(log_id: str, logs: list[LogDetail], metadata: dict | None = None, ttl_minutes: int = 60*24*7): # 1주 보관
     meta = metadata.copy() if metadata else {}
-    meta["created_at"] = datetime.now(ZoneInfo("Asia/Seoul")).isoformat()
+    meta["created_at"] = datetime.now().isoformat()
 
     payload = {
         "metadata": meta,

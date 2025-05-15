@@ -1,8 +1,7 @@
 # memory_logger.py
-import re, json
+import re
 
 from datetime import datetime
-from zoneinfo import ZoneInfo
 from typing import List, Optional
 
 from langchain.callbacks.base import BaseCallbackHandler
@@ -45,11 +44,11 @@ class MemoryLogger(BaseCallbackHandler):
     def on_llm_start(self, serialized, prompts, **kwargs):
         """LLM 호출 전 입력 프롬프트 저장"""
         self._last_prompts = prompts
-        self._start_time = datetime.now(ZoneInfo("Asia/Seoul"))
+        self._start_time = datetime.now()
 
     def on_llm_end(self, response, **kwargs):
         """LLM 응답 후, 로그를 생성하고 지연(latency)을 메타데이터에 추가합니다."""
-        end_time = datetime.now(ZoneInfo("Asia/Seoul"))
+        end_time = datetime.now()
         # 시작 시간이 기록되어 있으면 지연 계산
         latency = None
         if self._start_time:
