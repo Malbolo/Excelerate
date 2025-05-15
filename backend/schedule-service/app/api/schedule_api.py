@@ -1,7 +1,7 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query, HTTPException
 from starlette.responses import JSONResponse
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.schemas.schedule_schema import (
     ScheduleCreateRequest,
@@ -64,7 +64,7 @@ async def create_schedule(
             "result": "success",
             "data": {
                 "schedule_id": dag_id,
-                "created_at": datetime.now().isoformat()
+                "created_at": datetime.now(timezone.utc).isoformat()
             }
         })
     except Exception as e:
@@ -152,14 +152,14 @@ async def get_schedule_executions_by_date(
         # 날짜 유효성 검사
         try:
             date_str = f"{year}-{month:02d}-{day:02d}"
-            date_obj = datetime.strptime(date_str, '%Y-%m-%d')
+            date_obj = datetime.strptime(date_str, '%Y-%m-%d').replace(tzinfo=timezone.utc)
         except ValueError:
             return JSONResponse(status_code=400, content={
                 "result": "error",
                 "message": "유효하지 않은 날짜입니다. 올바른 날짜를 입력해주세요."
             })
 
-        dags = airflow_client.get_all_dags()  # dag_query → airflow_client
+        dags = airflow_client.get_all_dags()
         executions = ScheduleService.get_dag_runs_by_date(dags, date_str)
 
         return JSONResponse(content={
@@ -353,7 +353,7 @@ async def update_schedule(
             "result": "success",
             "data": {
                 "schedule_id": schedule_id,
-                "updated_at": datetime.now().isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
                 "message": "스케줄이 업데이트되었습니다."
             }
         })

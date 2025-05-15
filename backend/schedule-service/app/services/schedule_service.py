@@ -349,7 +349,7 @@ class ScheduleService:
         return schedule_list
 
     @staticmethod
-    def get_dag_runs_by_date(dags: List[Dict[str, Any]],target_date: str) -> Dict[str, Any]:
+    def get_dag_runs_by_date(dags: List[Dict[str, Any]], target_date: str) -> Dict[str, Any]:
         """특정 날짜의 DAG 실행 내역 + 실행 예정(PENDING) DAG 반환"""
 
         # timezone을 일관되게 적용하기 위해 UTC 사용
@@ -402,8 +402,11 @@ class ScheduleService:
                 logger.debug(f"Error getting dag runs for {dag_id}: {e}")
                 dag_runs = []
 
+            # 이미 pending으로 등록된 DAG인지 추적하기 위한 플래그
+            is_already_pending = False
+
+            # 1. 기존 실행 이력 처리
             if dag_runs:
-                # 실행 기록이 있는 경우, 성공/실패에 따라 분류
                 for run in dag_runs:
                     state = run.get("state", "").lower()
                     run_info = {
@@ -424,11 +427,10 @@ class ScheduleService:
                     else:
                         # "running", "queued" 등의 상태는 pending으로 표시
                         result["pending"].append(run_info)
-            else:
-                # 실행 이력이 없는 경우, 시작일 및 실행 시각 확인
-                should_be_pending = False
-                next_run_time = None
+                        is_already_pending = True
 
+            # 2. 미래 예정된 실행 확인 - 실행 이력 유무와 관계없이 항상 확인
+            if not is_already_pending:  # 이미 pending이 아닌 경우에만 확인
                 # 시작일 추출 - DAG ID에서 날짜 부분 추출
                 dag_start_date = date_utils.extract_date_from_dag_id(dag_id)
 
@@ -445,21 +447,20 @@ class ScheduleService:
 
                             # 같은 날짜 내에 실행 시간이 있고, 아직 실행 시간이 지나지 않았는지 확인
                             if execution_time <= end_dt and execution_time > now:
-                                should_be_pending = True
                                 next_run_time = execution_time.isoformat()
                                 logger.debug(f"{dag_id} will run at {next_run_time} on {target_date}")
+
+                                # pending으로 추가
+                                result["pending"].append({
+                                    "schedule_id": dag_id,
+                                    "title": title,
+                                    "description": description,
+                                    "owner": owner,
+                                    "status": "pending",
+                                    "next_run_time": next_run_time
+                                })
                         except Exception as e:
                             logger.debug(f"Error calculating execution time for {dag_id}: {str(e)}")
-
-                if should_be_pending:
-                    result["pending"].append({
-                        "schedule_id": dag_id,
-                        "title": title,
-                        "description": description,
-                        "owner": owner,
-                        "status": "pending",
-                        "next_run_time": next_run_time
-                    })
 
         # 결과 출력
         logger.debug(
