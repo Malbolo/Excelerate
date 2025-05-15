@@ -25,7 +25,7 @@ const SourceData = () => {
                 Value
               </div>
             </div>
-            <div className='flex-1 overflow-y-auto px-1.5'>
+            <div className='h-full flex-1 overflow-y-auto px-1.5'>
               {Object.entries(sourceParams).map(([key, value], index) => (
                 <div
                   key={key}
