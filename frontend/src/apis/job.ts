@@ -39,6 +39,7 @@ interface SendCommandListRequest {
   command_list: string[];
   url: string;
   stream_id: string;
+  original_code?: string;
 }
 
 interface EditJobRequest {
@@ -76,6 +77,7 @@ const sendCommandList = async ({
   command_list,
   url,
   stream_id,
+  original_code,
 }: SendCommandListRequest) => {
   const { data, error, success } = await api<SendCommandListResponse>(
     '/api/agent/code/generate',
@@ -85,6 +87,7 @@ const sendCommandList = async ({
         command_list,
         url,
         stream_id,
+        original_code,
       }),
     },
   );

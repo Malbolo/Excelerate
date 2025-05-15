@@ -38,6 +38,7 @@ const CommandList = ({ job }: { job?: JobManagement }) => {
 
   const {
     setDataframe: setData,
+    code,
     setCode,
     setColumns,
     setDownloadToken,
@@ -77,11 +78,14 @@ const CommandList = ({ job }: { job?: JobManagement }) => {
     resetLogs();
 
     const commands = commandList.map(({ content }) => content);
-    const response = await commandMutation({
+    const request = {
       command_list: commands,
       url: sourceDataUrl,
       stream_id: streamId,
-    });
+      original_code: code,
+    };
+
+    const response = await commandMutation(request);
 
     const columns: ColumnDef<DataFrameRow>[] = response.dataframe[0][0]
       ? createSortableColumns(response.dataframe[0][0])
