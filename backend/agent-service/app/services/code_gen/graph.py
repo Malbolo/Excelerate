@@ -242,9 +242,16 @@ class CodeGenerator:
     def error_node(self, state: AgentState) -> AgentState:
         msg = AIMessage(content="⚠️ 코드 생성이 3회 연속 실패했습니다. 나중에 다시 시도해주세요.")
         self.q.put_nowait({"type": "notice", "content": "⚠️ 코드 생성이 3회 연속 실패했습니다."})
-        # 에러 시 처리 코드 추가
+        # 에러 시 생성된 코드 리스트 합쳐서 반환
+        code_str = state["python_code"]
+        codes = state.get("python_codes_list", []) + [code_str]
+
+        merged_code = merge_code_snippets(codes)
+
+        self.q.put_nowait({"type": "code", "content": merged_code})
         return {
-            "messages": state["messages"] + [msg]
+            "messages": state["messages"] + [msg],
+            "python_code": merged_code,
         }
     
     def execute_code(self, state: AgentState) -> AgentState:
