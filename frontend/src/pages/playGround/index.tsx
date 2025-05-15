@@ -1,19 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
-import {
-  ArrowLeftIcon,
-  PlusIcon,
-  // Few-shot 추가 버튼용 아이콘
-  Send,
-  // 전송 버튼용 아이콘
-  Trash2,
-} from 'lucide-react';
+import { ArrowLeftIcon, PlusIcon, Send, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -27,7 +19,6 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import useInternalRouter from '@/hooks/useInternalRouter';
 
-// 카테고리 및 기능 데이터 정의
 const CATEGORIES = {
   CODE_GENERATOR: 'Code Generator',
   DATA_LOADER: 'Data Loader',
@@ -39,7 +30,7 @@ const FEATURES_BY_CATEGORY = {
     'Generate Code',
     'Manipulate Excel',
   ],
-  [CATEGORIES.DATA_LOADER]: ['Extract DataCall Params'],
+  [CATEGORIES.DATA_LOADER]: ['Extract DataCall Params', 'Transfrom Date'],
 };
 
 interface FewShot {
@@ -51,7 +42,6 @@ interface FewShot {
 const LLMPlaygroundPage = () => {
   const { goBack } = useInternalRouter();
 
-  // 상단 Select 상태
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(
     undefined,
   );
@@ -60,18 +50,16 @@ const LLMPlaygroundPage = () => {
     undefined,
   );
 
-  // LLM 입력 상태
   const [systemPrompt, setSystemPrompt] = useState<string>('');
   const [fewShots, setFewShots] = useState<FewShot[]>([
-    { id: '1', userPrompt: '', aiPrompt: '' }, // 초기 Few-shot 1개
+    { id: '1', userPrompt: '', aiPrompt: '' },
   ]);
   const [userInput, setUserInput] = useState<string>('');
 
-  // 카테고리 변경 시 세부 기능 목록 업데이트
   useEffect(() => {
     if (selectedCategory) {
       setAvailableFeatures(FEATURES_BY_CATEGORY[selectedCategory] || []);
-      setSelectedFeature(undefined); // 카테고리 변경 시 세부 기능 선택 초기화
+      setSelectedFeature(undefined);
     } else {
       setAvailableFeatures([]);
       setSelectedFeature(undefined);
@@ -100,6 +88,10 @@ const LLMPlaygroundPage = () => {
   };
 
   const addFewShot = () => {
+    if (fewShots.length >= 5) {
+      toast.error('You can only add up to 5 few-shots.');
+      return;
+    }
     setFewShots(prev => [
       ...prev,
       { id: `${prev.length + 1}`, userPrompt: '', aiPrompt: '' },
@@ -120,47 +112,43 @@ const LLMPlaygroundPage = () => {
     );
   };
 
+  const handleTest = () => {
+    const payload = {
+      systemPrompt,
+      fewShots,
+      userInput,
+    };
+    console.log('Test Payload (JSON):', JSON.stringify(payload, null, 2));
+    toast.success('Test payload logged to console!');
+  };
+
   return (
     <section className='flex h-screen flex-1 flex-col bg-gray-100'>
-      {/* 상단 헤더 영역 */}
       <header className='sticky top-0 z-10 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm'>
-        {' '}
-        {/* h-16->h-14, px-6->px-4 */}
         <div className='flex items-center gap-3'>
-          {' '}
-          {/* gap-4->gap-3 */}
           <Button
             variant='ghost'
-            size='sm' // 크기 유지, 아이콘과 텍스트가 잘 어울림
+            size='sm'
             onClick={goBack}
-            className='flex items-center gap-1.5 text-gray-700 hover:bg-gray-200' // gap-2->gap-1.5
+            className='flex items-center gap-1.5 text-gray-700 hover:bg-gray-200'
           >
             <ArrowLeftIcon className='h-4 w-4' />
             Back
           </Button>
           <h1 className='text-md font-semibold text-gray-800'>
-            {' '}
-            {/* text-lg->text-md */}
             LLM Playground
           </h1>
         </div>
         <div className='flex items-center gap-2.5'>
-          {' '}
-          {/* gap-3->gap-2.5 */}
           <Select value={selectedCategory} onValueChange={handleCategoryChange}>
             <SelectTrigger className='w-[180px] bg-white text-xs'>
-              {' '}
-              {/* w-[200px]->w-[180px], text-xs 추가 */}
               <SelectValue placeholder='Select Category' />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectLabel className='text-xs'>Categories</SelectLabel>{' '}
-                {/* text-xs 추가 */}
+                <SelectLabel className='text-xs'>Categories</SelectLabel>
                 {Object.values(CATEGORIES).map(cat => (
                   <SelectItem key={cat} value={cat} className='text-xs'>
-                    {' '}
-                    {/* text-xs 추가 */}
                     {cat}
                   </SelectItem>
                 ))}
@@ -173,18 +161,13 @@ const LLMPlaygroundPage = () => {
             disabled={!selectedCategory || availableFeatures.length === 0}
           >
             <SelectTrigger className='w-[200px] bg-white text-xs'>
-              {' '}
-              {/* w-[220px]->w-[200px], text-xs 추가 */}
               <SelectValue placeholder='Select Feature' />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectLabel className='text-xs'>Features</SelectLabel>{' '}
-                {/* text-xs 추가 */}
+                <SelectLabel className='text-xs'>Features</SelectLabel>
                 {availableFeatures.map(feat => (
                   <SelectItem key={feat} value={feat} className='text-xs'>
-                    {' '}
-                    {/* text-xs 추가 */}
                     {feat}
                   </SelectItem>
                 ))}
@@ -193,30 +176,22 @@ const LLMPlaygroundPage = () => {
           </Select>
           <Button
             onClick={handleSubmitParameters}
-            size='sm' // size 추가 또는 className으로 패딩 조절
+            size='sm'
             className='bg-blue-600 text-white hover:bg-blue-700'
           >
-            <Send className='mr-1.5 h-4 w-4' /> {/* mr-2->mr-1.5 */}
+            <Send className='mr-1.5 h-4 w-4' />
             Submit
           </Button>
         </div>
       </header>
 
-      {/* 메인 컨텐츠 영역 (좌우 분할) */}
       <div className='flex flex-1 gap-3 overflow-hidden p-3'>
-        {' '}
-        {/* gap-4->gap-3, p-4->p-3 */}
-        {/* 좌측 입력 영역 */}
-        <ScrollArea className='w-3/5 rounded-lg border bg-white p-0.5 shadow-sm xl:w-2/3'>
-          {' '}
-          {/* p-1 제거 또는 p-0.5 */}
+        <div className='w-3/5 overflow-y-auto rounded-lg border bg-white p-0.5 shadow-sm xl:w-2/3'>
           <div className='space-y-5 p-4'>
-            {' '}
-            {/* space-y-6->space-y-5, p-5->p-4 */}
             <div>
               <Label
                 htmlFor='system-prompt'
-                className='mb-1 block text-xs font-medium text-gray-700' // text-sm->text-xs, mb-1.5->mb-1
+                className='mb-1 block text-xs font-medium text-gray-700'
               >
                 System Prompt
               </Label>
@@ -225,18 +200,14 @@ const LLMPlaygroundPage = () => {
                 value={systemPrompt}
                 onChange={e => setSystemPrompt(e.target.value)}
                 placeholder='Define the AI behavior and context here...'
-                className='min-h-[100px] rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500' // min-h-[120px]->min-h-[100px], text-sm 추가
-                rows={4} // rows 5->4
+                className='min-h-[100px] resize-none rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500'
+                rows={4}
               />
             </div>
             <Separator />
             <div>
               <div className='mb-2.5 flex items-center justify-between'>
-                {' '}
-                {/* mb-3->mb-2.5 */}
                 <h3 className='text-xs font-medium text-gray-700'>
-                  {' '}
-                  {/* text-sm->text-xs */}
                   Few-shot Prompts
                 </h3>
                 <Button
@@ -245,26 +216,21 @@ const LLMPlaygroundPage = () => {
                   onClick={addFewShot}
                   className='flex items-center gap-1 border-blue-500 py-1 text-xs text-blue-600 hover:bg-blue-50 hover:text-blue-700' // gap-1.5->gap-1, text-xs 추가, py-1 추가
                 >
-                  <PlusIcon className='h-3.5 w-3.5' />{' '}
-                  {/* h-4 w-4 -> h-3.5 w-3.5 */}
+                  <PlusIcon className='h-3.5 w-3.5' />
                   Add
                 </Button>
               </div>
               <div className='space-y-3'>
-                {' '}
-                {/* space-y-4->space-y-3 */}
                 {fewShots.map((fs, index) => (
                   <div
                     key={fs.id}
                     className='rounded-md border border-gray-200 bg-gray-50/50 p-3' // p-4->p-3
                   >
                     <div className='mb-2 flex items-center justify-between'>
-                      {' '}
-                      {/* mb-3->mb-2 */}
                       <span className='text-xs font-semibold text-gray-600'>
                         Example {index + 1}
                       </span>
-                      {fewShots.length > 0 && ( // 0개일때도 삭제버튼 안보이도록. 1개일때는 삭제 가능하게 하려면 > 1
+                      {fewShots.length > 0 && (
                         <Button
                           variant='ghost'
                           size='icon'
@@ -272,14 +238,11 @@ const LLMPlaygroundPage = () => {
                           className='h-6 w-6 text-red-500 hover:bg-red-100 hover:text-red-600' // h-7 w-7 -> h-6 w-6
                           aria-label='Remove few-shot'
                         >
-                          <Trash2 className='h-3.5 w-3.5' />{' '}
-                          {/* h-4 w-4 -> h-3.5 w-3.5 */}
+                          <Trash2 className='h-3.5 w-3.5' />
                         </Button>
                       )}
                     </div>
                     <div className='space-y-2.5'>
-                      {' '}
-                      {/* space-y-3->space-y-2.5 */}
                       <div>
                         <Label
                           htmlFor={`fs-user-${fs.id}`}
@@ -298,7 +261,7 @@ const LLMPlaygroundPage = () => {
                             )
                           }
                           placeholder='User says...'
-                          className='min-h-[70px] rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500' // min-h-[80px]->min-h-[70px], text-sm 추가
+                          className='min-h-[70px] resize-none rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500'
                           rows={3}
                         />
                       </div>
@@ -320,7 +283,7 @@ const LLMPlaygroundPage = () => {
                             )
                           }
                           placeholder='AI responds...'
-                          className='min-h-[70px] rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500' // min-h-[80px]->min-h-[70px], text-sm 추가
+                          className='min-h-[70px] resize-none rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500'
                           rows={3}
                         />
                       </div>
@@ -338,7 +301,7 @@ const LLMPlaygroundPage = () => {
             <div>
               <Label
                 htmlFor='user-input'
-                className='mb-1 block text-xs font-medium text-gray-700' // text-sm->text-xs, mb-1.5->mb-1
+                className='mb-1 block text-xs font-medium text-gray-700'
               >
                 User Input
               </Label>
@@ -347,29 +310,26 @@ const LLMPlaygroundPage = () => {
                 value={userInput}
                 onChange={e => setUserInput(e.target.value)}
                 placeholder='Enter your final prompt here for the AI to process...'
-                className='min-h-[120px] rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500' // min-h-[150px]->min-h-[120px], text-sm 추가
-                rows={5} // rows 6->5
+                className='min-h-[120px] resize-none rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500'
+                rows={5}
               />
             </div>
+            <Button
+              onClick={handleTest}
+              className='bg-green-600 py-2 text-sm text-white hover:bg-green-700'
+            >
+              Test
+            </Button>
           </div>
-        </ScrollArea>
-        {/* 우측 결과 비교 영역 */}
+        </div>
         <div className='flex w-2/5 flex-col gap-3 xl:w-1/3'>
-          {' '}
-          {/* gap-4->gap-3 */}
           <Card className='flex-1'>
             <CardHeader className='p-3'>
-              {' '}
-              {/* pt-4 pb-3 -> p-3 */}
               <CardTitle className='text-sm font-semibold text-gray-700'>
-                {' '}
-                {/* text-base->text-sm */}
                 Original AI Output
               </CardTitle>
             </CardHeader>
             <CardContent className='p-3 text-xs text-gray-600'>
-              {' '}
-              {/* text-sm->text-xs, p-3 추가 */}
               <p className='italic'>
                 AI output based on initial parameters will appear here.
               </p>
@@ -377,17 +337,11 @@ const LLMPlaygroundPage = () => {
           </Card>
           <Card className='flex-1'>
             <CardHeader className='p-3'>
-              {' '}
-              {/* pt-4 pb-3 -> p-3 */}
               <CardTitle className='text-sm font-semibold text-gray-700'>
-                {' '}
-                {/* text-base->text-sm */}
                 Modified AI Output
               </CardTitle>
             </CardHeader>
             <CardContent className='p-3 text-xs text-gray-600'>
-              {' '}
-              {/* text-sm->text-xs, p-3 추가 */}
               <p className='italic'>
                 AI output based on your modified prompts will appear here.
               </p>
