@@ -33,6 +33,9 @@ interface GetSourceDataResponse {
   url: string;
   dataframe: DataFrame;
   data_load_code?: string;
+  params: {
+    [key: string]: string;
+  };
 }
 
 interface SendCommandListRequest {
