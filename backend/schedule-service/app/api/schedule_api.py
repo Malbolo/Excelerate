@@ -1,5 +1,6 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query, HTTPException
+from sqlalchemy.orm import Session
 from starlette.responses import JSONResponse
 from datetime import datetime, timezone
 
@@ -15,6 +16,7 @@ from app.services.calendar_service import build_monthly_dag_calendar
 from app.utils import cron_utils
 from app.core import auth
 from app.core.log_config import logger
+from app.db import database
 
 router = APIRouter(
     prefix="/api/schedules",
@@ -32,7 +34,8 @@ def check_admin_permission(user_id: int = Depends(auth.get_user_id_from_header))
 @router.post("")
 async def create_schedule(
         schedule_request: ScheduleCreateRequest,
-        user_id: int = Depends(check_admin_permission)
+        user_id: int = Depends(check_admin_permission),
+        db: Session = Depends(database.get_db)
 ) -> JSONResponse:
     try:
         # frequency를 cron 표현식으로 변환
@@ -57,7 +60,8 @@ async def create_schedule(
             end_date=schedule_request.end_date,
             success_emails=schedule_request.success_emails,
             failure_emails=schedule_request.failure_emails,
-            user_id=user_id
+            user_id=user_id,
+            db=db
         )
 
         return JSONResponse(status_code=200, content={
