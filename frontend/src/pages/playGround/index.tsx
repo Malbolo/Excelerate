@@ -3,6 +3,10 @@ import { useEffect, useState } from 'react';
 import { ArrowLeftIcon, PlusIcon, Send, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import {
+  useGetLLMTemplate,
+  useGetLLMTemplateByCategory,
+} from '@/apis/playground';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -19,20 +23,6 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import useInternalRouter from '@/hooks/useInternalRouter';
 
-const CATEGORIES = {
-  CODE_GENERATOR: 'Code Generator',
-  DATA_LOADER: 'Data Loader',
-};
-
-const FEATURES_BY_CATEGORY = {
-  [CATEGORIES.CODE_GENERATOR]: [
-    'Split Command List',
-    'Generate Code',
-    'Manipulate Excel',
-  ],
-  [CATEGORIES.DATA_LOADER]: ['Extract DataCall Params', 'Transfrom Date'],
-};
-
 interface FewShot {
   id: string;
   userPrompt: string;
@@ -41,6 +31,9 @@ interface FewShot {
 
 const LLMPlaygroundPage = () => {
   const { goBack } = useInternalRouter();
+
+  const { data: llmTemplate } = useGetLLMTemplate();
+  const getLLMTemplateByCategory = useGetLLMTemplateByCategory();
 
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(
     undefined,
@@ -58,7 +51,7 @@ const LLMPlaygroundPage = () => {
 
   useEffect(() => {
     if (selectedCategory) {
-      setAvailableFeatures(FEATURES_BY_CATEGORY[selectedCategory] || []);
+      setAvailableFeatures(llmTemplate[selectedCategory] || []);
       setSelectedFeature(undefined);
     } else {
       setAvailableFeatures([]);
@@ -74,17 +67,17 @@ const LLMPlaygroundPage = () => {
     setSelectedFeature(value);
   };
 
-  const handleSubmitParameters = () => {
+  const handleSubmitParameters = async () => {
     if (!selectedCategory || !selectedFeature) {
       toast.error('Please select both a category and a feature.');
       return;
     }
-    console.log('Category:', selectedCategory);
-    console.log('Feature:', selectedFeature);
-    toast.success('Parameters logged to console!');
-    console.log('System Prompt:', systemPrompt);
-    console.log('Few-shots:', fewShots);
-    console.log('User Input:', userInput);
+
+    const result = await getLLMTemplateByCategory({
+      agent: selectedCategory,
+      template_name: selectedFeature,
+    });
+    console.log('Result:', result);
   };
 
   const addFewShot = () => {
@@ -147,7 +140,7 @@ const LLMPlaygroundPage = () => {
             <SelectContent>
               <SelectGroup>
                 <SelectLabel className='text-xs'>Categories</SelectLabel>
-                {Object.values(CATEGORIES).map(cat => (
+                {Object.keys(llmTemplate).map(cat => (
                   <SelectItem key={cat} value={cat} className='text-xs'>
                     {cat}
                   </SelectItem>
@@ -178,6 +171,7 @@ const LLMPlaygroundPage = () => {
             onClick={handleSubmitParameters}
             size='sm'
             className='bg-blue-600 text-white hover:bg-blue-700'
+            disabled={!selectedCategory || !selectedFeature}
           >
             <Send className='mr-1.5 h-4 w-4' />
             Submit
