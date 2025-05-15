@@ -509,7 +509,9 @@ def build_monthly_dag_calendar(dags: List[Dict[str, Any]], year: int, month: int
 
                         # 같은 날짜 내에 실행 시간이 있는지 확인
                         if execution_time <= day_end and execution_time > now:
-                            all_days[idx]["pending"] += 1
+                            # 이미 처리된 실행이 없는 경우에만 추가
+                            if not day_runs:
+                                all_days[idx]["pending"] += 1
                     except Exception as e:
                         logger.debug(f"Error evaluating cron for {dag_id} on {date_str}: {str(e)}")
                 else:
