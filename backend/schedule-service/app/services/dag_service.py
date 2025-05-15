@@ -68,6 +68,7 @@ class DagService:
                 "title": name,
                 "description": description,
                 "cron_expression": cron_expression,
+                "frequency": cron_utils.convert_cron_to_frequency(cron_expression),
                 "execution_time": execution_time,
                 "start_date": start_date,
                 "end_date": end_date,
@@ -201,6 +202,10 @@ class DagService:
                 f.write(dag_code)
                 logger.info(f"Updated DAG file at {dag_file_path}")
 
+            frequency = None
+            if cron_expression:
+                frequency = cron_utils.convert_cron_to_frequency(cron_expression)
+
             schedule_crud.update_schedule_metadata(
                 db,
                 dag_id=dag_id,
@@ -211,7 +216,9 @@ class DagService:
                     "success_emails": success_emails,
                     "failure_emails": failure_emails,
                     "title": update_name,
-                    "description": update_description
+                    "description": update_description,
+                    "cron_expression": update_schedule,  # cron 표현식 추가
+                    "frequency": frequency,
                 }
             )
 
