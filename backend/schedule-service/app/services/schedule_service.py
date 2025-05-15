@@ -29,7 +29,7 @@ class ScheduleService:
             job_ids = metadata.get("job_ids", [])
 
             # user_id 전달하여 job의 상세 정보 조회 (commands 포함)
-            job_details = ScheduleService.get_job_details(job_ids, user_id=user_id)
+            job_details = ScheduleService.get_job_commands(job_ids, user_id=user_id)
 
             # 작업 목록을 순서대로 구성
             tasks = []
@@ -93,11 +93,9 @@ class ScheduleService:
         return None
 
     @staticmethod
-    def get_job_details(job_ids: List[str], user_id: int = None) -> Dict[str, Any]:
+    def get_job_commands(job_ids: List[str], user_id: int = None) -> Dict[str, Any]:
         """주어진 job ID 리스트에 대한 상세 정보를 Job Service API를 통해 조회"""
         try:
-            job_details = {}
-
             # Job Service URL 가져오기
             job_service_url = settings.JOB_SERVICE_URL
             if not job_service_url:
@@ -112,6 +110,10 @@ class ScheduleService:
                     data={"job_ids": job_ids},
                     user_id=user_id
                 )
+
+                job_details = {}
+                for job_id in job_ids:
+                    job_details[job_id] = None
 
                 # 응답 형식에 맞게 처리
                 if response and "jobs" in response:
@@ -181,7 +183,7 @@ class ScheduleService:
                         pass
 
             # job 상세 정보 조회
-            job_details = ScheduleService.get_job_details(job_ids, user_id)
+            job_details = ScheduleService.get_job_commands(job_ids, user_id)
 
             # 태스크 데이터 구성 (job_id를 키로 사용)
             jobs_data = {}
