@@ -370,20 +370,22 @@ async def update_schedule(
 
 @router.get("")
 async def get_all_schedules(
-        user_id: int = Depends(check_admin_permission)
+        user_id: int = Depends(check_admin_permission),
+        db: Session = Depends(database.get_db)
 ) -> JSONResponse:
     """모든 스케줄(DAG) 목록을 반환하는 API"""
     try:
         # 서비스 함수 호출
-        schedules = ScheduleService.get_all_schedules_with_details(
-            user_id=user_id
-        )
+        result = ScheduleService.get_all_schedules_with_details(user_id=user_id, db=db)
+
+        schedules = result.get("schedules", [])
+        total = result.get("total", 0)
 
         return JSONResponse(content={
             "result": "success",
             "data": {
                 "schedules": schedules,
-                "total": len(schedules)
+                "total": total
             }
         })
     except Exception as e:
