@@ -1,5 +1,5 @@
 from typing import List, Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 from croniter import croniter
 
@@ -362,6 +362,7 @@ class ScheduleService:
 
         # 현재 시각 (UTC 기준)
         now = date_utils.get_now_utc()
+        logger.debug(f"현재 시간(UTC): {now}, 대상 날짜: {target_date}, 시작: {start_dt}, 종료: {end_dt}")
 
         start = date_utils.format_date_for_airflow(start_dt)
         end = date_utils.format_date_for_airflow(end_dt)
@@ -373,20 +374,23 @@ class ScheduleService:
             "pending": []
         }
 
-        logger.debug(f"Processing dags for date: {target_date}, dags count: {len(dags)}")
-
-        # 대상 날짜의 문자열 형식 (YYYY-MM-DD)
-        target_date_str = target_date_dt.strftime("%Y-%m-%d")
+        # 이미 처리된 DAG ID 추적
+        processed_dag_ids = set()
 
         # 모든 DAG를 순회하며 처리
         for dag in dags:
             dag_id = dag.get("dag_id")
             owner = dag.get("owners", ["unknown"])[0]
 
+            # 이미 처리된 DAG는 건너뛰기
+            if dag_id in processed_dag_ids:
+                continue
+            processed_dag_ids.add(dag_id)
+
             # 태그에서 title 추출
             title = ScheduleService.extract_title_from_tags(dag.get("tags", []))
             if not title:
-                title = dag.get("name", dag_id)  # 태그에 없으면 name이나 dag_id 사용
+                title = dag.get("name", dag_id)
 
             description = dag.get("description", "")
             is_paused = dag.get("is_paused", False)
@@ -402,10 +406,10 @@ class ScheduleService:
                 logger.debug(f"Error getting dag runs for {dag_id}: {e}")
                 dag_runs = []
 
-            # 이미 pending으로 등록된 DAG인지 추적하기 위한 플래그
-            is_already_pending = False
+            # 이미 pending으로 추가됐는지 확인하는 플래그
+            already_added_as_pending = False
 
-            # 1. 기존 실행 이력 처리
+            # 실행 기록이 있는 경우 처리
             if dag_runs:
                 for run in dag_runs:
                     state = run.get("state", "").lower()
@@ -427,15 +431,18 @@ class ScheduleService:
                     else:
                         # "running", "queued" 등의 상태는 pending으로 표시
                         result["pending"].append(run_info)
-                        is_already_pending = True
+                        already_added_as_pending = True
+                        logger.debug(f"DAG {dag_id} 기존 실행 상태로 pending 추가: {state}")
 
-            # 2. 미래 예정된 실행 확인 - 실행 이력 유무와 관계없이 항상 확인
-            if not is_already_pending:  # 이미 pending이 아닌 경우에만 확인
+            # 실행 이력과 관계없이 미래 예정된 실행 확인
+            if not already_added_as_pending:
                 # 시작일 추출 - DAG ID에서 날짜 부분 추출
                 dag_start_date = date_utils.extract_date_from_dag_id(dag_id)
 
-                # 시작일이 대상 날짜 이전이거나 같은 경우에만 계속 진행
-                if (dag_start_date and target_date_dt >= dag_start_date) or dag_start_date is None:
+                # 시작일이 대상 날짜 이전이거나 같은 경우, 또는 시작일을 확인할 수 없는 경우
+                valid_start_date = (dag_start_date is None) or (target_date_dt.date() >= dag_start_date.date())
+
+                if valid_start_date:
                     # 스케줄 정보 확인
                     schedule_interval = cron_utils.normalize_cron_expression(dag.get("schedule_interval", ""))
 
@@ -445,12 +452,18 @@ class ScheduleService:
                             cron_iter = croniter(schedule_interval, start_dt)
                             execution_time = cron_iter.get_next(datetime)
 
+                            # 시간대 확인 및 추가
+                            if execution_time.tzinfo is None:
+                                execution_time = execution_time.replace(tzinfo=timezone.utc)
+
+                            logger.debug(
+                                f"DAG {dag_id} - 다음 실행: {execution_time}, 오늘?: {execution_time <= end_dt}, 미래?: {execution_time > now}")
+
                             # 같은 날짜 내에 실행 시간이 있고, 아직 실행 시간이 지나지 않았는지 확인
                             if execution_time <= end_dt and execution_time > now:
                                 next_run_time = execution_time.isoformat()
-                                logger.debug(f"{dag_id} will run at {next_run_time} on {target_date}")
+                                logger.debug(f"DAG {dag_id} pending으로 추가: {next_run_time}")
 
-                                # pending으로 추가
                                 result["pending"].append({
                                     "schedule_id": dag_id,
                                     "title": title,
@@ -465,5 +478,6 @@ class ScheduleService:
         # 결과 출력
         logger.debug(
             f"Final result for {target_date}: success={len(result['success'])}, failed={len(result['failed'])}, pending={len(result['pending'])}")
+        logger.debug(f"Pending DAGs: {[item['schedule_id'] for item in result['pending']]}")
 
         return result

@@ -328,6 +328,7 @@ class DagService:
             tags: str,
             job_details: List[Dict[str, Any]]
     ) -> str:
+        print("generate_dag_start_date:", start_date)
         """DAG 코드 생성 (내부 헬퍼 함수)"""
         dag_code = f"""
 from airflow import DAG
@@ -360,8 +361,8 @@ default_args = {{
     'email': [{', '.join([f"'{email}'" for email in (success_emails or [])])}],
     'email_on_failure': {bool(failure_emails or [])},
     'email_on_retry': False,
-    'retries': 1,
-    'retry_delay': timedelta(seconds=1),
+    'retries': 0,
+    # 'retry_delay': timedelta(seconds=1),
 }}
 
 dag = DAG(
