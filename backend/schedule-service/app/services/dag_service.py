@@ -366,7 +366,7 @@ default_args = {{
 dag = DAG(
     '{dag_id}',
     default_args=default_args,
-    dag_display_name='{name}'
+    dag_display_name='{name}',
     description='{description}',
     schedule_interval='{schedule_interval}',
     start_date= datetime({start_date.year}, {start_date.month}, {start_date.day}),
