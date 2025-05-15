@@ -82,3 +82,33 @@ async def preview_template(
     # # 다운로드가 아닌 인라인 뷰로
     # response.headers["Content-Disposition"] = f"inline; filename*=UTF-8''{quoted_fname}"
     # return response
+
+@router.get("/{template_name}/download", summary="템플릿 다운로드")
+async def download_template(
+    template_name: str,
+    background_tasks: BackgroundTasks,
+    minio: MinioClient = Depends(get_minio_client),
+):
+    # 1) 임시 디렉토리 & 파일 경로 생성
+    tmpdir = tempfile.mkdtemp()
+    xlsx_path = os.path.join(tmpdir, f"{template_name}.xlsx")
+
+    # 2) Minio에서 다운로드
+    try:
+        minio.download_template(template_name, xlsx_path)
+    except Exception as e:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+        raise HTTPException(status_code=404, detail=f"템플릿을 찾을 수 없습니다: {e}")
+
+    # 3) 응답 이후 임시 디렉토리 삭제 예약
+    background_tasks.add_task(shutil.rmtree, tmpdir, True)
+
+    # 4) FileResponse로 내려주기
+    response = FileResponse(
+        xlsx_path,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    # 한글 파일명 대응
+    quoted_fname = urllib.parse.quote(f"{template_name}.xlsx", safe="")
+    response.headers["Content-Disposition"] = f"attachment; filename*=UTF-8''{quoted_fname}"
+    return response

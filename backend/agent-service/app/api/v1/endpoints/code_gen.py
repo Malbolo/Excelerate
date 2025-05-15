@@ -7,7 +7,6 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.concurrency import run_in_threadpool
 
 from datetime import datetime
-from zoneinfo import ZoneInfo
 import numpy as np
 
 from app.core import auth
@@ -29,7 +28,7 @@ async def command_code(
     code_gen: CodeGenerator = Depends(get_code_gen)
 ):
     try:
-        api_start = datetime.now(ZoneInfo("Asia/Seoul"))
+        api_start = datetime.now()
         graph = code_gen.build()
 
         # 나중엔 Optional이 아닌 필수로 연결하도록 요청
@@ -89,7 +88,7 @@ async def command_code(
 
         log_id = generate_log_id(user_name, uid)
 
-        api_end = datetime.now(ZoneInfo("Asia/Seoul"))
+        api_end = datetime.now()
         api_latency = (api_end - api_start).total_seconds()
         
         q.put_nowait({"type": "notice", "content": "Log를 저장 중입니다..."})
