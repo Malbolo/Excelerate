@@ -6,6 +6,7 @@ from http import HTTPStatus
 from app.core import auth
 from app.core.constants import SUCCESS, FAIL, JOB_NOT_FOUND, ADMIN_USER, USER_ROLE, \
     ACCESS_DENIED
+from app.core.constants import USER_DEPARTMENT, USER_NAME
 from app.core.log_config import logger
 from app.crud import crud
 from app.models import models
@@ -24,8 +25,8 @@ from starlette.responses import JSONResponse
 
 def create_job(request: JobCreateRequest, user_id: int, db: Session) -> JSONResponse:
     try:
-        # user_info = auth.get_user_info(user_id)
-        job = crud.create_job(db, request, user_id, 'user_info.get(USER_NAME)', 'user_info.get(USER_DEPARTMENT)')
+        user_info = auth.get_user_info(user_id)
+        job = crud.create_job(db, request, user_id, user_info.get(USER_NAME), user_info.get(USER_DEPARTMENT))
 
         data = JobCreateResponseData(
             job_id=str(job.id),

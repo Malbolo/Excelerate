@@ -2,7 +2,9 @@ from datetime import datetime
 from http import HTTPStatus
 from typing import List
 
+from app.core import auth
 from app.core.constants import JOB_NOT_FOUND, ACCESS_DENIED
+from app.core.constants import USER_DEPARTMENT, USER_NAME
 from app.models import models
 from app.models.models import JobCommand, Job
 from app.schemas.job_create_schema import JobCreateRequest
@@ -36,8 +38,8 @@ def update_job(db: Session, job_id: str, request: JobUpdateRequest, user_id: int
     db.commit()
     db.refresh(existing_job)
 
-    # user_info = auth.get_user_info(user_id)
-    return create_job(db, request, user_id, 'user_info.get(USER_NAME)', 'user_info.get(USER_DEPARTMENT)')
+    user_info = auth.get_user_info(user_id)
+    return create_job(db, request, user_id, user_info.get(USER_NAME), user_info.get(USER_DEPARTMENT))
 
 def get_all_jobs(db: Session):
     return db.query(models.Job).options(joinedload(models.Job.commands))
