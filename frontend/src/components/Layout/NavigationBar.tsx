@@ -51,9 +51,7 @@ const NavigationBar = () => {
         })}
       </ul>
 
-      <div className='mt-auto border-t p-4'>
-        <LocaleSelector />
-
+      <div className='mt-auto flex flex-col gap-2 border-t p-4'>
         {name ? (
           <LogoutButton name={name} />
         ) : (
@@ -63,6 +61,7 @@ const NavigationBar = () => {
             </Button>
           </Link>
         )}
+        <LocaleSelector />
       </div>
     </nav>
   );

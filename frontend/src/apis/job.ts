@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 
 import useInternalRouter from '@/hooks/useInternalRouter';
 import { DataFrame } from '@/types/dataframe';
+import { ErrorMessage } from '@/types/job';
 
 import { api } from './core';
 
@@ -22,6 +23,7 @@ interface SendCommandListResponse {
   dataframe: DataFrame;
   download_token: string;
   log_id: string;
+  error_msg?: ErrorMessage;
 }
 
 interface GetSourceDataRequest {
