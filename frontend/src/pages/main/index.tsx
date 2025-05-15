@@ -170,7 +170,7 @@ const MainPage: React.FC = () => {
 
         <ResizableHandle withHandle />
 
-        <ResizablePanel minSize={30} maxSize={60} defaultSize={30}>
+        <ResizablePanel minSize={30} maxSize={70} defaultSize={30}>
           <MainSideBar />
         </ResizablePanel>
       </ResizablePanelGroup>

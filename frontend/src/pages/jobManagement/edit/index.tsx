@@ -229,7 +229,7 @@ const JobEditPage = () => {
 
         <ResizableHandle withHandle />
 
-        <ResizablePanel minSize={30} maxSize={60} defaultSize={30}>
+        <ResizablePanel minSize={30} maxSize={70} defaultSize={30}>
           {!dataframe || isCommandLoading ? ( // Added isSourceDataLoading for consistency
             <div className='flex h-full w-full items-center justify-center border-l bg-[#FAFCFF]'>
               <ClipLoader size={18} color='#7d9ecd' />
