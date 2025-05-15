@@ -541,159 +541,172 @@ class ScheduleService:
         }
 
         try:
-            # DB 세션을 외부에서 받지 않았을 경우에만 새로 생성
+            # DB 세션 생성
             if db is None:
                 db = SessionLocal()
                 close_db = True
 
-            # timezone을 일관되게 적용하기 위해 UTC 사용
+            # 날짜 변환 및 범위 설정
             target_date_dt = date_utils.parse_date_string(target_date)
             if not target_date_dt:
                 raise ValueError(f"Invalid date format: {target_date}")
 
-            start_dt = target_date_dt.replace(hour=0, minute=0, second=0)
-            end_dt = target_date_dt.replace(hour=23, minute=59, second=59)
+            # timezone 확인 및 추가 - 여기 수정
+            if target_date_dt.tzinfo is None:
+                target_date_dt = target_date_dt.replace(tzinfo=timezone.utc)
 
-            # 현재 시각 (UTC 기준)
+            day_start = target_date_dt.replace(hour=0, minute=0, second=0)
+            day_end = target_date_dt.replace(hour=23, minute=59, second=59)
+
+            # API 호출용 날짜 포맷
+            start = date_utils.format_date_for_airflow(day_start)
+            end = date_utils.format_date_for_airflow(day_end)
+
+            # 현재 시각
             now = date_utils.get_now_utc()
-            logger.debug(f"현재 시간(UTC): {now}, 대상 날짜: {target_date}, 시작: {start_dt}, 종료: {end_dt}")
+            # timezone 확인 - 여기 수정
+            if now.tzinfo is None:
+                now = now.replace(tzinfo=timezone.utc)
 
-            start = date_utils.format_date_for_airflow(start_dt)
-            end = date_utils.format_date_for_airflow(end_dt)
-
-            # 이미 처리된 DAG ID 추적 (프로세싱 용도)
+            # 이미 처리된 DAG 추적
             processed_dag_ids = set()
-            # 대기 목록에 추가되면 안되는 DAG ID (이미 실제 실행 이력이 있는 경우)
             already_processed_for_pending = set()
 
-            # 모든 DAG를 순회하며 처리
+            # 모든 DAG 처리
             for dag in dags:
                 dag_id = dag.get("dag_id")
-                owner = dag.get("owners", ["unknown"])[0] if dag.get("owners") else "unknown"
 
-                # 이미 처리된 DAG는 건너뛰기
-                if dag_id in processed_dag_ids:
+                # 이미 처리됐거나 비활성 상태면 스킵
+                if dag_id in processed_dag_ids or dag.get("is_paused", False):
                     continue
+
                 processed_dag_ids.add(dag_id)
 
-                # DB에서 title 가져오기
+                # 기본 정보
                 title = dag.get("dag_display_name", dag_id)
                 description = dag.get("description", "")
+                owner = dag.get("owners", ["unknown"])[0] if dag.get("owners") else "unknown"
 
+                # DB에 정보가 있으면 사용
                 db_schedule = schedule_crud.get_schedule_by_dag_id(db, dag_id)
                 if db_schedule:
                     title = db_schedule.title
                     description = db_schedule.description
-                else:
-                    # DB에 정보가 없는 경우 태그에서 title 추출 시도
-                    title_from_tag = ScheduleService.extract_title_from_tags(dag.get("tags", []))
-                    if title_from_tag:
-                        title = title_from_tag
-
-                is_paused = dag.get("is_paused", False)
-
-                # 비활성 DAG는 건너뛰기
-                if is_paused:
-                    continue
 
                 # 실행 이력 확인
+                already_added_as_pending = False
                 try:
                     dag_runs = airflow_client.get_dag_runs(dag_id, start_date=start, end_date=end, limit=100)
+
+                    # 실행 기록이 있는 경우
+                    if dag_runs:
+                        already_processed_for_pending.add(dag_id)
+
+                        for run in dag_runs:
+                            state = run.get("state", "").lower()
+                            run_info = {
+                                "schedule_id": dag_id,
+                                "run_id": run.get("dag_run_id"),
+                                "title": title,
+                                "description": description,
+                                "owner": owner,
+                                "status": state,
+                                "start_time": run.get("start_date"),
+                                "end_time": run.get("end_date")
+                            }
+
+                            if state == "success":
+                                result["success"].append(run_info)
+                            elif state in ("failed", "error"):
+                                result["failed"].append(run_info)
+                            else:
+                                result["pending"].append(run_info)
+                                already_added_as_pending = True
+
                 except Exception as e:
-                    logger.debug(f"Error getting dag runs for {dag_id}: {e}")
-                    dag_runs = []
+                    logger.error(f"Error getting runs for {dag_id}: {str(e)}")
+                    continue
 
-                # 이미 pending으로 추가됐는지 확인하는 플래그
-                already_added_as_pending = False
-
-                # 실행 기록이 있는 경우 처리
-                if dag_runs:
-                    # DAG에 실행 이력이 있으면 대기 목록에 추가하지 않도록 표시
-                    already_processed_for_pending.add(dag_id)
-
-                    for run in dag_runs:
-                        state = run.get("state", "").lower()
-                        run_info = {
-                            "schedule_id": dag_id,
-                            "run_id": run.get("dag_run_id"),
-                            "title": title,
-                            "description": description,
-                            "owner": owner,
-                            "status": state,
-                            "start_time": run.get("start_date"),
-                            "end_time": run.get("end_date")
-                        }
-
-                        if state == "success":
-                            result["success"].append(run_info)
-                        elif state in ("failed", "error"):
-                            result["failed"].append(run_info)
-                        else:
-                            # "running", "queued" 등의 상태는 pending으로 표시
-                            result["pending"].append(run_info)
-                            already_added_as_pending = True
-                            logger.debug(f"DAG {dag_id} 기존 실행 상태로 pending 추가: {state}")
-
-                # 미래 예정된 실행 확인 (이미 실행 이력이 있으면 추가하지 않음)
+                # 예정된 실행 확인 (실행 이력이 없고 대기 목록에 추가되지 않은 경우)
                 if not already_added_as_pending and dag_id not in already_processed_for_pending:
-                    # 시작일 추출 - DAG ID에서 날짜 부분 추출
-                    dag_start_date = date_utils.extract_date_from_dag_id(dag_id)
+                    # 시작일/종료일 확인
+                    dag_start_date = db_schedule.start_date if db_schedule and db_schedule.start_date else None
+                    dag_end_date = db_schedule.end_date if db_schedule and db_schedule.end_date else None
 
-                    # DB에서 시작일 가져오기 시도
-                    if not dag_start_date and db_schedule and db_schedule.start_date:
-                        dag_start_date = db_schedule.start_date
+                    # timezone 확인 및 추가 - 여기 수정 (중요!)
+                    if dag_start_date and dag_start_date.tzinfo is None:
+                        dag_start_date = dag_start_date.replace(tzinfo=timezone.utc)
 
-                    # 시작일이 대상 날짜 이전이거나 같은 경우, 또는 시작일을 확인할 수 없는 경우
-                    valid_start_date = (dag_start_date is None) or (target_date_dt.date() >= dag_start_date.date())
+                    if dag_end_date and dag_end_date.tzinfo is None:
+                        dag_end_date = dag_end_date.replace(tzinfo=timezone.utc)
 
-                    if valid_start_date:
-                        # 스케줄 정보 확인
-                        schedule_interval = dag.get("schedule_interval")
-                        cron_expr = ""
-                        if isinstance(schedule_interval, dict) and "__type" in schedule_interval:
-                            cron_expr = schedule_interval.get("__type", "")
-                        else:
-                            cron_expr = str(schedule_interval) if schedule_interval else ""
-
-                        if cron_expr and croniter.is_valid(cron_expr):
+                    # 시작일이 없는 경우 API에서 확인
+                    if dag_start_date is None:
+                        start_date_str = dag.get("start_date")
+                        if start_date_str:
                             try:
-                                # 해당 날짜의 00:00:00을 기준으로 크론 표현식 평가
-                                cron_iter = croniter(cron_expr, start_dt)
-                                execution_time = cron_iter.get_next(datetime)
+                                dag_start_date = datetime.fromisoformat(start_date_str.replace("Z", "+00:00"))
+                                # 이미 timezone이 있으므로 추가할 필요 없음
+                            except (ValueError, TypeError):
+                                # DAG ID에서 추출 시도
+                                extracted_date = date_utils.extract_date_from_dag_id(dag_id)
+                                if extracted_date:
+                                    # timezone 확인 및 추가
+                                    if extracted_date.tzinfo is None:
+                                        dag_start_date = extracted_date.replace(tzinfo=timezone.utc)
+                                    else:
+                                        dag_start_date = extracted_date
 
-                                # 시간대 확인 및 추가
-                                if execution_time.tzinfo is None:
-                                    execution_time = execution_time.replace(tzinfo=timezone.utc)
+                    # 종료일이 없는 경우 API에서 확인
+                    if dag_end_date is None:
+                        end_date_str = dag.get("end_date")
+                        if end_date_str:
+                            try:
+                                dag_end_date = datetime.fromisoformat(end_date_str.replace("Z", "+00:00"))
+                                # 이미 timezone이 있으므로 추가할 필요 없음
+                            except (ValueError, TypeError):
+                                pass
 
-                                logger.debug(
-                                    f"DAG {dag_id} - 다음 실행: {execution_time}, 오늘?: {execution_time <= end_dt}, 미래?: {execution_time > now}")
+                    # 날짜 범위 체크
+                    if (dag_start_date and dag_start_date > day_end) or (dag_end_date and dag_end_date < day_start):
+                        continue
 
-                                # 같은 날짜 내에 실행 시간이 있고, 아직 실행 시간이 지나지 않았는지 확인
-                                if execution_time <= end_dt and execution_time > now:
-                                    next_run_time = execution_time.isoformat()
-                                    logger.debug(f"DAG {dag_id} pending으로 추가: {next_run_time}")
+                    # 크론 표현식 정규화
+                    cron_expr = cron_utils.normalize_cron_expression(dag.get("schedule_interval"))
 
-                                    result["pending"].append({
-                                        "schedule_id": dag_id,
-                                        "title": title,
-                                        "description": description,
-                                        "owner": owner,
-                                        "status": "pending",
-                                        "next_run_time": next_run_time
-                                    })
-                            except Exception as e:
-                                logger.debug(f"Error calculating execution time for {dag_id}: {str(e)}")
+                    if cron_expr and croniter.is_valid(cron_expr):
+                        try:
+                            # 다음 실행 시간 계산
+                            start_time = now if day_start <= now <= day_end else day_start
+                            cron_iter = croniter(cron_expr, start_time)
+                            execution_time = cron_iter.get_next(datetime)
 
-            # 결과 출력
-            logger.debug(
-                f"Final result for {target_date}: success={len(result['success'])}, failed={len(result['failed'])}, pending={len(result['pending'])}")
-            logger.debug(f"Pending DAGs: {[item['schedule_id'] for item in result['pending']]}")
+                            # 시간대 추가 - 여기 수정
+                            if execution_time.tzinfo is None:
+                                execution_time = execution_time.replace(tzinfo=timezone.utc)
+
+                            # 오늘 내에 실행 예정이고 현재 시간 이후인 경우
+                            if execution_time <= day_end and execution_time > now:
+                                result["pending"].append({
+                                    "schedule_id": dag_id,
+                                    "title": title,
+                                    "description": description,
+                                    "owner": owner,
+                                    "status": "pending",
+                                    "next_run_time": execution_time.isoformat()
+                                })
+                        except Exception as e:
+                            logger.error(f"Error calculating next run for {dag_id}: {str(e)}")
+
+                logger.info(
+                    f"일별 통계 조회 결과 - 날짜: {target_date}, 성공: {len(result['success'])}, 실패: {len(result['failed'])}, 대기: {len(result['pending'])}")
+
+        except Exception as e:
+            logger.error(f"Error in get_dag_runs_by_date: {str(e)}")
         finally:
-            # 생성한 경우에만 세션 닫기
             if close_db and db is not None:
                 db.close()
 
-        # finally 블록 바깥에서 return
         return result
 
     @staticmethod

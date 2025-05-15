@@ -169,10 +169,16 @@ def _extract_dag_dates(dag: Dict[str, Any], dag_id: str, now: datetime, db_sched
     if db_schedule:
         # DB에 정보가 있으면 사용
         if hasattr(db_schedule, 'start_date') and db_schedule.start_date:
+            # timezone 확인 및 추가
             dag_start_date = db_schedule.start_date
+            if dag_start_date.tzinfo is None:
+                dag_start_date = dag_start_date.replace(tzinfo=timezone.utc)
 
         if hasattr(db_schedule, 'end_date') and db_schedule.end_date:
+            # timezone 확인 및 추가
             dag_end_date = db_schedule.end_date
+            if dag_end_date.tzinfo is None:
+                dag_end_date = dag_end_date.replace(tzinfo=timezone.utc)
 
     # DB에 시작일이 없는 경우 API에서 추출
     if dag_start_date is None:
@@ -180,7 +186,13 @@ def _extract_dag_dates(dag: Dict[str, Any], dag_id: str, now: datetime, db_sched
 
     # API에도 없는 경우 DAG ID에서 추출
     if dag_start_date is None:
-        dag_start_date = date_utils.extract_date_from_dag_id(dag_id)
+        extracted_date = date_utils.extract_date_from_dag_id(dag_id)
+        if extracted_date:
+            # timezone 확인 및 추가
+            if extracted_date.tzinfo is None:
+                dag_start_date = extracted_date.replace(tzinfo=timezone.utc)
+            else:
+                dag_start_date = extracted_date
 
     # 그래도 없는 경우 생성일 또는 현재 시간 사용
     if dag_start_date is None:
@@ -194,6 +206,13 @@ def _extract_dag_dates(dag: Dict[str, Any], dag_id: str, now: datetime, db_sched
                 dag_end_date = datetime.fromisoformat(end_date_str.replace("Z", "+00:00"))
             except (ValueError, TypeError):
                 pass
+
+    # 최종 확인: timezone이 없는 날짜가 있으면 추가
+    if dag_start_date and dag_start_date.tzinfo is None:
+        dag_start_date = dag_start_date.replace(tzinfo=timezone.utc)
+
+    if dag_end_date and dag_end_date.tzinfo is None:
+        dag_end_date = dag_end_date.replace(tzinfo=timezone.utc)
 
     return dag_start_date, dag_end_date
 
