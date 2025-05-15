@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/card';
 import useInternalRouter from '@/hooks/useInternalRouter';
 import { formatDateTime } from '@/lib/dateFormat';
+import { useLocalDate } from '@/store/useLocalDate';
 
 import JobPagination from './JobPagination';
 
@@ -19,6 +20,8 @@ const AgentCallList = () => {
   const startDate = searchParams.get('startDate') || '';
   const endDate = searchParams.get('endDate') || '';
   const page = searchParams.get('page') || '1';
+
+  const { locale, place } = useLocalDate();
 
   const {
     data: { logs, pages },
@@ -47,7 +50,7 @@ const AgentCallList = () => {
             </CardHeader>
             <CardContent className='flex w-full justify-between'>
               <p>{log.user_name}</p>
-              <p>{formatDateTime(log.created_at)}</p>
+              <p>{formatDateTime(log.created_at, locale, place)}</p>
             </CardContent>
           </Card>
         ))}
