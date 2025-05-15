@@ -2,6 +2,7 @@ import os
 import shutil
 import urllib.parse
 import tempfile
+import base64
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse, FileResponse
 from app.utils.depend import get_minio_client
@@ -64,12 +65,20 @@ async def preview_template(
     # 응답 후 임시 디렉터리 삭제 스케줄
     background_tasks.add_task(shutil.rmtree, tmpdir, True)
 
-    response = FileResponse(png_path, media_type="image/png")
+    with open(png_path, "rb") as f:
+        img_bytes = f.read()
+    encoded_str = base64.b64encode(img_bytes).decode("utf-8")
 
-    # RFC5987 포맷으로 한글 이름을 UTF-8 URL 인코딩
-    filename = os.path.basename(png_path)  # e.g. "테스트.png"
-    quoted_fname = urllib.parse.quote(filename, safe="")  
+    data_uri = f"data:image/png;base64,{encoded_str}"
 
-    # 다운로드가 아닌 인라인 뷰로
-    response.headers["Content-Disposition"] = f"inline; filename*=UTF-8''{quoted_fname}"
-    return response
+    return JSONResponse(status_code=200, content={"result" : "success", "data" : data_uri})
+
+    # response = FileResponse(png_path, media_type="image/png")
+
+    # # RFC5987 포맷으로 한글 이름을 UTF-8 URL 인코딩
+    # filename = os.path.basename(png_path)  # e.g. "테스트.png"
+    # quoted_fname = urllib.parse.quote(filename, safe="")  
+
+    # # 다운로드가 아닌 인라인 뷰로
+    # response.headers["Content-Disposition"] = f"inline; filename*=UTF-8''{quoted_fname}"
+    # return response

@@ -2,7 +2,7 @@
 # Data_Loader
 ``` json
 {
-  "name": "Data_Loader:extract_url_params",
+  "name": "Data_Loader:Extract_DataCall_Params",
   "messages": [
     {
       "role": "system",
@@ -18,7 +18,7 @@
 
 ``` json
 {
-  "name": "Data_Loader:transform_date",
+  "name": "Data_Loader:Transform_Date_Params",
   "messages": [
     {
       "role": "system",
@@ -43,7 +43,7 @@
 # Code_Generator
 ``` json
 {
-  "name": "Code_Generator:generate_code",
+  "name": "Code_Generator:Generate_Code",
   "messages": [
     {
       "role": "system",
@@ -59,7 +59,7 @@
 
 ``` json
 {
-  "name": "Code_Generator:generate_code_extension",
+  "name": "Code_Generator:Generate_Code_Extension",
   "messages": [
     {
       "role": "system",
@@ -75,7 +75,7 @@
 
 ``` json
 {
-  "name": "Code_Generator:classify_commands",
+  "name": "Code_Generator:Split_Command_List",
   "messages": [
     {
       "role": "system",
@@ -107,7 +107,7 @@
 
 ``` json
 {
-  "name": "Code_Generator:extract_excel_params",
+  "name": "Code_Generator:Manipulate_Excel",
   "messages": [
     {
       "role": "system",

@@ -96,7 +96,7 @@ class CodeGenerator:
             }
 
         cmds = new_cmds
-        prompt = load_chat_template("Code_Generator:classify_commands")
+        prompt = load_chat_template("Code_Generator:Split_Command_List")
         # invoke
         cng_chain = prompt | self.sllm
         resp = cng_chain.invoke({"cmd_list": json.dumps(cmds, ensure_ascii=False)})
@@ -203,11 +203,11 @@ class CodeGenerator:
 
         if state['original_code']:
             self.q.put_nowait({"type": "notice", "content": "기존 코드를 감지해 반영합니다."})
-            code_gen_prompt = load_chat_template("Code_Generator:generate_code_extension")
+            code_gen_prompt = load_chat_template("Code_Generator:Generate_Code_Extension")
             schain = code_gen_prompt | self.sllm
             llm_input = {"original_code":state['original_code'], "dftypes": df.dtypes.to_string(), "df": df_preview, "input": input}
         else:
-            code_gen_prompt = load_chat_template("Code_Generator:generate_code")
+            code_gen_prompt = load_chat_template("Code_Generator:Generate_Code")
             schain = code_gen_prompt | self.sllm
             llm_input = {"dftypes": df.dtypes.to_string(), "df": df_preview, "input": input}
 
@@ -311,7 +311,7 @@ class CodeGenerator:
         unit = state['current_unit']
         cmd = unit.get("cmd", "")
 
-        prompt = load_chat_template("Code_Generator:extract_excel_params")
+        prompt = load_chat_template("Code_Generator:Manipulate_Excel")
         params = json.loads((prompt | self.sllm).invoke({"command": str(cmd)}).content)
         self.q.put_nowait({"type": "notice", "content": f"{params['template_name']} 템플릿을 불러옵니다."})
 

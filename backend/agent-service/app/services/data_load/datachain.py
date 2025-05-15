@@ -103,7 +103,7 @@ class FileAPIClient:
 
     def extract_params_chain(self):
         # Entity extractor chain
-        prompt = load_chat_template("Data_Loader:extract_url_params")
+        prompt = load_chat_template("Data_Loader:Extract_DataCall_Params")
         structured = self.llm.with_structured_output(FileAPIDetail)
         
         today_chain = TransformChain(
@@ -159,7 +159,7 @@ class FileAPIClient:
         self.mlogger.set_name(f"LLM Call: Transform Date Params")
 
         # 2-1) 날짜 계산용 템플릿 꺼내기
-        prompt = load_chat_template("Data_Loader:transform_date")
+        prompt = load_chat_template("Data_Loader:Transform_Date_Params")
         date_chain = prompt | self.llm
 
         # 2-2) expr 에 원본 텍스트 넣고 코드 스니펫 받기
