@@ -349,10 +349,8 @@ class ScheduleService:
         return schedule_list
 
     @staticmethod
-    def get_dag_runs_by_date(target_date: str) -> Dict[str, Any]:
+    def get_dag_runs_by_date(dags: List[Dict[str, Any]],target_date: str) -> Dict[str, Any]:
         """특정 날짜의 DAG 실행 내역 + 실행 예정(PENDING) DAG 반환"""
-        # 모든 DAG 정보 조회
-        dags = airflow_client.get_all_dags(limit=1000)
 
         # timezone을 일관되게 적용하기 위해 UTC 사용
         target_date_dt = date_utils.parse_date_string(target_date)
