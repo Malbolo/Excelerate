@@ -37,9 +37,9 @@ const getJobList = async (request: GetJobListRequest) => {
   return data;
 };
 
-const getJobLogs = async (job_id: string) => {
+const getJobLogs = async (log_id: string) => {
   const { data, error, success } = await api<Log[]>(
-    `/api/agent/logs/${job_id}`,
+    `/api/agent/logs/${log_id}`,
   );
 
   if (!success) {
@@ -63,9 +63,9 @@ export const useGetJobList = (request: GetJobListRequest) => {
   });
 };
 
-export const useGetJobLogs = (job_id: string) => {
+export const useGetJobLogs = (log_id: string) => {
   return useSuspenseQuery({
-    queryKey: ['jobLogs', job_id],
-    queryFn: () => getJobLogs(job_id),
+    queryKey: ['agentLogs', log_id],
+    queryFn: () => getJobLogs(log_id),
   });
 };

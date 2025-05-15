@@ -6,7 +6,7 @@ import useInternalRouter from '@/hooks/useInternalRouter';
 
 const usePagination = (totalPages: number) => {
   const [curPage, setCurPage] = useState(1);
-  const pageRange = 10; // 한 번에 보여줄 페이지 수
+  const pageRange = 5; // 한 번에 보여줄 페이지 수
 
   const { push, replace } = useInternalRouter();
 
