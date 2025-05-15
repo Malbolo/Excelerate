@@ -61,7 +61,7 @@ def invoke_messages(req: InvokeRequest = docs.invoke["split"]) -> JSONResponse:
         content = invoke_with_messages([m.dict() for m in req.messages], req.variables)
     except HTTPException as e:
         raise e
-    return JSONResponse(status_code=200, content={"result": "success", "data": content})
+    return JSONResponse(status_code=200, content={"result": "success", "data": {"output": content}})
 
 @router.post("/invoke/template", response_model=Any)
 def invoke_template(req: InvokeTemplateRequest = docs.invoke["template"]) -> JSONResponse:
@@ -73,7 +73,7 @@ def invoke_template(req: InvokeTemplateRequest = docs.invoke["template"]) -> JSO
         content = invoke_with_template(req.template_name, req.variables)
     except HTTPException as e:
         raise e
-    return JSONResponse(status_code=200, content={"result": "success", "data": content})
+    return JSONResponse(status_code=200, content={"result": "success", "data": {"output": content}})
 
 # 개발자 관리용 API -------------------------------
 @router.get("/dev/fetch/list", response_model=list[str])
