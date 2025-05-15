@@ -19,7 +19,7 @@ export interface SaveJobRequest {
 
 interface SendCommandListResponse {
   codes: string[];
-  dataframe: DataFrame[];
+  dataframe: DataFrame;
   download_token: string;
   log_id: string;
 }
