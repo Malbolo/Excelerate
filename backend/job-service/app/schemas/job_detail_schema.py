@@ -1,6 +1,8 @@
-from fastapi import Query
 from typing import List, Optional
+
+from fastapi import Query
 from pydantic import BaseModel
+
 
 class JobDetailRequest:
     def __init__(
@@ -56,3 +58,7 @@ class JobDetailSchema(BaseModel):
             ],
             created_at=str(job.created_at)
         )
+
+class JobDetailResponse(BaseModel):
+    result: str
+    data: Optional[JobDetailSchema]
