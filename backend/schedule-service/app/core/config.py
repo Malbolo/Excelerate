@@ -1,12 +1,52 @@
-import os
 from pydantic.v1 import BaseSettings
+from functools import lru_cache
+from typing import List, Optional
 
 class Settings(BaseSettings):
-    AIRFLOW_API_URL: str = os.getenv("AIRFLOW_API_URL")
-    AIRFLOW_USERNAME: str = os.getenv("AIRFLOW_USERNAME")
-    AIRFLOW_PASSWORD: str = os.getenv("AIRFLOW_PASSWORD")
+    # 애플리케이션 설정
+    APP_NAME: str = "Schedule Service"
+    APP_VERSION: str = "1.0.0"
+
+    # 데이터베이스 설정
+    DB_USER: str
+    DB_PASSWORD: str
+    DB_HOST: str
+    DB_PORT: str
+    DB_NAME: str
+    DATABASE_URL: Optional[str] = None
+
+    # Airflow 설정
+    AIRFLOWCOREDAGS_FOLDER: str = "/opt/airflow/dags"
+    AIRFLOWCORESQL_ALCHEMY_CONN: str
+    AIRFLOW_API_URL: str
+    AIRFLOW_USERNAME: str
+    AIRFLOW_PASSWORD: str
+
+    # 서비스 URL
+    JOB_SERVICE_URL: str
+    USER_SERVICE_URL: Optional[str] = None
+
+    # 개발 모드 설정
+    DEV_MODE: bool = False
+
+    # 로깅 설정
+    LOG_LEVEL: str = "INFO"
 
     class Config:
         env_file = ".env"
+        env_file_encoding = "utf-8"
 
-settings = Settings()
+    def init(self, data):
+        super().init(data)
+        # DATABASE_URL이 직접 설정되지 않은 경우 다른 DB 설정으로부터 구성
+        if not self.DATABASE_URL and self.DB_USER:
+            self.DATABASE_URL = f"mysql+pymysql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}?charset=utf8mb4"
+
+        # Airflow DAG 폴더 경로 가공
+        self.AIRFLOW_DAGS_PATH = self.AIRFLOWCOREDAGS_FOLDER
+
+@lru_cache()
+def get_settings():
+    """캐싱된 설정 인스턴스 반환"""
+    return Settings()
+settings = get_settings()
