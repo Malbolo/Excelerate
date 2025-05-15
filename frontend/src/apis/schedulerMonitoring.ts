@@ -52,9 +52,10 @@ export interface RunDetailResponse {
 }
 
 export interface JobError {
-  error_message: string;
-  error_trace: string;
   error_time: string;
+  error_message: string;
+  error_type?: string;
+  error_trace?: string;
 }
 
 const getRunDetail = async (scheduleId: string, runId: string) => {
