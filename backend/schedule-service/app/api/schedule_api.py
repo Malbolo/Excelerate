@@ -12,7 +12,7 @@ from app.schemas.schedule_schema import (
 from app.services.airflow_client import airflow_client
 from app.services.dag_service import DagService
 from app.services.schedule_service import ScheduleService
-from app.services.calendar_service import build_monthly_dag_calendar
+from app.services import calendar_service
 from app.utils import cron_utils
 from app.core import auth
 from app.core.log_config import logger
@@ -86,7 +86,7 @@ async def get_monthly_statistics(
 ) -> JSONResponse:
     try:
         dags = airflow_client.get_all_dags()
-        calendar_data = build_monthly_dag_calendar(dags, year, month)
+        calendar_data = calendar_service.build_monthly_dag_calendar(dags, year, month)
 
         return JSONResponse(content={
             "result": "success",
