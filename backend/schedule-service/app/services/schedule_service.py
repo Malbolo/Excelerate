@@ -5,7 +5,7 @@ from croniter import croniter
 
 from app.core.config import settings
 from app.core.log_config import logger
-from app.services.clients.airflow_client import airflow_client
+from app.services.airflow_client import airflow_client
 from app.services.metadata import get_dag_metadata
 from app.utils import date_utils, cron_utils, log_utils
 from app.core import auth

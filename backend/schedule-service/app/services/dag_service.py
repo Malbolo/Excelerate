@@ -1,5 +1,3 @@
-# app/services/dag_service.py
-
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 import os
@@ -8,11 +6,10 @@ from croniter import croniter
 
 from app.core.config import settings
 from app.core.log_config import logger
-from app.services.clients.airflow_client import airflow_client
+from app.services.airflow_client import airflow_client
 from app.services.metadata import get_dag_metadata, save_dag_metadata
 from app.utils import date_utils, cron_utils, log_utils
 from app.core import auth
-
 
 class DagService:
     """DAG 관련 서비스 클래스"""

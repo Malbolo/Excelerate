@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from croniter import croniter
 
 from app.core.log_config import logger
-from app.services.clients.airflow_client import airflow_client
+from app.services.airflow_client import airflow_client
 from app.utils import date_utils, cron_utils
 
 def build_monthly_dag_calendar(dags: List[Dict[str, Any]], year: int, month: int) -> List[Dict[str, Any]]:
