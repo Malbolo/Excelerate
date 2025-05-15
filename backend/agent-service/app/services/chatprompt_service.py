@@ -27,12 +27,25 @@ def list_grouped_prompts() -> Dict[str, List[str]]:
     return grouped
 
 
-def get_prompt(agent: str, template_name: str) -> Dict[str, Any]:
+def get_prompt_json(agent: str, template_name: str) -> Dict[str, Any]:
     key = f"{agent}:{template_name}"
     msgs = store.load(key)
     if msgs is None:
         raise HTTPException(404, "Prompt not found")
-    return {"name": key, "messages": msgs}
+    if len(msgs) < 2:
+        raise HTTPException(500, "Invalid prompt format: insufficient messages")
+    # 첫 system 메시지
+    system_text = msgs[0]["text"]
+    # 마지막 human 메시지
+    human_text = msgs[-1]["text"]
+    # 중간 fewshot 쌍 생성
+    fewshot: List[Dict[str, str]] = []
+    for i in range(1, len(msgs) - 1, 2):
+        role_h = msgs[i]["role"].lower()
+        role_a = msgs[i+1]["role"].lower() if i+1 < len(msgs) else None
+        if role_h == "human" and role_a == "ai":
+            fewshot.append({"human": msgs[i]["text"], "ai": msgs[i+1]["text"]})
+    return {"system": system_text, "fewshot": fewshot, "human": human_text}
 
 
 def invoke_with_messages(messages: List[Dict[str, str]], variables: Dict[str, Any]) -> str:
@@ -55,8 +68,7 @@ def invoke_with_messages(messages: List[Dict[str, str]], variables: Dict[str, An
 
 
 def invoke_with_template(name: str, variables: Dict[str, Any]) -> str:
-    norm = name.replace(" ", "_")
-    prompt = load_chat_template(norm)
+    prompt = load_chat_template(name)
     chain = prompt | llm
     result = chain.invoke(variables)
     return result.content
