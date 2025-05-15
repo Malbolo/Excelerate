@@ -1,7 +1,6 @@
 import pandas as pd
 import re
 import json
-import os
 
 from dotenv import load_dotenv
 
@@ -12,22 +11,19 @@ from langchain_core.messages import AIMessage
 from langchain_openai import ChatOpenAI
 from langgraph.graph import START, END
 
-from app.utils.memory_logger import MemoryLogger
-from app.services.code_gen.graph_util import (
-    load_chat_template,
-    extract_error_info, make_code_template, make_code_extension_template, make_classify_template,
-    make_extract_excel_params_template, insert_df_to_excel, make_excel_code_snippet
-)
-from app.utils.minio_client import MinioClient
 from tempfile import TemporaryDirectory
-from uuid import uuid4
 from itsdangerous import TimestampSigner
 
-from app.models.log import LogDetail
 from app.core.config import settings
+from app.models.log import LogDetail
+from app.utils.minio_client import MinioClient
 
+from app.services.code_gen.graph_util import extract_error_info, insert_df_to_excel, make_excel_code_snippet
 from app.services.code_gen.merge_utils import merge_code_snippets
+
+from app.utils.memory_logger import MemoryLogger
 from app.utils.api_utils import get_log_queue, get_df_queue
+from app.utils.redis_chatprompt import load_chat_template
 
 load_dotenv()
 
@@ -100,8 +96,7 @@ class CodeGenerator:
             }
 
         cmds = new_cmds
-        # prompt = make_classify_template()
-        prompt = load_chat_template("classify_commands")
+        prompt = load_chat_template("Code_Generator:classify_commands")
         # invoke
         cng_chain = prompt | self.sllm
         resp = cng_chain.invoke({"cmd_list": json.dumps(cmds, ensure_ascii=False)})
@@ -208,12 +203,11 @@ class CodeGenerator:
 
         if state['original_code']:
             self.q.put_nowait({"type": "notice", "content": "기존 코드를 감지해 반영합니다."})
-            code_gen_prompt = make_code_extension_template()
+            code_gen_prompt = load_chat_template("Code_Generator:generate_code_extension")
             schain = code_gen_prompt | self.sllm
             llm_input = {"original_code":state['original_code'], "dftypes": df.dtypes.to_string(), "df": df_preview, "input": input}
         else:
-            # code_gen_prompt = make_code_template()
-            code_gen_prompt = load_chat_template("make_code")
+            code_gen_prompt = load_chat_template("Code_Generator:generate_code")
             schain = code_gen_prompt | self.sllm
             llm_input = {"dftypes": df.dtypes.to_string(), "df": df_preview, "input": input}
 
@@ -317,7 +311,7 @@ class CodeGenerator:
         unit = state['current_unit']
         cmd = unit.get("cmd", "")
 
-        prompt = make_extract_excel_params_template()
+        prompt = load_chat_template("Code_Generator:extract_excel_params")
         params = json.loads((prompt | self.sllm).invoke({"command": str(cmd)}).content)
         self.q.put_nowait({"type": "notice", "content": f"{params['template_name']} 템플릿을 불러옵니다."})
 

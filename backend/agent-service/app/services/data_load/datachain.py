@@ -5,21 +5,21 @@ import time
 from datetime import date
 
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
 from langchain_milvus import Milvus
 from langchain.chains.retrieval import create_retrieval_chain
 from langchain.chains.transform import TransformChain
 from pymilvus import connections, utility
 from fastapi import HTTPException
 
+from app.core.config import settings
 from app.models.log import LogDetail
 from app.models.structure import FileAPIDetail
 
-from app.utils.memory_logger import MemoryLogger
+from app.services.data_load.data_util import is_iso_date
 
-from app.core.config import settings
-from app.services.data_load.data_util import make_entity_extraction_prompt, make_date_code_template, is_iso_date
+from app.utils.memory_logger import MemoryLogger
 from app.utils.api_utils import get_log_queue
+from app.utils.redis_chatprompt import load_chat_template
 
 # 로깅 설정
 logger = logging.getLogger(__name__)
@@ -53,7 +53,7 @@ class FileAPIClient:
             self.retriever = None
 
         # Entity extractor chain
-        prompt = make_entity_extraction_prompt()
+        prompt = load_chat_template("Data_Loader:extract_url_params")
         self.llm = ChatOpenAI(model_name=model_name, temperature=0, callbacks=[self.mlogger])
         structured = self.llm.with_structured_output(FileAPIDetail)
         
@@ -158,7 +158,7 @@ class FileAPIClient:
         self.mlogger.set_name(f"LLM Call: Transform Date Params")
 
         # 2-1) 날짜 계산용 템플릿 꺼내기
-        prompt = make_date_code_template()
+        prompt = load_chat_template("Data_Loader:transform_date")
         date_chain = prompt | self.llm
 
         # 2-2) expr 에 원본 텍스트 넣고 코드 스니펫 받기

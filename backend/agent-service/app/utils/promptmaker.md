@@ -1,7 +1,49 @@
 # ChatPromptTemplate 들입니다. 해당 내용을 사용해 ChatPromptTemplate들을 등록하세요.
+# Data_Loader
 ``` json
 {
-  "name": "generate_code",
+  "name": "Data_Loader:extract_url_params",
+  "messages": [
+    {
+      "role": "system",
+      "text": "오늘은 {today}입니다.\n다음 필드를 추출하세요: factory_name, system_name, metric, factory_id, product_code, start_date, end_date.\n해당하는 값이 없으면 null로 두세요.\n— start_date, end_date 처리 규칙 —\n1) '숫자+월+숫자+일' 패턴(예: 4월 15일)만 YYYY-MM-DD 형태로 즉시 변환하여 추출하세요.\n2) '지난달', '어제', '3일 전' 등 상대 표현은 절대 변환하지 말고, **원문 그대로** '지난달', '어제' 등으로 추출하세요.\n3) end_date를 특정할 수 있는 표현이 없으면 null로 두세요.\n\n<context>\n{context}\n</context>"
+    },
+    {
+      "role": "human",
+      "text": "{input}"
+    }
+  ]
+}
+```
+
+``` json
+{
+  "name": "Data_Loader:transform_date",
+  "messages": [
+    {
+      "role": "system",
+      "text": "당신은 두 개의 상대 날짜 표현(start_expr, end_expr)을 입력받아, 오늘(date.today())을 기준으로 ISO 8601 형식의 날짜 문자열인 `startdate`, `enddate` 변수를 생성하는 파이썬 코드를 작성하는 전문가입니다.\n반환된 코드에는 반드시 `startdate`, `enddate` 변수가 ISO 문자열로 설정되어야 합니다.\n출력은 마크다운 없이 순수 코드만 반환해주세요."
+    },
+    {
+      "role": "human",
+      "text": "start_expr: 지난달, end_expr: 오늘"
+    },
+    {
+      "role": "ai",
+      "text": "from datetime import date\nfrom dateutil.relativedelta import relativedelta\n\ntoday = date.today()\nfirst_of_this = today.replace(day=1)\nfirst_of_last = first_of_this - relativedelta(months=1)\nstartdate = first_of_last.isoformat()\n\nenddate = today().isoformat()"
+    },
+    {
+      "role": "human",
+      "text": "start_expr: {start_expr}, end_expr: {end_expr}"
+    }
+  ]
+}
+```
+
+# Code_Generator
+``` json
+{
+  "name": "Code_Generator:generate_code",
   "messages": [
     {
       "role": "system",
@@ -17,7 +59,7 @@
 
 ``` json
 {
-  "name": "generate_code_extension",
+  "name": "Code_Generator:generate_code_extension",
   "messages": [
     {
       "role": "system",
@@ -33,7 +75,7 @@
 
 ``` json
 {
-  "name": "classify_commands",
+  "name": "Code_Generator:classify_commands",
   "messages": [
     {
       "role": "system",
@@ -58,6 +100,22 @@
     {
       "role": "human",
       "text": "{cmd_list}"
+    }
+  ]
+}
+```
+
+``` json
+{
+  "name": "Code_Generator:extract_excel_params",
+  "messages": [
+    {
+      "role": "system",
+      "text": "사용자 명령어에서 엑셀 템플릿 이름, 시트 이름(선택), 삽입 시작 위치, 결과 파일명을 JSON으로 추출해 주세요.\n\n예시)\n\"KPIreport 템플릿을 불러와서 3열 4행부터 데이터를 꽉 차게 삽입한 뒤 KPI_결과.xlsx로 저장해줘\"\n{{\n  \"template_name\": \"KPIreport\",\n  \"sheet_name\": null,\n  \"start_row\": 4,\n  \"start_col\": 3,\n  \"output_name\": \"KPI_결과.xlsx\"\n}}"
+    },
+    {
+      "role": "human",
+      "text": "{command}"
     }
   ]
 }

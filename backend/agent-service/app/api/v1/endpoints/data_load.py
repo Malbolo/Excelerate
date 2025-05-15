@@ -16,7 +16,7 @@ from zoneinfo import ZoneInfo
 
 router = APIRouter()
 docs = DataDocs()
-data_loader = FileAPIClient()
+# data_loader = FileAPIClient()
 
 # FastAPI 엔드포인트: 사용자의 질의를 받고 graph를 통해 답변 생성
 @router.post("/load")
@@ -24,6 +24,8 @@ async def command_code(
     req: Request,
     request: DataRequest = docs.base["data"]
 ):
+    data_loader = FileAPIClient() # 요청 보낼 때 마다 변화를 반영
+
     try:
         api_start = datetime.now(ZoneInfo("Asia/Seoul"))
 

@@ -1,17 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
-from app.utils.docs import CodeGenDocs
 from app.models.query import CommandRequest
 from app.services.code_gen.graph import CodeGenerator
-from app.utils.depend import get_code_gen
 from fastapi.encoders import jsonable_encoder
-from app.core import auth
 
 from fastapi.concurrency import run_in_threadpool
 
 from datetime import datetime
 from zoneinfo import ZoneInfo
+import numpy as np
 
+from app.core import auth
+
+from app.utils.depend import get_code_gen
+from app.utils.docs import CodeGenDocs
 from app.utils.redis_client import generate_log_id, save_logs_to_redis, save_states_to_redis, get_states_from_redis
 from app.utils.api_utils import make_initial_query, get_log_queue, strip_excel_block
 from uuid import uuid4
@@ -73,6 +75,11 @@ async def command_code(
         # answer["dataframe"] 가 이제 List[pd.DataFrame] 라면…
         df_list = answer["dataframe"]
 
+        # df list의 각 df의 결측치 제거
+        for df in df_list:
+            # NaN, inf 처리를 한 번에
+            df = df.replace([np.nan, np.inf, -np.inf], None)
+
         # 레코드 목록 리스트로 직렬화
         serialized = [
             single_df.to_dict(orient="records")
@@ -97,10 +104,9 @@ async def command_code(
 
         payload = {
             "codes":      [answer["python_code"]],
-            "dataframe": serialized,      # 여전히 to_dict 직후의 리스트
+            "dataframe": serialized,
             "error_msg": answer["error_msg"],
             "download_token":answer["download_token"],
-            # "logs":      answer["logs"], # 이제 로그는 log_id만 보내기
             "log_id": uid
         }
     
