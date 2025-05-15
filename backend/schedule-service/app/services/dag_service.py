@@ -328,7 +328,6 @@ class DagService:
             tags: str,
             job_details: List[Dict[str, Any]]
     ) -> str:
-        print("generate_dag_start_date:", start_date)
         """DAG 코드 생성 (내부 헬퍼 함수)"""
         dag_code = f"""
 from airflow import DAG
@@ -370,8 +369,8 @@ dag = DAG(
     default_args=default_args,
     description='{description}',
     schedule_interval='{schedule_interval}',
-    start_date: datetime({start_date.year}, {start_date.month}, {start_date.day}),
-    end_date: {f"datetime({end_date.year}, {end_date.month}, {end_date.day})" if end_date else "None"},
+    start_date= datetime({start_date.year}, {start_date.month}, {start_date.day}),
+    end_date= {f"datetime({end_date.year}, {end_date.month}, {end_date.day})" if end_date else "None"},
     tags={tags},
     catchup=False,
     is_paused_upon_creation=False
