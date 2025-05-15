@@ -5,7 +5,7 @@ from sqlalchemy import desc
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 
-from app.models.schedule import Schedule, ScheduleJob, ScheduleRun, ScheduleRunTask
+from app.models.schedule_models import Schedule, ScheduleJob, ScheduleRun, ScheduleRunTask
 from app.schemas.schedule_schema import ScheduleCreateRequest, ScheduleUpdateRequest
 
 
