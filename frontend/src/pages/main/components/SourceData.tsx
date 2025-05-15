@@ -4,9 +4,9 @@ const SourceData = () => {
   const { sourceDataCommand } = useSourceStore();
 
   return (
-    <section className='flex max-h-48 flex-1 flex-col gap-4'>
-      <p className='text-lg font-bold'>Source Data</p>
-      <div className='card-gradient flex grow flex-col items-center justify-center overflow-y-auto rounded-xl border p-4'>
+    <section className='flex flex-1 flex-col justify-between'>
+      <p className='py-1 text-lg font-bold'>Source Data</p>
+      <div className='card-gradient flex h-38 flex-col items-center justify-center overflow-y-auto rounded-xl border p-4'>
         {sourceDataCommand ? (
           <p>{sourceDataCommand}</p>
         ) : (

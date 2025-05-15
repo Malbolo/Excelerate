@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { ColumnDef } from '@tanstack/react-table';
+import { Megaphone } from 'lucide-react';
 import ClipLoader from 'react-spinners/ClipLoader';
 
 import { useGetSourceData } from '@/apis/job';
@@ -47,7 +48,7 @@ const MainPage: React.FC = () => {
   const { mutateAsync: sourceDataMutation, isPending: isSourceDataLoading } =
     useGetSourceData();
 
-  const { connectStream, resetStream } = useStreamStore();
+  const { connectStream, resetStream, notice } = useStreamStore();
 
   const fetchSourceData = async () => {
     const response = await sourceDataMutation({
@@ -116,43 +117,51 @@ const MainPage: React.FC = () => {
               <CommandList />
             </div>
 
-            <div className='flex gap-2'>
-              <div className='relative flex-1'>
-                <Textarea
-                  value={inputCommand}
-                  onChange={e => setInputCommand(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && !isSourceDataLoading) {
-                      if (e.shiftKey) {
-                        return;
+            <div className='flex flex-col gap-2'>
+              {notice && (
+                <div className='text-accent-foreground flex w-full items-center gap-2 rounded-lg bg-[#F0F7FF] p-2 px-4'>
+                  <Megaphone className='h-4 w-4 shrink-0' />
+                  <p className='text-sm'>{notice}</p>
+                </div>
+              )}
+              <div className='flex gap-2'>
+                <div className='relative flex-1'>
+                  <Textarea
+                    value={inputCommand}
+                    onChange={e => setInputCommand(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && !isSourceDataLoading) {
+                        if (e.shiftKey) {
+                          return;
+                        }
+                        e.preventDefault();
+                        handleSubmitCommand();
                       }
-                      e.preventDefault();
-                      handleSubmitCommand();
+                    }}
+                    placeholder={
+                      step === 'source'
+                        ? 'Load the source data.'
+                        : 'Please enter a command.'
                     }
-                  }}
-                  placeholder={
-                    step === 'source'
-                      ? 'Load the source data.'
-                      : 'Please enter a command.'
-                  }
-                  disabled={isSourceDataLoading}
-                  className='min-h-[42px] resize-none px-4 py-2.5 transition-all'
-                />
-                {isSourceDataLoading && (
-                  <div className='absolute top-1/2 right-2 -translate-y-2/5'>
-                    <ClipLoader size={18} color='#7d9ecd' />
-                  </div>
-                )}
-              </div>
+                    disabled={isSourceDataLoading}
+                    className='min-h-[42px] resize-none px-4 py-2.5 transition-all'
+                  />
+                  {isSourceDataLoading && (
+                    <div className='absolute top-1/2 right-2 -translate-y-2/5'>
+                      <ClipLoader size={18} color='#7d9ecd' />
+                    </div>
+                  )}
+                </div>
 
-              <Button
-                onClick={handleSubmitCommand}
-                className='min-h-[42px] self-end'
-                size='lg'
-                disabled={isSourceDataLoading}
-              >
-                Enter
-              </Button>
+                <Button
+                  onClick={handleSubmitCommand}
+                  className='min-h-[42px] self-end'
+                  size='lg'
+                  disabled={isSourceDataLoading}
+                >
+                  Enter
+                </Button>
+              </div>
             </div>
           </div>
         </ResizablePanel>

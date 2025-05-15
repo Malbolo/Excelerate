@@ -63,6 +63,29 @@ const createTemplate = async ({ title, file }: CreateTemplateVariables) => {
   return data;
 };
 
+const getTemplateImage = async (templateName: string) => {
+  const { data, error, success } = await api<string>(
+    `/api/agent/template/${templateName}/preview`,
+  );
+
+  if (!success) {
+    throw new Error(error);
+  }
+
+  return data;
+};
+
+export const useGetTemplateImage = () => {
+  const { mutateAsync } = useMutation({
+    mutationFn: (templateName: string) => getTemplateImage(templateName),
+    onError: error => {
+      toast.error(error.message);
+    },
+  });
+
+  return mutateAsync;
+};
+
 export const useGetTemplates = () =>
   useSuspenseQuery({
     queryKey: ['templates'],

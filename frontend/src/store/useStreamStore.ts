@@ -9,6 +9,7 @@ interface StreamState {
   isConnected: boolean;
   eventSource: EventSource | null;
   logs: Log[];
+  notice: string;
 
   connectStream: () => void;
   disconnectStream: () => void;
@@ -21,6 +22,7 @@ export const useStreamStore = create<StreamState>((set, get) => ({
   isConnected: false,
   eventSource: null,
   logs: [],
+  notice: '',
 
   connectStream: () => {
     const currentEventSource = get().eventSource;
@@ -47,6 +49,14 @@ export const useStreamStore = create<StreamState>((set, get) => ({
       }
     });
 
+    eventSource.addEventListener('notice', event => {
+      set({ notice: event.data });
+    });
+
+    eventSource.addEventListener('stop', () => {
+      set({ notice: '' });
+    });
+
     eventSource.onerror = error => {
       set({ isConnected: false });
       toast.error(`Connection error: ${error}`);
@@ -67,6 +77,7 @@ export const useStreamStore = create<StreamState>((set, get) => ({
         isConnected: false,
         eventSource: null,
         streamId: null,
+        notice: '',
       });
     }
   },
@@ -85,6 +96,7 @@ export const useStreamStore = create<StreamState>((set, get) => ({
       eventSource: null,
       logs: [],
       streamId: null,
+      notice: '',
     });
   },
 }));

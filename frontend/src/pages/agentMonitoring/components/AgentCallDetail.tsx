@@ -1,22 +1,18 @@
 import { useState } from 'react';
 
-import { ArrowLeftIcon } from 'lucide-react';
-import { useParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 
 import { useGetJobLogs } from '@/apis/agentMonitoring';
 import LLMGraph from '@/components/Graph/LLMGraph';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import useInternalRouter from '@/hooks/useInternalRouter';
 import Tabs from '@/pages/main/components/Tabs';
 import { Log, LogMessage, LogMetadata } from '@/types/agent';
 
-// 컴포넌트 분리가 어려워 컴포넌트 분리 추후 진행
-const JobAgentMonitoringPage = () => {
-  const { jobId } = useParams() as { jobId: string };
-  const { goBack } = useInternalRouter();
+const AgentCallDetail = () => {
+  const [searchParams] = useSearchParams();
+  const logId = searchParams.get('logId') || '';
 
-  const { data: logs } = useGetJobLogs(jobId);
+  const { data: logs } = useGetJobLogs(logId);
 
   const [selectedLog, setSelectedLog] = useState<Log | null>(null);
 
@@ -25,22 +21,17 @@ const JobAgentMonitoringPage = () => {
   };
 
   return (
-    <div className='flex h-screen w-full'>
-      <section className='h-full min-w-[400px] overflow-y-auto bg-[#F0F0F0] p-6'>
-        <div className='mb-4'>
-          <Button
-            variant='ghost'
-            size='sm'
-            onClick={goBack}
-            className='flex items-center gap-2'
-          >
-            <ArrowLeftIcon className='h-4 w-4' />
-            Back
-          </Button>
-        </div>
-        <LLMGraph jobName='job name' logs={logs} onLogClick={handleClickLog} />
+    <div className='flex h-screen w-full flex-col gap-5 border-l bg-[#FAFCFF] p-8'>
+      <section>
+        {logs.length > 0 && (
+          <LLMGraph
+            jobName='job name'
+            logs={logs}
+            onLogClick={handleClickLog}
+          />
+        )}
       </section>
-      <section className='h-full flex-1 p-4'>
+      <section className='flex-1 overflow-hidden'>
         <Tabs
           tabList={['Run', 'Metadata']}
           tabPanels={[
@@ -58,7 +49,7 @@ const JobAgentMonitoringPage = () => {
   );
 };
 
-export default JobAgentMonitoringPage;
+export default AgentCallDetail;
 
 interface MessageItemProps {
   message: LogMessage;
@@ -84,14 +75,14 @@ const MessageItem = ({ message }: MessageItemProps) => {
 const RunPanel = ({ input, output }: Pick<Log, 'input' | 'output'>) => {
   if ((!input || input.length === 0) && (!output || output.length === 0)) {
     return (
-      <div className='flex h-full items-center justify-center rounded-tl-md rounded-b-md border bg-white p-2'>
+      <div className='flex h-full items-center justify-center rounded-tl-md rounded-b-md bg-white p-2'>
         <p className='text-sm text-gray-500'>No data available</p>
       </div>
     );
   }
 
   return (
-    <div className='flex h-full overflow-y-auto rounded-tl-md rounded-b-md border bg-white p-2'>
+    <div className='flex h-full overflow-y-auto rounded-tl-md rounded-b-md bg-white p-2'>
       <div className='flex w-full flex-col gap-4 px-4 py-5'>
         {input && input.length > 0 && (
           <div className='flex flex-col gap-4'>
@@ -166,14 +157,14 @@ const MetadataItem = ({ label, value, depth = 0 }: MetadataItemProps) => {
 const MetadataPanel = ({ metadata }: Pick<Log, 'metadata'>) => {
   if (!metadata || Object.keys(metadata).length === 0) {
     return (
-      <div className='flex h-full items-center justify-center rounded-tl-md rounded-b-md border bg-white p-2'>
+      <div className='flex h-full items-center justify-center rounded-tl-md rounded-b-md bg-white p-2'>
         <p className='text-sm text-gray-500'>No metadata available</p>
       </div>
     );
   }
 
   return (
-    <div className='flex h-full overflow-y-auto rounded-tl-md rounded-b-md border bg-white p-2'>
+    <div className='flex h-full overflow-y-auto rounded-tl-md rounded-b-md bg-white p-2'>
       <div className='flex flex-col gap-4 px-4 py-5'>
         {Object.entries(metadata).map(([key, value]) => (
           <MetadataItem key={key} label={key} value={value} />

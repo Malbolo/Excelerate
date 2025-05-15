@@ -13,7 +13,9 @@ import {
 } from '@/components/ui/popover';
 import useInternalRouter from '@/hooks/useInternalRouter';
 import { cn } from '@/lib/utils';
-import JobPagination from '@/pages/agentMonitoring/components/JobPagination';
+
+import AgentCallDetail from './components/AgentCallDetail';
+import AgentCallList from './components/AgentCallList';
 
 // 유틸 함수로 분리해야함
 const disabledDate = (
@@ -47,74 +49,86 @@ const AgentMonitoringPage: React.FC = () => {
   };
 
   return (
-    <div className='flex h-screen w-full flex-col justify-between gap-5 p-8'>
-      <div className='flex items-center gap-4'>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant={'outline'}
-              className={cn(
-                'w-[280px] justify-start text-left font-normal',
-                !startDate && 'text-muted-foreground',
-              )}
-            >
-              <CalendarIcon className='mr-2 h-4 w-4' />
-              {startDate ? (
-                format(startDate, 'PPP')
-              ) : (
-                <span>Pick a start date</span>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className='w-auto p-0'>
-            <Calendar
-              mode='single'
-              selected={startDate}
-              onSelect={setStartDate}
-              initialFocus
-              disabled={date => disabledDate(date, endDate, startDate)}
-            />
-          </PopoverContent>
-        </Popover>
+    <div className='bg-gradient flex h-screen w-full'>
+      <section className='flex h-screen w-[480px] flex-col justify-between gap-5 p-8'>
+        <div className='flex w-full flex-col items-center gap-3'>
+          <div className='flex w-full items-center gap-3'>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={'outline'}
+                  className={cn(
+                    'flex-1 justify-start text-left font-normal',
+                    !startDate && 'text-muted-foreground',
+                  )}
+                >
+                  <CalendarIcon className='mr-2 h-4 w-4' />
+                  {startDate ? (
+                    format(startDate, 'PPP')
+                  ) : (
+                    <span>Pick a start date</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className='w-auto p-0'>
+                <Calendar
+                  mode='single'
+                  selected={startDate}
+                  onSelect={setStartDate}
+                  initialFocus
+                  disabled={date => disabledDate(date, endDate, startDate)}
+                />
+              </PopoverContent>
+            </Popover>
 
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant={'outline'}
-              className={cn(
-                'w-[280px] justify-start text-left font-normal',
-                !endDate && 'text-muted-foreground',
-              )}
-            >
-              <CalendarIcon className='mr-2 h-4 w-4' />
-              {endDate ? format(endDate, 'PPP') : <span>Pick a end date</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className='w-auto p-0'>
-            <Calendar
-              mode='single'
-              selected={endDate}
-              onSelect={setEndDate}
-              initialFocus
-              disabled={date => disabledDate(date, endDate, startDate)}
-            />
-          </PopoverContent>
-        </Popover>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={'outline'}
+                  className={cn(
+                    'flex-1 justify-start text-left font-normal',
+                    !endDate && 'text-muted-foreground',
+                  )}
+                >
+                  <CalendarIcon className='mr-2 h-4 w-4' />
+                  {endDate ? (
+                    format(endDate, 'PPP')
+                  ) : (
+                    <span>Pick a end date</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className='w-auto p-0'>
+                <Calendar
+                  mode='single'
+                  selected={endDate}
+                  onSelect={setEndDate}
+                  initialFocus
+                  disabled={date => disabledDate(date, endDate, startDate)}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
 
-        <div className='relative h-full flex-2'>
-          <Input
-            value={name}
-            onChange={e => setName(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleSearchJobList()}
-            placeholder='Search employee name'
-          />
+          <div className='flex w-full items-center gap-3'>
+            <div className='relative h-full flex-1'>
+              <Input
+                value={name}
+                onChange={e => setName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSearchJobList()}
+                placeholder='Search employee name'
+              />
+            </div>
+            <Button onClick={handleSearchJobList} className='cursor-pointer'>
+              Search
+            </Button>
+          </div>
         </div>
-        <Button onClick={handleSearchJobList} className='cursor-pointer'>
-          Search
-        </Button>
-      </div>
 
-      <JobPagination />
+        <AgentCallList />
+      </section>
+
+      <AgentCallDetail />
     </div>
   );
 };

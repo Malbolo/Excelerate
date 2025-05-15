@@ -6,7 +6,6 @@ import ErrorBoundary from '@/components/Layout/ErrorBoundary';
 import Layout from '@/components/Layout/Layout';
 import EditSchedulerPage from '@/pages/EditSchedulerPage';
 import AgentMonitoringPage from '@/pages/agentMonitoring';
-import JobAgentMonitoringPage from '@/pages/agentMonitoring/job';
 import LoginPage from '@/pages/auth';
 import CreateSchedulerPage from '@/pages/createScheduler';
 import DaySchedulePage from '@/pages/daySchedulerMonitoring';
@@ -166,18 +165,6 @@ const routes = [
       </Layout>
     ),
     name: 'EditScheduler',
-  },
-  {
-    path: '/agent-monitoring/job/:jobId',
-    element: (
-      <Layout>
-        <Suspense fallback={<div>로딩중...</div>}>
-          <JobAgentMonitoringPage />
-        </Suspense>
-      </Layout>
-    ),
-    errorElement: <ErrorBoundary />,
-    name: 'JobAgentMonitoring',
   },
   {
     path: '/auth',
