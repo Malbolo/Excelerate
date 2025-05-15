@@ -51,7 +51,7 @@ class DagService:
             # DAG 코드 생성
             dag_code = DagService._generate_dag_code(
                 dag_id, owner, start_date, end_date, success_emails, failure_emails,
-                description, cron_expression, tags_str, job_details
+                description, cron_expression, tags_str, job_details, name
             )
 
             # DAG 파일 저장
@@ -175,7 +175,7 @@ class DagService:
             # DAG 코드 생성
             dag_code = DagService._generate_dag_code(
                 dag_id, owner, update_start_date, update_end_date, success_emails, failure_emails,
-                update_description, update_schedule, tags_str, job_details
+                update_description, update_schedule, tags_str, job_details, name
             )
 
             # 백업 파일 생성
@@ -326,7 +326,8 @@ class DagService:
             description: str,
             schedule_interval: str,
             tags: str,
-            job_details: List[Dict[str, Any]]
+            job_details: List[Dict[str, Any]],
+            name: str
     ) -> str:
         """DAG 코드 생성 (내부 헬퍼 함수)"""
         dag_code = f"""
@@ -365,6 +366,7 @@ default_args = {{
 dag = DAG(
     '{dag_id}',
     default_args=default_args,
+    dag_display_name='{name}'
     description='{description}',
     schedule_interval='{schedule_interval}',
     start_date= datetime({start_date.year}, {start_date.month}, {start_date.day}),
