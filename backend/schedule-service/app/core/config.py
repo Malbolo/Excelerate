@@ -17,7 +17,6 @@ class Settings(BaseSettings):
 
     # Airflow 설정
     AIRFLOWCOREDAGS_FOLDER: str = "/opt/airflow/dags"
-    AIRFLOWCORESQL_ALCHEMY_CONN: str
     AIRFLOW_API_URL: str
     AIRFLOW_USERNAME: str
     AIRFLOW_PASSWORD: str
