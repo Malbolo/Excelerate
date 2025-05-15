@@ -1,7 +1,10 @@
 import os
-from fastapi import Request, HTTPException
+from http import HTTPStatus
+
 import requests
+from app.core.constants import USER_NAME, USER_DEPARTMENT, USER_ROLE
 from dotenv import load_dotenv
+from fastapi import Request, HTTPException
 
 load_dotenv()
 
@@ -12,7 +15,7 @@ def get_user_id_from_header(request: Request) -> int:
     try:
         return int(user_id)
     except (TypeError, ValueError):
-        raise HTTPException(status_code=400, detail="Invalid x-user-id header")
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="Invalid x-user-id header")
 
 def get_user_info(user_id: int):
     url = USER_SERVICE_URL
@@ -22,16 +25,16 @@ def get_user_info(user_id: int):
 
     response = requests.get(url, headers=headers)
 
-    if response.status_code == 200:
+    if response.status_code == HTTPStatus.OK:
         user_data = response.json()
-        name = user_data.get("data").get("name")
-        department = user_data.get("data").get("department")
-        role = user_data.get("data").get("role")
+        name = user_data.get("data").get(USER_NAME)
+        department = user_data.get("data").get(USER_DEPARTMENT)
+        role = user_data.get("data").get(USER_ROLE)
 
         return {
-            "name": name,
-            "department": department,
-            "role": role
+            USER_NAME: name,
+            USER_DEPARTMENT: department,
+            USER_ROLE: role
         }
     else:
         return None

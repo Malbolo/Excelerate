@@ -1,14 +1,13 @@
-from typing import Optional
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
-from starlette.responses import JSONResponse
 from app.core import auth
 from app.db.database import get_db
-from app.schemas.job.job_create_schema import JobCreateRequest
-from app.schemas.job.job_detail_schema import JobDetailRequest
-from app.schemas.job.job_update_schema import JobUpdateRequest
+from app.schemas.job_create_schema import JobCreateRequest
+from app.schemas.job_detail_schema import JobDetailRequest
+from app.schemas.job_for_schedule_schema import JobForScheduleRequest
+from app.schemas.job_update_schema import JobUpdateRequest
 from app.services import job_service
-from app.schemas.job.job_for_schedule_schema import JobForScheduleRequest
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+from starlette.responses import JSONResponse
 
 router = APIRouter(
     prefix="/api/jobs",
@@ -16,8 +15,8 @@ router = APIRouter(
 )
 
 @router.post("")
-def create_job(job_request: JobCreateRequest, db: Session = Depends(get_db), user_id: int = Depends(auth.get_user_id_from_header)) -> JSONResponse:
-    return job_service.create_job(job_request, user_id, db)
+def create_job(request: JobCreateRequest, db: Session = Depends(get_db), user_id: int = Depends(auth.get_user_id_from_header)) -> JSONResponse:
+    return job_service.create_job(request, user_id, db)
 
 @router.get("")
 def get_jobs(
@@ -33,12 +32,12 @@ def get_job_detail(job_id: str, db: Session = Depends(get_db)) -> JSONResponse:
 
 @router.put("/{job_id}")
 def update_job(
-        job_id: int,
-        job_request: JobUpdateRequest,
+        job_id: str,
+        request: JobUpdateRequest,
         db: Session = Depends(get_db),
         user_id: int = Depends(auth.get_user_id_from_header)
 ) -> JSONResponse:
-    return job_service.update_job(db, job_id, job_request, user_id)
+    return job_service.update_job(db, job_id, request, user_id)
 
 
 @router.delete("/{job_id}")

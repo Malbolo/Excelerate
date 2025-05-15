@@ -1,8 +1,8 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, func, Boolean
+from app.db.database import Base
+from app.schemas.job_create_schema import JobCreateRequest
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, func
 from sqlalchemy.dialects.mysql import LONGTEXT
 from sqlalchemy.orm import relationship
-from app.db.database import Base
-from app.schemas.job.job_create_schema import JobCreateRequest
 
 
 class Job(Base):
@@ -25,18 +25,18 @@ class Job(Base):
     commands = relationship("JobCommand", back_populates="job", cascade="all, delete")
 
     @classmethod
-    def create(cls, job: JobCreateRequest, user_id: int, user_name: str, department: str):
+    def create(cls, request: JobCreateRequest, user_id: int, user_name: str, department: str):
         return Job(
         user_id=user_id,
         user_name=user_name,
         user_department=department,
-        type=job.type,
-        title=job.title,
-        description=job.description,
-        data_load_command=job.data_load_command,
-        data_load_url=job.data_load_url,
-        data_load_code=job.data_load_code,
-        code=job.code
+        type=request.type,
+        title=request.title,
+        description=request.description,
+        data_load_command=request.data_load_command,
+        data_load_url=request.data_load_url,
+        data_load_code=request.data_load_code,
+        code=request.code
     )
 
 class JobCommand(Base):
