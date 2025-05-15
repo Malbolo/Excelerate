@@ -27,13 +27,13 @@ export const formatInterval = (
 
   switch (interval.type) {
     case 'daily':
-      return `매일 @ ${localTime}`;
+      return `daily @ ${localTime}`;
     case 'weekly':
-      return `매주 ${interval.dayOfWeek} @ ${localTime}`;
+      return `weekly @ ${localTime}`;
     case 'monthly':
-      return `매월 ${interval.dayOfMonth}일 @ ${localTime}`;
+      return `monthly @ ${localTime}`;
     default:
-      return '사용자 지정';
+      return 'custom';
   }
 };
 

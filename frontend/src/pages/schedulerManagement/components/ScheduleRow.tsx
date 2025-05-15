@@ -58,12 +58,12 @@ const ScheduleRow = ({ schedule }: ScheduleRowProps) => {
         </TableCell>
 
         <TableCell>
-          {schedule.last_run
+          {schedule.last_run && schedule.last_run.end_time
             ? formatDateTime(schedule.last_run.end_time, locale, place)
             : '-'}
         </TableCell>
         <TableCell>
-          {schedule.next_run
+          {schedule.next_run && schedule.next_run.data_interval_end
             ? formatDateTime(schedule.next_run.data_interval_end, locale, place)
             : '-'}
         </TableCell>
