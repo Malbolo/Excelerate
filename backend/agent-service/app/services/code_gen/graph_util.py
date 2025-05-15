@@ -2,7 +2,8 @@
 import re
 import traceback
 from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate, AIMessagePromptTemplate
-
+from difflib import SequenceMatcher
+from typing import Optional
 import pandas as pd
 from openpyxl import load_workbook
 
@@ -89,11 +90,13 @@ with TemporaryDirectory() as workdir:
             )
     ])
 
-def extract_error_info(exc: Exception, code_body: str, stage: str, commands: list[str]) -> dict:
+def extract_error_info(exc: Exception, code_body: str, stage: str, commands: list[str], similarity_threshold: float = 0.5) -> dict:
     """
     Exception과 원본 코드 문자열, 실패 단계를 받아서
     빈 줄을 블록 구분자로 사용해, 해당 블록 시작(가장 가까운 빈 줄 이후)부터
     에러 라인까지의 snippet과, 블록 시작 주석을 command로 추출합니다.
+    그 command가 commands 내에서 얼마나 유사한지 보고, similarity_threshold 이상이면 그 인덱스
+    를 반환합니다.
     """
     # 1) traceback에서 마지막 프레임 정보 추출
     tb_last = traceback.extract_tb(exc.__traceback__)[-1]
@@ -118,16 +121,21 @@ def extract_error_info(exc: Exception, code_body: str, stage: str, commands: lis
     # 5) 블록 시작 줄(주석)에서 command 추출
     #    예: "# defect_rate가 1 이상인 데이터만 필터링 해주세요."
     raw_comment = lines[block_start].lstrip()
-    if raw_comment.startswith("#"):
-        command = raw_comment[1:].strip()
-    else:
-        command = ""
+    command = raw_comment[1:].strip() if raw_comment.startswith("#") else ""
     
     # 6) command_index 찾기
-    try:
-        command_index = commands.index(command)
-    except ValueError:
-        command_index = None  # 리스트에 없으면 None
+    best_idx   : Optional[int]   = None
+    best_ratio : float = 0.0
+    for idx, cand in enumerate(commands):
+        # SequenceMatcher.ratio()는 0~1 사이 값을 반환
+        ratio = SequenceMatcher(None, command, cand).ratio()
+        if ratio > best_ratio:
+            best_ratio, best_idx = ratio, idx
+
+    if best_ratio >= similarity_threshold:
+        command_index = best_idx
+    else:
+        command_index = None
 
     # 7) snippet 생성 (block_start 부터 err_idx 까지)
     snippet_lines = []
