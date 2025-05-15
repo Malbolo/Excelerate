@@ -5,21 +5,21 @@ import time
 from datetime import date
 
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
 from langchain_milvus import Milvus
 from langchain.chains.retrieval import create_retrieval_chain
 from langchain.chains.transform import TransformChain
 from pymilvus import connections, utility
 from fastapi import HTTPException
 
+from app.core.config import settings
 from app.models.log import LogDetail
 from app.models.structure import FileAPIDetail
 
-from app.utils.memory_logger import MemoryLogger
+from app.services.data_load.data_util import is_iso_date
 
-from app.core.config import settings
-from app.services.data_load.data_util import make_entity_extraction_prompt, make_date_code_template, is_iso_date
+from app.utils.memory_logger import MemoryLogger
 from app.utils.api_utils import get_log_queue
+from app.utils.redis_chatprompt import load_chat_template
 
 # 로깅 설정
 logger = logging.getLogger(__name__)
@@ -37,10 +37,9 @@ class FileAPIClient:
             model_name: str = "gpt-4.1-nano",
             base_url: str = settings.FILESYSTEM_URL,
     ):
-        # 임베딩 초기화
-        self.emb = OpenAIEmbeddings()
-
         self.mlogger = MemoryLogger()
+        self.llm = ChatOpenAI(model_name=model_name, temperature=0, callbacks=[self.mlogger])
+        self.emb = OpenAIEmbeddings()
         # Milvus 초기화 시도
         self.store = self._initialize_milvus(host, port, collection_name)
 
@@ -51,24 +50,7 @@ class FileAPIClient:
         else:
             logger.warning("Milvus 연결 실패. 검색 기능이 제한됩니다.")
             self.retriever = None
-
-        # Entity extractor chain
-        prompt = make_entity_extraction_prompt()
-        self.llm = ChatOpenAI(model_name=model_name, temperature=0, callbacks=[self.mlogger])
-        structured = self.llm.with_structured_output(FileAPIDetail)
         
-        today_chain = TransformChain(
-            input_variables=[],
-            output_variables=["today"],
-            transform=lambda _: {"today": date.today().isoformat()}
-        )
-        
-        flatten = TransformChain(
-            input_variables=["context"],
-            output_variables=["context"],
-            transform=lambda i: {"context": "\n".join(d.page_content for d in i["context"])}
-        )
-        self.extractor_chain = today_chain | flatten | prompt | structured
         self.base_url = base_url
 
     def _initialize_milvus(self, host, port, collection_name):
@@ -119,6 +101,25 @@ class FileAPIClient:
         logger.error(f"Milvus 연결 모두 실패 ({max_retries}회 시도)")
         return None
 
+    def extract_params_chain(self):
+        # Entity extractor chain
+        prompt = load_chat_template("Data_Loader:Extract_DataCall_Params")
+        structured = self.llm.with_structured_output(FileAPIDetail)
+        
+        today_chain = TransformChain(
+            input_variables=[],
+            output_variables=["today"],
+            transform=lambda _: {"today": date.today().isoformat()}
+        )
+        
+        flatten = TransformChain(
+            input_variables=["context"],
+            output_variables=["context"],
+            transform=lambda i: {"context": "\n".join(d.page_content for d in i["context"])}
+        )
+        extractor_chain = today_chain | flatten | prompt | structured
+        return extractor_chain
+
     def fetch_data(self, url: str) -> dict:
         resp = requests.get(url)
         resp.raise_for_status()
@@ -158,7 +159,7 @@ class FileAPIClient:
         self.mlogger.set_name(f"LLM Call: Transform Date Params")
 
         # 2-1) 날짜 계산용 템플릿 꺼내기
-        prompt = make_date_code_template()
+        prompt = load_chat_template("Data_Loader:Transform_Date_Params")
         date_chain = prompt | self.llm
 
         # 2-2) expr 에 원본 텍스트 넣고 코드 스니펫 받기
@@ -173,7 +174,6 @@ class FileAPIClient:
         queue.put_nowait({"type":"code","content": code_snippet})
         queue.put_nowait({"type":"log","content":self.mlogger.get_logs()[-1].model_dump_json()})
         return code_snippet
-
 
     def _assemble_url(self, q: FileAPIDetail) -> str:
         # 예시 URL: /{system_name}/factory-data/{metric}?product_code=...&start_date=...
@@ -197,13 +197,15 @@ class FileAPIClient:
 
         python_code = None
 
+        extract_chain = self.extract_params_chain()
+
         # 1) 엔티티 추출
         if self.retriever:
-            result = create_retrieval_chain(self.retriever, self.extractor_chain).invoke({"input": user_input})
+            result = create_retrieval_chain(self.retriever, extract_chain).invoke({"input": user_input})
             entities: FileAPIDetail = result['answer']
         else:
             # retriever가 없는 경우 직접 추출
-            result = self.extractor_chain.invoke({"context": "", "input": user_input})
+            result = extract_chain.invoke({"context": "", "input": user_input})
             entities: FileAPIDetail = result
 
         entity_logs: list[LogDetail] = self.mlogger.get_logs()

@@ -9,6 +9,7 @@ class CommandRequest(BaseModel):
     url: str = None
     uid: Optional[str] = None
     stream_id: Optional[str] = None
+    original_code: Optional[str] = None
 
 class DataRequest(BaseModel):
     command: str = None,

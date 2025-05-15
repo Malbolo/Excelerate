@@ -10,6 +10,7 @@ from app.core.config import settings
 
 redis_client = redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB, decode_responses=True)
 
+# 로그 관리 ------------------------------------------
 def generate_log_id(user_name: str, uid: str = None) -> str:
     # timestamp = datetime.now(ZoneInfo("Asia/Seoul")).isoformat(timespec="seconds")
     if uid:
@@ -45,6 +46,7 @@ def get_logs_data_from_redis(log_id: str) -> list[dict] | None:
     # 기존 코드가 기대하는 순수 logs 리스트 반환
     return raw.get("logs", [])
 
+# 세션 상태관리 ------------------------------------------
 def serialize_state(state: dict) -> dict:
     """
     AgentState에서 Redis에 저장할 최소 상태만 뽑아서
@@ -107,4 +109,3 @@ def get_states_from_redis(session_id: str) -> dict | None:
         "logs":               log_list,
     }
     return state
-

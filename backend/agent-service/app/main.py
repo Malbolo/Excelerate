@@ -10,6 +10,7 @@ from app.utils.docs import RootDocs
 from contextlib import asynccontextmanager
 from app.services.llmtest import LLMTest
 from app.services.code_gen.graph import CodeGenerator
+from app.services.data_load.datachain import FileAPIClient
 from app.core import auth
 from app.utils.api_utils import _DF_SENDER_TASKS
 import asyncio
@@ -20,6 +21,7 @@ async def lifespan(app: FastAPI):
     # Startup: 서비스 인스턴스 생성 및 등록
     app.state.llm_service = LLMTest()
     app.state.code_gen = CodeGenerator()
+    app.state.data_load = FileAPIClient()
     # 필요한 추가 초기화 작업 수행 (예: DB 연결, 캐시 초기화 등)
     yield
     # Shutdown: 종료 로직 수행 (예: 연결 종료 등)
@@ -28,6 +30,8 @@ async def lifespan(app: FastAPI):
         await app.state.llm_service.close()
     if hasattr(app.state.code_gen, "close"):
         await app.state.code_gen.close()
+    if hasattr(app.state.data_load, "close"):
+        await app.state.data_load.close()
     # 백그라운드 task 모두 종료
     tasks = list(_DF_SENDER_TASKS.values())
     for t in tasks:

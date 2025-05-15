@@ -6,111 +6,6 @@ from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTempla
 import pandas as pd
 from openpyxl import load_workbook
 
-def make_code_template() -> ChatPromptTemplate:
-    # 2) 시스템 메시지: df와 파라미터를 받아 필터링 코드를 생성한다는 역할 정의
-    system_template = SystemMessagePromptTemplate.from_template(
-        "당신은 pandas DataFrame을 조작하는 파이썬 코드를 작성하는 전문가입니다."
-    )
-
-    # 3) 휴먼 메시지: start_date, end_date 변수를 받아 df 필터링 함수 코드를 만들어 달라는 요청
-    human_template = HumanMessagePromptTemplate.from_template(
-        """
-사용자의 요청 리스트에 따라 pandas DataFrame(`df`)을 변형하는 **직접 실행 가능한 스크립트**를 작성하세요.
-- 시작 시 `intermediate = []` 로 빈 리스트를 만들고,
-- 사용자의 각 요청에 맞게 df를 변형하는 코드를 작성하고, 해당 코드 위에 주석으로 해당 요청을 표시하세요.
-- 사용자의 요청과 관련없는 코드는 생성하지 마세요.
-- 각 변형 결과마다 `intermediate.append(…)` 를 호출하세요.
-- 각 변형 결과를 다음 단계의 dataframe으로 사용하세요.
-- 전체 코드 마지막에 `df = intermediate[-1]`로 df에 최종 결과를 대입하세요.
-
-import문이나 함수 정의(`def …`)나 `return` 문은 쓰지 마세요.
-
-주어진 DataFrame의 컬럼 타입 정보:
-{dftypes}
-주어진 DataFrame 상위 5행:
-{df}
-
-마크다운과 설명 없이 오직 코드만 작성해 주세요.
-
-사용자 요청:
-{input}
-"""
-    )
-
-    # 4) 두 메시지를 합쳐 PromptTemplate 생성
-    prompt = ChatPromptTemplate.from_messages([system_template, human_template])
-    return prompt
-
-def make_classify_template() -> ChatPromptTemplate:
-    """
-    사용자 명령어 리스트를 분석하여,
-    1) 연속된 데이터프레임(df) 명령은 하나의 그룹으로 묶어 하나의 JSON 문자열로 'command'에 넣고, 'type'을 'df'로 지정합니다.
-    2) '템플릿'(또는 'template') 키워드가 포함된 명령은 'type'을 'excel'로 지정하고, 개별 문자열로 처리합니다.
-    3) 아무 의미없는 명령은 'type'을 'none'으로 지정하고 무시합니다.
-    출력은 JSON 객체 배열이며, 각 객체는 'command'(문자열)와 'type'('df' 또는 'excel' 또는 'none') 필드를 가집니다.
-
-    예시 입력:
-      ["압력이 3이상인 것만 필터링 해주세요", "createdAt의 포맷을 YYYY-MM-DD로 바꿔주세요", "KPIreport 템플릿 불러오기"]
-    예시 출력:
-      [
-        {"command":"[\"압력이 3이상인 것만 필터링 해주세요\",\"createdAt의 포맷을 YYYY-MM-DD로 바꿔주세요\"]","type":"df"},
-        {"command":"KPIreport 템플릿 불러오기","type":"excel"}
-      ]
-    """
-    # 시스템 메시지: 분류 규칙 정의
-    system = SystemMessagePromptTemplate.from_template(
-    """
-당신은 사용자 명령어를 'df'와 'excel', 'none'으로 분류하는 전문가입니다.
-- '템플릿' 또는 'template'이라는 단어가 들어있는 명령만 'excel'로 분류하세요.
-- dataframe을 조작하는 명령(예: 필터링, 포맷 변경 등)은 'df'로 분류하세요.
-- 순수 숫자(0-9)로만 구성된 명령은 'none'으로 분류하세요.
-- 그 외 의미 없는 명령도 'none'으로 분류하세요.
-- 연속된 동일 타입 명령은 하나의 그룹으로 묶습니다.
-  - 연속된 df 명령은 하나의 'df' 그룹으로,
-  - 연속된 none 명령은 하나의 'none' 그룹으로 묶으세요.
-- 순서를 반드시 유지하세요.
-- 각 요소는 반드시 {{'command': '...', 'type': '...'}} 형태의 JSON 객체여야 합니다.
-"""
-)
-
-    # 그룹화 예시
-    example_h1 = HumanMessagePromptTemplate.from_template(
-        '["4월 5일 이후의 데이터만 필터링 해주세요",'
-        '"defect_rate가 1 이상인 데이터만 필터링 해주세요",'
-        '"1","2","3",'
-        '"날짜의 포맷을 YYYY-MM-DD로 변경해 주세요",'
-        '"테스트 템플릿을 불러와 dataframe을 1열 5행에 붙여넣고 result로 저장해주세요"]'
-    )
-    example_a1 = AIMessagePromptTemplate.from_template(
-        '['
-          '{{"command":"[\\"4월 5일 이후의 데이터만 필터링 해주세요\\",'
-                         '\\"defect_rate가 1 이상인 데이터만 필터링 해주세요\\"]","type":"df"}},'
-          '{{"command":"[\\"1\\",\\"2\\",\\"3\\"]","type":"none"}},'
-          '{{"command":"[\\"날짜의 포맷을 YYYY-MM-DD로 변경해 주세요\\"]","type":"df"}},'
-          '{{"command":"테스트 템플릿을 불러와 dataframe을 1열 5행에 붙여넣고 result로 저장해주세요","type":"excel"}}'
-        ']'
-    )
-
-    # 예시 2: excel 먼저 → 두 개 df 그룹 → excel
-    example_h2 = HumanMessagePromptTemplate.from_template(
-        '["A가 B인 것만 남겨", "B 컬럼 제거해줘", "C가 5 이상인 것만 필터링해", "집가고 싶다"]'
-    )
-    example_a2 = AIMessagePromptTemplate.from_template(
-        '[{{"command":"[\\"A가 B인 것만 남겨\\",\\"B 컬럼 제거해줘\\",\\"C가 5 이상인 것만 필터링해\\"]","type":"df"}},'
-        '{{"command":"[\\"집가고 싶다\\"]","type":"none"}}]'
-    )
-
-    # 사용자 입력 바인딩
-    user = HumanMessagePromptTemplate.from_template("{cmd_list}")
-
-    # 프롬프트 순서 조합
-    return ChatPromptTemplate.from_messages([
-        system,
-        example_h1, example_a1,
-        example_h2, example_a2,
-        user
-    ])
-
 ## 추 후 다양한 기능을(단순 불러오기, dataframe 치환, 다중 저장 등) 수행시키고 싶다면 해당 템플릿을 사용해 엑셀 코드를 생성하도록 수정해야 할 것
 def make_excel_template() -> ChatPromptTemplate:
     """
@@ -252,25 +147,6 @@ def extract_error_info(exc: Exception, code_body: str, stage: str, commands: lis
         }
     }
 
-def make_extract_excel_params_template() -> ChatPromptTemplate:
-    system = SystemMessagePromptTemplate.from_template(
-    """
-사용자 명령어에서 엑셀 템플릿 이름, 시트 이름(선택), 삽입 시작 위치, 결과 파일명을 JSON으로 추출해 주세요.
-
-예시)
-"KPIreport 템플릿을 불러와서 3열 4행부터 데이터를 꽉 차게 삽입한 뒤 KPI_결과.xlsx로 저장해줘"
-{{
-  "template_name": "KPIreport",
-  "sheet_name": null,
-  "start_row": 4,
-  "start_col": 3,
-  "output_name": "KPI_결과.xlsx"
-}}
-"""
-)
-    user = HumanMessagePromptTemplate.from_template("{command}")
-    return ChatPromptTemplate.from_messages([system, user])
-
 def insert_df_to_excel(df: pd.DataFrame,
                        input_path: str,
                        output_path: str = None,
@@ -329,6 +205,7 @@ def make_excel_code_snippet(template_name: str,
     """
     sheet_repr = repr(sheet_name) if sheet_name is not None else 'None'
     return f"""
+# Excel 작업 시작
 # {template_name} 템플릿의 {start_col}열 {start_row}행에 dataframe 붙여넣기
 workdir = mkdtemp()
 tpl    = os.path.join(workdir, "{template_name}.xlsx")
@@ -348,4 +225,5 @@ insert_df_to_excel(
 
 # 업로드
 minio.upload_result("{user_id}", "{template_name}", out)
+# Excel 작업 끝
 """
