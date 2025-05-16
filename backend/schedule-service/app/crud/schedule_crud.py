@@ -208,3 +208,19 @@ def update_schedule_metadata(db: Session, dag_id: str, data: Dict[str, Any]) -> 
 
     db.commit()
     return True
+
+def get_schedules_in_range(db: Session, min_id: str, max_id: str) -> List[Schedule]:
+    """특정 ID 범위에 속하는 스케줄 조회 (id는 ULID 형식)"""
+    return db.query(Schedule).filter(
+        Schedule.id >= min_id,
+        Schedule.id <= max_id
+    ).order_by(desc(Schedule.id)).all()
+
+def get_schedule_jobs_by_schedule_ids(db: Session, schedule_ids: List[str]) -> List[ScheduleJob]:
+    """특정 스케줄 ID 목록에 해당하는 job 정보 조회"""
+    if not schedule_ids:
+        return []
+
+    return db.query(ScheduleJob).filter(
+        ScheduleJob.schedule_id.in_(schedule_ids)
+    ).order_by(ScheduleJob.schedule_id, ScheduleJob.order).all()
