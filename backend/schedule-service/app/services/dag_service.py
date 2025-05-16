@@ -50,7 +50,7 @@ class DagService:
             end_date_str = end_date.strftime("%Y-%m-%d") if end_date else "None"
 
             # 태그 및 설명 설정
-            tags = [f'owner:{owner}', f'start_date:{start_date_str}', f'title:{name}']
+            tags = ['custom', '{owner}', f'start_date:{start_date_str}', f'title:{name}']
             if end_date:
                 tags.append(f'end_date:{end_date_str}')
             tags_str = str(tags)
@@ -343,6 +343,7 @@ def send_failure_email(**kwargs):
     
 default_args = {{
     'depends_on_past': False,
+    'owner' : {owner},
     'email': [{', '.join([f"'{email}'" for email in (success_emails or [])])}],
     'email_on_failure': False,
     'email_on_retry': False,
@@ -353,7 +354,6 @@ default_args = {{
 dag = DAG(
     '{dag_id}',
     default_args=default_args,
-    owner='{owner}',
     dag_display_name='{name}',
     description='{description}',
     schedule_interval='{schedule_interval}',
