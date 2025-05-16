@@ -93,132 +93,71 @@ class DagService:
     @staticmethod
     def update_dag(
             dag_id: str,
-            name: Optional[str] = None,
-            description: Optional[str] = None,
-            cron_expression: Optional[str] = None,
-            job_ids: Optional[List[str]] = None,
-            start_date: Optional[datetime] = None,
+            name: str,
+            description: str,
+            cron_expression: str,
+            job_ids: List[str],
+            owner: str,
+            start_date: datetime,
             end_date: Optional[datetime] = None,
-            success_emails: Optional[List[str]] = None,
-            failure_emails: Optional[List[str]] = None,
+            success_emails: List[str] = None,
+            failure_emails: List[str] = None,
+            execution_time: str = None,
             user_id: int = None,
             db: Session = None
     ) -> bool:
         """기존 DAG 업데이트 - 동일한 DAG ID를 유지하면서 내용만 교체"""
+        close_db = False
+        if db is None:
+            db = next(database.get_db())
+            close_db = True
+
         try:
             # 기존 DAG 정보 조회
             current_dag = airflow_client.get_dag_detail(dag_id)
             dag_file_path = os.path.join(settings.AIRFLOW_DAGS_PATH, f"{dag_id}.py")
 
-            # DAG ID에서 owner 추출
-            parts = dag_id.split('_')
-            owner = parts[0]  # 기본값
-
-            # 태그에서 owner 확인
-            tags = current_dag.get("tags", [])
-            for tag in tags:
-                tag_value = tag
-                if isinstance(tag, dict) and "name" in tag:
-                    tag_value = tag["name"]
-                if tag_value.startswith("user_"):
-                    owner = tag_value
-                    break
-
-            # 업데이트할 값 설정
-            current_name = current_dag.get("name", "")
-            current_description = current_dag.get("description", "")
-            current_schedule = current_dag.get("schedule_interval", "")
-
-            update_name = name if name is not None else current_name
-            update_description = description if description is not None else current_description
-            update_schedule = cron_expression if cron_expression is not None else current_schedule
-
-            # 시작일과 종료일 설정
-            start_date_dt = None
-            end_date_dt = None
-
-            # 태그에서 시작일과 종료일 추출
-            for tag in tags:
-                tag_value = tag
-                if isinstance(tag, dict) and "name" in tag:
-                    tag_value = tag["name"]
-
-                if tag_value.startswith("start_date:"):
-                    start_date_str = tag_value.split(':', 1)[1]
-                    try:
-                        start_date_dt = datetime.strptime(start_date_str, "%Y-%m-%d")
-                    except ValueError:
-                        pass
-
-                if tag_value.startswith("end_date:"):
-                    end_date_str = tag_value.split(':', 1)[1]
-                    if end_date_str != "None":
-                        try:
-                            end_date_dt = datetime.strptime(end_date_str, "%Y-%m-%d")
-                        except ValueError:
-                            pass
-
-            # 변경할 시작일/종료일
-            update_start_date = start_date if start_date is not None else start_date_dt
-            update_end_date = end_date if end_date is not None else end_date_dt
-
-            if update_start_date is None:
-                raise Exception("시작일을 찾을 수 없습니다.")
-
-            # job_ids는 필수 항목입니다
-            if not job_ids:
-                raise Exception("스케줄 업데이트에는 최소 하나 이상의 Job ID가 필요합니다.")
-
             # Job 상세 정보 조회
             job_details = DagService._get_job_basic_info(job_ids, user_id)
 
             # 시작일과 종료일 문자열로 변환
-            start_date_str = update_start_date.strftime("%Y-%m-%d")
-            end_date_str = update_end_date.strftime("%Y-%m-%d") if update_end_date else "None"
+            start_date_str = start_date.strftime("%Y-%m-%d")
+            end_date_str = end_date.strftime("%Y-%m-%d") if end_date else "None"
 
             # 태그 및 설명 설정
-            tags_str = f"['custom', '{owner}', 'start_date:{start_date_str}', 'title:{update_name}'"
-            if update_end_date:
+            tags_str = f"['custom', '{owner}', 'start_date:{start_date_str}', 'title:{name}'"
+            if end_date:
                 tags_str += f", 'end_date:{end_date_str}'"
             tags_str += "]"
 
             # DAG 코드 생성
             dag_code = DagService._generate_dag_code(
-                dag_id, owner, update_start_date, update_end_date, success_emails, failure_emails,
-                update_description, update_schedule, tags_str, job_details, name
+                dag_id, owner, start_date, end_date, success_emails, failure_emails,
+                description, cron_expression, tags_str, job_details, name
             )
-
-            # 백업 파일 생성
-            backup_file_path = f"{dag_file_path}.bak"
-            try:
-                if os.path.exists(dag_file_path):
-                    shutil.copy2(dag_file_path, backup_file_path)
-                    logger.info(f"Created backup at {backup_file_path}")
-            except Exception as e:
-                logger.warning(f"Failed to create backup file: {str(e)}")
 
             # DAG 파일 저장
             with open(dag_file_path, 'w') as f:
                 f.write(dag_code)
                 logger.info(f"Updated DAG file at {dag_file_path}")
 
-            frequency = None
-            if cron_expression:
-                frequency = cron_utils.convert_cron_to_frequency(cron_expression)
+            frequency = cron_utils.convert_cron_to_frequency(cron_expression)
 
             schedule_crud.update_schedule_metadata(
                 db,
                 dag_id=dag_id,
                 data={
                     "job_ids": [str(job["id"]) for job in job_details],
-                    "start_date": update_start_date,
-                    "end_date": update_end_date,
-                    "success_emails": success_emails,
-                    "failure_emails": failure_emails,
-                    "title": update_name,
-                    "description": update_description,
-                    "cron_expression": update_schedule,  # cron 표현식 추가
+                    "start_date": start_date,
+                    "end_date": end_date,
+                    "success_emails": success_emails or [],
+                    "failure_emails": failure_emails or [],
+                    "title": name,
+                    "description": description,
+                    "cron_expression": cron_expression,
                     "frequency": frequency,
+                    "execution_time": execution_time,
+                    "owner": owner
                 }
             )
 
@@ -235,18 +174,12 @@ class DagService:
             return True
 
         except Exception as e:
-            # 오류 발생 시 백업에서 복원 시도
-            try:
-                backup_file_path = os.path.join(settings.AIRFLOW_DAGS_PATH, f"{dag_id}.py.bak")
-                dag_file_path = os.path.join(settings.AIRFLOW_DAGS_PATH, f"{dag_id}.py")
-
-                if os.path.exists(backup_file_path):
-                    shutil.copy2(backup_file_path, dag_file_path)
-                    logger.info(f"Restored DAG file from backup after error: {str(e)}")
-            except Exception as restore_error:
-                logger.error(f"Failed to restore from backup: {str(restore_error)}")
-
+            logger.error(f"Error updating DAG: {str(e)}")
             raise Exception(f"Failed to update DAG: {str(e)}")
+
+        finally:
+            if close_db:
+                db.close()
 
     @staticmethod
     def delete_dag(dag_id: str) -> bool:

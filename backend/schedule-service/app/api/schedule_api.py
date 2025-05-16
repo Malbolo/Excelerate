@@ -322,37 +322,36 @@ async def toggle_schedule(
 async def update_schedule(
         schedule_id: str,
         schedule_request: ScheduleUpdateRequest,
-        user_id: int = Depends(check_admin_permission)
+        user_id: int = Depends(check_admin_permission),
+        db: Session = Depends(database.get_db)
 ) -> JSONResponse:
     try:
-        # cron 표현식 변환 (frequency가 제공된 경우)
-        cron_expression = None
-        if schedule_request.frequency and schedule_request.execution_time:
-            cron_expression = cron_utils.convert_frequency_to_cron(
-                schedule_request.frequency,
-                schedule_request.execution_time
-            )
+        # frequency를 cron 표현식으로 변환
+        cron_expression = cron_utils.convert_frequency_to_cron(
+            schedule_request.frequency,
+            schedule_request.execution_time,
+            schedule_request.start_date
+        )
 
-        # job_ids 정렬 (jobs가 제공된 경우)
-        job_ids = None
-        if schedule_request.jobs:
-            sorted_jobs = sorted(schedule_request.jobs, key=lambda job: job.order)
-            job_ids = [job.id for job in sorted_jobs]
+        # 작업 목록 정렬
+        sorted_jobs = sorted(schedule_request.jobs, key=lambda job: job.order)
+        job_ids = [job.id for job in sorted_jobs]
 
-        # DAG 업데이트 - description 제외
+        # DAG 업데이트
         result = DagService.update_dag(
             dag_id=schedule_id,
             name=schedule_request.title,
-            # description 필드 제외 (Airflow API에서 읽기 전용)
-            # description=schedule_request.description,
+            description=schedule_request.description,
             cron_expression=cron_expression,
             job_ids=job_ids,
+            owner=auth.get_user_info(user_id).get('name'),
             start_date=schedule_request.start_date,
             end_date=schedule_request.end_date,
             success_emails=schedule_request.success_emails,
             failure_emails=schedule_request.failure_emails,
             execution_time=schedule_request.execution_time,
-            user_id=user_id
+            user_id=user_id,
+            db=db
         )
 
         return JSONResponse(content={
