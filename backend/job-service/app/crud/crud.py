@@ -2,11 +2,11 @@ from datetime import datetime
 from http import HTTPStatus
 from typing import List
 
+from app.app.models.models import JobCommand, Job
 from app.core import auth
 from app.core.constants import JOB_NOT_FOUND, ACCESS_DENIED
 from app.core.constants import USER_DEPARTMENT, USER_NAME
 from app.models import models
-from app.models.models import JobCommand, Job
 from app.schemas.job_create_schema import JobCreateRequest
 from app.schemas.job_update_schema import JobUpdateRequest
 from fastapi import HTTPException
@@ -17,15 +17,33 @@ def create_job(db: Session, request: JobCreateRequest, user_id: int, user_name: 
     db_job = models.Job.create(request, user_id, user_name, department)
     db.add(db_job)
     db.flush()
+
+    source_data = request.source_data
+    db_source_data = models.JobSourceData(
+        job_id=db_job.id,
+        factory_name=source_data.factory_name,
+        system_name=source_data.system_name,
+        metric=source_data.metric,
+        factory_id=source_data.factory_id,
+        product_code=source_data.product_code,
+        start_date=source_data.start_date,
+        end_date=source_data.end_date,
+    )
+    db.add(db_source_data)
+
     for idx, command in enumerate(request.commands):
         db_command = JobCommand(content=command, order=idx + 1, job=db_job)
         db.add(db_command)
+
     db.commit()
     db.refresh(db_job)
     return db_job
 
 def get_job_by_id(db: Session, job_id: str):
-    return db.query(models.Job).filter(models.Job.id == job_id).one()
+    return db.query(models.Job) \
+        .options(joinedload(models.Job.source_data)) \
+        .filter(models.Job.id == job_id) \
+        .one()
 
 def update_job(db: Session, job_id: str, request: JobUpdateRequest, user_id: int):
     existing_job = get_job_by_id(db, job_id)
