@@ -722,67 +722,6 @@ class ScheduleService:
         return result
 
     @staticmethod
-    def _get_schedules_from_db(db=None) -> List[Dict[str, Any]]:
-        """DB에서 스케줄 기본 정보를 가져옵니다 (fallback용)"""
-        close_db = False
-        result = []  # 여기서 result를 초기화하여 함수 밖에서도 접근 가능하게 함
-        try:
-            if db is None:
-                db = SessionLocal()
-                close_db = True
-
-            # DB에서 스케줄 정보 가져오기
-            schedules = schedule_crud.get_all_schedules(db)
-
-            # DB 객체를 딕셔너리로 변환
-            for schedule in schedules:
-                # Schedule 모델 객체를 딕셔너리로 변환
-                schedule_dict = {
-                    "schedule_id": schedule.dag_id,
-                    "title": schedule.title,
-                    "description": schedule.description,
-                    "frequency": schedule.frequency,
-                    "frequency_cron": schedule.cron_expression,
-                    "execution_time": schedule.execution_time,
-                    "is_paused": schedule.is_paused,
-                    "start_date": schedule.start_date.isoformat() if schedule.start_date else None,
-                    "end_date": schedule.end_date.isoformat() if schedule.end_date else None,
-                    "success_emails": schedule.success_emails or [],
-                    "failure_emails": schedule.failure_emails or [],
-                    "owner": schedule.owner,
-                    "created_by": schedule.created_by,
-                    "created_at": schedule.created_at.isoformat() if schedule.created_at else None,
-                    "updated_at": schedule.updated_at.isoformat() if schedule.updated_at else None,
-                    "last_run": None,
-                    "next_run": None,
-                    "jobs": []
-                }
-
-                # job_ids 가져오기
-                try:
-                    schedule_jobs = []
-                    if hasattr(schedule, 'jobs') and schedule.jobs:
-                        # 순서에 따라 정렬
-                        schedule_jobs = sorted(schedule.jobs, key=lambda x: x.order)
-                        schedule_dict["job_ids"] = [job.job_id for job in schedule_jobs]
-                    else:
-                        # DB에서 별도 쿼리로 가져오기
-                        schedule_jobs = db.query(ScheduleJob).filter(ScheduleJob.schedule_id == schedule.id).order_by(
-                            ScheduleJob.order).all()
-                        schedule_dict["job_ids"] = [job.job_id for job in schedule_jobs]
-                except Exception as e:
-                    logger.error(f"Error getting job_ids for schedule {schedule.dag_id}: {str(e)}")
-                    schedule_dict["job_ids"] = []
-
-                result.append(schedule_dict)
-        finally:
-            if close_db and db is not None:
-                db.close()
-
-        # finally 블록 바깥에서 return 문 사용
-        return result
-
-    @staticmethod
     def get_all_schedules_with_details_optimized(user_id: int = None, db=None) -> Dict[str, Any]:
         """모든 스케줄(DAG) 목록을 반환 - ULID 범위 쿼리와 최소한의 필드만 요청"""
         close_db = False
