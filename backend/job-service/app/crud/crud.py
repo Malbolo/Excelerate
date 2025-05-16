@@ -2,11 +2,11 @@ from datetime import datetime
 from http import HTTPStatus
 from typing import List
 
+from app.app.models.models import JobCommand, Job
 from app.core import auth
 from app.core.constants import JOB_NOT_FOUND, ACCESS_DENIED
 from app.core.constants import USER_DEPARTMENT, USER_NAME
 from app.models import models
-from app.models.models import JobCommand, Job
 from app.schemas.job_create_schema import JobCreateRequest
 from app.schemas.job_update_schema import JobUpdateRequest
 from fastapi import HTTPException

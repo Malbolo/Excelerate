@@ -1,8 +1,9 @@
-from app.db.database import Base
-from app.schemas.job_create_schema import JobCreateRequest
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, func
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, func, BigInteger, Date
 from sqlalchemy.dialects.mysql import LONGTEXT
 from sqlalchemy.orm import relationship
+
+from db.database import Base
+from schemas.job_create_schema import JobCreateRequest
 
 
 class Job(Base):

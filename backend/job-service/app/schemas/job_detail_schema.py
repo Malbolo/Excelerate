@@ -3,6 +3,8 @@ from typing import List, Optional
 from fastapi import Query
 from pydantic import BaseModel
 
+from schemas.job_create_schema import SourceData
+
 
 class JobDetailRequest:
     def __init__(
