@@ -8,10 +8,10 @@ from sqlalchemy.orm import relationship
 class Job(Base):
     __tablename__ = "jobs"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, nullable=False)
-    user_name = Column(String, nullable=False)
-    user_department = Column(String, nullable=False)
+    id = Column(BigInteger, primary_key=True, index=True)
+    user_id = Column(BigInteger, nullable=False)
+    user_name = Column(String(50), nullable=False)
+    user_department = Column(String(100), nullable=False)
     type = Column(String(50), nullable=False)
     title = Column(String(100), nullable=False)
     description = Column(Text, nullable=False)
@@ -22,6 +22,7 @@ class Job(Base):
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
+    source_data = relationship("JobSourceData", back_populates="job", uselist=False, cascade="all, delete")
     commands = relationship("JobCommand", back_populates="job", cascade="all, delete")
 
     @classmethod
@@ -39,11 +40,26 @@ class Job(Base):
         code=request.code
     )
 
+class JobSourceData(Base):
+    __tablename__ = "job_source_data"
+
+    id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
+    job_id = Column(BigInteger, ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False)
+    factory_name = Column(String(20))
+    system_name = Column(String(10))
+    metric = Column(String(15))
+    factory_id = Column(String(30))
+    product_code = Column(String(30))
+    start_date = Column(Date)
+    end_date = Column(Date)
+
+    job = relationship("Job", back_populates="source_data")
+
 class JobCommand(Base):
     __tablename__ = "job_commands"
 
-    id = Column(Integer, primary_key=True, index=True)
-    job_id = Column(Integer, ForeignKey("jobs.id", ondelete="CASCADE"))
+    id = Column(BigInteger, primary_key=True, index=True)
+    job_id = Column(BigInteger, ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False)
     content = Column(Text, nullable=False)
     order = Column(Integer, nullable=False)
 
