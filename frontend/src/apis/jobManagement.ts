@@ -17,6 +17,7 @@ export interface JobManagement extends Job {
   data_load_url: string;
   code: string;
   created_at: string;
+  source_data: Record<string, string>;
 }
 
 export interface Job {

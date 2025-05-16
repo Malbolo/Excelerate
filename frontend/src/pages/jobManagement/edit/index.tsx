@@ -39,8 +39,12 @@ const JobEditPage = () => {
   const { mutateAsync: commandMutation, isPending: isCommandLoading } =
     useSendCommandList();
 
-  const { setSourceDataCommand, setSourceDataUrl, resetSource } =
-    useSourceStore();
+  const {
+    setSourceDataCommand,
+    setSourceDataUrl,
+    resetSource,
+    setSourceParams,
+  } = useSourceStore();
   const {
     addCommand,
     resetCommand,
@@ -58,10 +62,12 @@ const JobEditPage = () => {
 
   useEffect(() => {
     if (jobDetail) {
-      const { data_load_command, data_load_url, commands, code } = jobDetail;
+      const { data_load_command, data_load_url, commands, code, source_data } =
+        jobDetail;
 
       setSourceDataCommand(data_load_command);
       setSourceDataUrl(data_load_url);
+      setSourceParams(source_data);
       setCode(code);
       setStoreCommandList(
         commands.map(({ content, order }) => ({

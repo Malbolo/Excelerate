@@ -15,6 +15,7 @@ export interface SaveJobRequest {
   commands: string[];
   code: string;
   data_load_code?: string;
+  source_data: Record<string, string>;
 }
 
 interface SendCommandListResponse {
