@@ -114,9 +114,9 @@ const CommandList = ({ job }: { job?: JobManagement }) => {
       if (errorMsg) {
         const errorIndex = errorMsg.command_index;
         updateCommandStatus(errorIndex, 'failed');
+      } else {
+        setCanSaveJob(true);
       }
-
-      setCanSaveJob(true);
     } catch (error) {
       commandList.forEach((_, idx) => {
         updateCommandStatus(idx, 'failed');
