@@ -354,6 +354,7 @@ default_args = {{
 dag = DAG(
     '{dag_id}',
     default_args=default_args,
+    owners='{owner}',
     dag_display_name='{name}',
     description='{description}',
     schedule_interval='{schedule_interval}',
