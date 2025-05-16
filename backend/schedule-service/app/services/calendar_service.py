@@ -98,7 +98,8 @@ def build_monthly_dag_calendar(dags: List[Dict[str, Any]], year: int, month: int
             # 해당 월의 각 날짜에 대해 데이터 처리
             for date_str, idx in date_index.items():
                 # 해당 날짜의 datetime 객체 생성
-                date_dt = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+                y, m, d = map(int, date_str.split("-"))
+                date_dt = datetime(y, m, d, tzinfo=timezone.utc)
                 day_start = date_dt.replace(hour=0, minute=0, second=0)
                 day_end = date_dt.replace(hour=23, minute=59, second=59)
 
@@ -183,16 +184,6 @@ def _extract_dag_dates(dag: Dict[str, Any], dag_id: str, now: datetime, db_sched
     # DB에 시작일이 없는 경우 API에서 추출
     if dag_start_date is None:
         dag_start_date = _extract_dag_start_date_from_api(dag, dag_id)
-
-    # API에도 없는 경우 DAG ID에서 추출
-    if dag_start_date is None:
-        extracted_date = date_utils.extract_date_from_dag_id(dag_id)
-        if extracted_date:
-            # timezone 확인 및 추가
-            if extracted_date.tzinfo is None:
-                dag_start_date = extracted_date.replace(tzinfo=timezone.utc)
-            else:
-                dag_start_date = extracted_date
 
     # 그래도 없는 경우 생성일 또는 현재 시간 사용
     if dag_start_date is None:

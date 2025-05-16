@@ -1,7 +1,7 @@
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 import os
-import shutil
+import ulid
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -40,7 +40,7 @@ class DagService:
             # DAG ID는 고유해야 함
             # DAG ID는 userid_time 형식으로 생성 (밀리초까지 포함하여 추가 고유성 확보)
             timestamp = date_utils.get_now_utc().strftime('%Y%m%d%H%M%S%f')[:18]
-            dag_id = f"{owner}_{timestamp}"
+            dag_id = f"dag_{ulid.ULID().str}"
 
             # Job Service에서 job 정보 가져오기
             job_details = DagService._get_job_basic_info(job_ids, user_id)
@@ -50,10 +50,10 @@ class DagService:
             end_date_str = end_date.strftime("%Y-%m-%d") if end_date else "None"
 
             # 태그 및 설명 설정
-            tags_str = f"['custom', '{owner}', 'start_date:{start_date_str}', 'title:{name}'"
+            tags = [f'owner:{owner}', f'start_date:{start_date_str}', f'title:{name}']
             if end_date:
-                tags_str += f", 'end_date:{end_date_str}'"
-            tags_str += "]"
+                tags.append(f'end_date:{end_date_str}')
+            tags_str = str(tags)
 
             # DAG 코드 생성
             dag_code = DagService._generate_dag_code(
@@ -125,10 +125,10 @@ class DagService:
             end_date_str = end_date.strftime("%Y-%m-%d") if end_date else "None"
 
             # 태그 및 설명 설정
-            tags_str = f"['custom', '{owner}', 'start_date:{start_date_str}', 'title:{name}'"
+            tags = [f'owner:{owner}', f'start_date:{start_date_str}', f'title:{name}']
             if end_date:
-                tags_str += f", 'end_date:{end_date_str}'"
-            tags_str += "]"
+                tags.append(f'end_date:{end_date_str}')
+            tags_str = str(tags)
 
             # DAG 코드 생성
             dag_code = DagService._generate_dag_code(
