@@ -295,7 +295,7 @@ from utils.code_util import insert_df_to_excel
 # 성공 이메일 콜백 함수
 def send_success_email(**kwargs):
     \"\"\"DAG 성공 시 이메일 전송\"\"\"
-    success_to = (success_emails or [])  
+    success_to = {success_emails!r} 
     if not success_to:
         return
         
@@ -319,7 +319,7 @@ def send_success_email(**kwargs):
 # 실패 이메일 콜백 함수
 def send_failure_email(**kwargs):
     \"\"\"DAG 실패 시 이메일 전송\"\"\"
-    failure_to = (failure_emails or [])  
+    failure_to = {failure_emails!r}
     if not failure_to:
         return
         
