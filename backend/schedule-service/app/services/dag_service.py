@@ -342,7 +342,6 @@ def send_failure_email(**kwargs):
     email.execute(context=kwargs)
     
 default_args = {{
-    'owner': '{owner}',
     'depends_on_past': False,
     'email': [{', '.join([f"'{email}'" for email in (success_emails or [])])}],
     'email_on_failure': False,
@@ -354,7 +353,7 @@ default_args = {{
 dag = DAG(
     '{dag_id}',
     default_args=default_args,
-    owners='{owner}',
+    owner='{owner}',
     dag_display_name='{name}',
     description='{description}',
     schedule_interval='{schedule_interval}',
