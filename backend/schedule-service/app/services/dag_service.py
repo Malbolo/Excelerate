@@ -292,15 +292,15 @@ from utils.code_util import insert_df_to_excel
 # END_DATE: {end_date.strftime("%Y-%m-%d") if end_date else "None"}
 
 # DAG 상태 알림 함수 - 항상 이메일 발송
-def notify_dag_status(context):
+def notify_dag_status(**kwargs):
     '''DAG 실행 완료 시 이메일 전송'''
-    dag_run = context['dag_run']
+    dag_run = kwargs['dag_run']
     ti_list = dag_run.get_task_instances()
     failed_tasks = [ti for ti in ti_list if ti.state == 'failed']
     
     # 실행 날짜와 시간 가져오기
-    ds = context.get('ds', '')
-    execution_date = context.get('execution_date', '')
+    ds = kwargs.get('ds', '')
+    execution_date = kwargs.get('execution_date', '')
     
     if failed_tasks:
         # 실패한 태스크가 있으면 실패 이메일 발송
@@ -483,9 +483,8 @@ task_{idx}_skip    >> task_{idx}_cleanup
 # 최종 DAG 상태 알림 태스크
 notify_task = PythonOperator(
     task_id='notify_dag_status',
-    python_callable=notify_dag_status,
-    provide_context=True,
-    trigger_rule=TriggerRule.ALL_DONE,  # 모든 태스크 완료 후 실행 (성공, 실패, 스킵 모두 포함)
+    python_callable=notify_dag_status,  
+    trigger_rule=TriggerRule.ALL_DONE,
     dag=dag,
 )
 
