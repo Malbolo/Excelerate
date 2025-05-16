@@ -292,11 +292,60 @@ from utils.code_util import insert_df_to_excel
 # START_DATE: {start_date.strftime("%Y-%m-%d")}
 # END_DATE: {end_date.strftime("%Y-%m-%d") if end_date else "None"}
 
+# 성공 이메일 콜백 함수
+def send_success_email(**kwargs):
+    \"\"\"DAG 성공 시 이메일 전송\"\"\"
+    success_to = (success_emails or [])  
+    if not success_to:
+        return
+        
+    dag_run = kwargs['dag_run']
+    dag_id = dag_run.dag_id
+    
+    email = EmailOperator(
+        task_id='send_success_email',
+        to=success_to,  
+        subject=f"[성공] {name} (DAG ID: {dag_id})",
+        html_content='''
+        <h3>DAG {{ dag_run.dag_id }} 실행이 성공적으로 완료되었습니다.</h3>
+        <p>DAG 이름: {name}</p>
+        <p>실행 날짜: {{ ds }}</p>
+        <p>실행 시간: {{ execution_date }}</p>
+        ''',
+        dag=kwargs['dag']
+    )
+    email.execute(context=kwargs)
+
+# 실패 이메일 콜백 함수
+def send_failure_email(**kwargs):
+    \"\"\"DAG 실패 시 이메일 전송\"\"\"
+    failure_to = (failure_emails or [])  
+    if not failure_to:
+        return
+        
+    dag_run = kwargs['dag_run']
+    dag_id = dag_run.dag_id
+    
+    email = EmailOperator(
+        task_id='send_failure_email',
+        to=failure_to, 
+        subject=f"[실패] {name} (DAG ID: {dag_id})",
+        html_content='''
+        <h3>DAG {{ dag_run.dag_id }} 실행이 실패했습니다.</h3>
+        <p>DAG 이름: {name}</p>
+        <p>실행 날짜: {{ ds }}</p>
+        <p>실행 시간: {{ execution_date }}</p>
+        <p>실패한 작업: {{ task_instance.task_id }}</p>
+        ''',
+        dag=kwargs['dag']
+    )
+    email.execute(context=kwargs)
+    
 default_args = {{
     'owner': '{owner}',
     'depends_on_past': False,
     'email': [{', '.join([f"'{email}'" for email in (success_emails or [])])}],
-    'email_on_failure': {bool(failure_emails or [])},
+    'email_on_failure': False,
     'email_on_retry': False,
     'retries': 0,
     # 'retry_delay': timedelta(seconds=1),
@@ -312,7 +361,9 @@ dag = DAG(
     end_date= {f"datetime({end_date.year}, {end_date.month}, {end_date.day})" if end_date else "None"},
     tags={tags},
     catchup=False,
-    is_paused_upon_creation=False
+    is_paused_upon_creation=False,
+    on_success_callback=send_success_email if {bool(success_emails)} else None,
+    on_failure_callback=send_failure_email if {bool(failure_emails)} else None
 )
 """
 
