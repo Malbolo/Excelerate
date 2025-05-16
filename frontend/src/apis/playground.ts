@@ -72,9 +72,7 @@ const postCallPrompt = async (payload: {
           })),
           human: userInput,
         },
-        variables: {
-          key: 'value',
-        },
+        variables,
       }),
     },
   );

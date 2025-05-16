@@ -60,7 +60,6 @@ const LLMPlaygroundPage = () => {
   const [userInput, setUserInput] = useState<string>('');
   const [variables, setVariables] = useState<{ [key: string]: string }>({});
   const [isVariablesDialogOpen, setIsVariablesDialogOpen] = useState(false);
-  const [output, setOutput] = useState<string>('');
   const [modifiedOutput, setModifiedOutput] = useState<string>('');
 
   useEffect(() => {
@@ -172,6 +171,8 @@ const LLMPlaygroundPage = () => {
     toast.success('Test payload logged to console!');
     const result = await postCallPrompt(payload);
     setModifiedOutput(result.output);
+
+    console.log(modifiedOutput);
   };
 
   return (
