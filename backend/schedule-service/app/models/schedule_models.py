@@ -14,7 +14,7 @@ class Schedule(Base):
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     frequency = Column(String(50), nullable=False)  # daily, weekly, monthly 등
-    frequency_cron = Column(String(100), nullable=False)  # cron 표현식
+    cron_expression = Column(String(100), nullable=False)  # cron 표현식
     execution_time = Column(String(10), nullable=True)  # HH:MM 형식
     is_paused = Column(Boolean, default=False)
 

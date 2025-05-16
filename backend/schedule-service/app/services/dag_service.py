@@ -38,7 +38,7 @@ class DagService:
 
         try:
             # DAG ID는 고유해야 함
-            dag_id = f"dag_{ulid.ULID()}"
+            dag_id = ulid.ULID()
 
             # Job Service에서 job 정보 가져오기
             job_details = DagService._get_job_basic_info(job_ids, user_id)
@@ -76,7 +76,7 @@ class DagService:
                 "job_ids": job_ids
             }
 
-            schedule_crud.create_schedule(db, dag_id, schedule_data, user_id)
+            schedule_crud.create_schedule(db, id=dag_id, data=schedule_data, user_id=user_id)
 
             return dag_id
 
@@ -141,9 +141,9 @@ class DagService:
 
             frequency = cron_utils.convert_cron_to_frequency(cron_expression)
 
-            schedule_crud.update_schedule_metadata(
+            schedule_crud.update_schedule(
                 db,
-                dag_id=dag_id,
+                id=dag_id,
                 data={
                     "job_ids": [str(job["id"]) for job in job_details],
                     "start_date": start_date,

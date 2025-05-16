@@ -35,7 +35,7 @@ class ScheduleService:
                 title = dag_detail.get("dag_display_name", schedule_id)
 
             # DB에서 스케줄 정보 조회
-            db_schedule = schedule_crud.get_schedule_by_dag_id(db, schedule_id)
+            db_schedule = schedule_crud.get_schedule_by_id(db, schedule_id)
             if db_schedule:
                 # DB에 저장된 정보 사용
                 title = db_schedule.title
@@ -88,13 +88,13 @@ class ScheduleService:
             # 크론 표현식 처리
             schedule_interval = dag_detail.get("schedule_interval")
             if isinstance(schedule_interval, dict) and "__type" in schedule_interval:
-                frequency_cron = schedule_interval.get("__type", "")
+                cron_expression = schedule_interval.get("__type", "")
             else:
-                frequency_cron = str(schedule_interval) if schedule_interval else ""
+                cron_expression = str(schedule_interval) if schedule_interval else ""
 
             # 주기 문자열로 변환 (역변환)
-            frequency = cron_utils.convert_cron_to_frequency(frequency_cron)
-            frequency_display = cron_utils.parse_cron_to_friendly_format(frequency_cron)
+            frequency = cron_utils.convert_cron_to_frequency(cron_expression)
+            frequency_display = cron_utils.parse_cron_to_friendly_format(cron_expression)
 
             # execution_time이 DB에 없으면 cron에서 추출
             execution_time = None
@@ -102,7 +102,7 @@ class ScheduleService:
                 execution_time = db_schedule.execution_time
 
             if not execution_time:
-                execution_time = cron_utils.extract_execution_time_from_cron(frequency_cron)
+                execution_time = cron_utils.extract_execution_time_from_cron(cron_expression)
 
             # 응답 데이터 구성
             schedule_data = {
@@ -110,7 +110,7 @@ class ScheduleService:
                 "title": title,
                 "description": description,
                 "frequency": frequency,
-                "frequency_cron": frequency_cron,
+                "frequency_cron": cron_expression,
                 "frequency_display": frequency_display,
                 "is_paused": dag_detail.get("is_paused", False),
                 "created_at": dag_detail.get("last_parsed_time", ""),
@@ -222,7 +222,7 @@ class ScheduleService:
                 title = dag_detail.get("dag_display_name", schedule_id)
 
             # DB에서 title 확인
-            db_schedule = schedule_crud.get_schedule_by_dag_id(db, schedule_id)
+            db_schedule = schedule_crud.get_schedule_by_id(db, schedule_id)
             if db_schedule:
                 title = db_schedule.title
 
@@ -406,16 +406,16 @@ class ScheduleService:
                     schedule_data["success_emails"] = db_schedule.success_emails or []
                     schedule_data["failure_emails"] = db_schedule.failure_emails or []
 
-                    # 주요 추가: frequency, frequency_cron, execution_time은 DB에서 가져오기
+                    # 주요 추가: frequency, cron_expression, execution_time은 DB에서 가져오기
                     schedule_data["frequency"] = db_schedule.frequency
-                    schedule_data["frequency_cron"] = db_schedule.frequency_cron
+                    schedule_data["frequency_cron"] = db_schedule.cron_expression
                     schedule_data["execution_time"] = db_schedule.execution_time
 
-                    # frequency_display는 frequency_cron에서 계산
-                    if db_schedule.frequency_cron:
+                    # frequency_display는 cron_expression에서 계산
+                    if db_schedule.cron_expression:
                         try:
                             schedule_data["frequency_display"] = cron_utils.parse_cron_to_friendly_format(
-                                db_schedule.frequency_cron)
+                                db_schedule.cron_expression)
                         except Exception as e:
                             logger.error(f"Error parsing cron expression for {dag_id}: {str(e)}")
                             schedule_data["frequency_display"] = None
@@ -600,7 +600,7 @@ class ScheduleService:
                 owner = dag.get("owners", ["unknown"])[0] if dag.get("owners") else "unknown"
 
                 # DB에 정보가 있으면 사용
-                db_schedule = schedule_crud.get_schedule_by_dag_id(db, dag_id)
+                db_schedule = schedule_crud.get_schedule_by_id(db, dag_id)
                 if db_schedule:
                     title = db_schedule.title
                     description = db_schedule.description
@@ -742,7 +742,7 @@ class ScheduleService:
                     "title": schedule.title,
                     "description": schedule.description,
                     "frequency": schedule.frequency,
-                    "frequency_cron": schedule.frequency_cron,
+                    "frequency_cron": schedule.cron_expression,
                     "execution_time": schedule.execution_time,
                     "is_paused": schedule.is_paused,
                     "start_date": schedule.start_date.isoformat() if schedule.start_date else None,
@@ -876,7 +876,7 @@ class ScheduleService:
                 }
 
                 # 크론 표현식 및 주기 정보 설정 (frequency_display 객체 형식 사용)
-                if db_schedule and db_schedule.frequency_cron:
+                if db_schedule and db_schedule.cron_expression:
                     # DB에서 가져온 정보 사용
                     execution_time = db_schedule.execution_time
                     frequency = db_schedule.frequency
