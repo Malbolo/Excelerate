@@ -1,10 +1,6 @@
 import { Schedule } from '@/apis/schedulerManagement';
 
-const convertUtcTimeToLocal = (
-  utcTimeString: string,
-  locale: string,
-  place: string,
-): string => {
+const convertUtcTimeToLocal = (utcTimeString: string, locale: string, place: string): string => {
   const dummyUtcDateTimeString = `2025-01-01T${utcTimeString}:00Z`;
   const dateObj = new Date(dummyUtcDateTimeString);
 
@@ -16,11 +12,7 @@ const convertUtcTimeToLocal = (
   });
 };
 
-export const formatInterval = (
-  interval: Schedule['frequency_display'],
-  locale: string,
-  place: string,
-): string => {
+export const formatInterval = (interval: Schedule['frequency_display'], locale: string, place: string): string => {
   if (!interval) return 'Manual';
 
   const localTime = convertUtcTimeToLocal(interval.time, locale, place);
@@ -37,11 +29,7 @@ export const formatInterval = (
   }
 };
 
-export const formatDate = (
-  dateString: string,
-  locale: string,
-  place: string,
-) => {
+export const formatDate = (dateString: string, locale: string, place: string) => {
   const date = new Date(dateString);
   return date.toLocaleDateString(locale, {
     year: 'numeric',
@@ -51,11 +39,7 @@ export const formatDate = (
   });
 };
 
-export const formatDateTime = (
-  dateTimeString: string,
-  locale: string,
-  place: string,
-) => {
+export const formatDateTime = (dateTimeString: string, locale: string, place: string) => {
   const date = new Date(dateTimeString);
   return date.toLocaleString(locale, {
     year: 'numeric',

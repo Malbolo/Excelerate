@@ -11,10 +11,7 @@ const SchedulerMonitoringPage = () => {
   const [year, month] = monthId.split('-').map(Number);
 
   return (
-    <SchedulerMonitoringLayout
-      title={`${MONTH_LIST[month]} ${year} Scheduler Monitoring`}
-      backPath='/'
-    >
+    <SchedulerMonitoringLayout title={`${MONTH_LIST[month]} ${year} Scheduler Monitoring`} backPath='/'>
       <DateNavigator />
       <CalendarGrid year={year} month={month} />
     </SchedulerMonitoringLayout>

@@ -6,11 +6,7 @@ import { Check, MoreVertical } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Input } from '@/components/ui/input';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { useCommandStore } from '@/store/useCommandStore';
 import { useJobStore } from '@/store/useJobStore';
@@ -37,8 +33,7 @@ const Command = ({ command, index }: CommandProps) => {
   const { updateCommand, deleteCommand } = useCommandStore();
   const { isEditMode, setIsEditMode, setCanSaveJob } = useJobStore();
 
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id: `${content}-${index}` });
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: `${content}-${index}` });
 
   const sortableProps = {
     ref: isEditMode ? undefined : setNodeRef,
@@ -95,10 +90,7 @@ const Command = ({ command, index }: CommandProps) => {
         )}
       >
         <div
-          className={cn(
-            statusColor[status],
-            'h-1.5 w-1.5 shrink-0 rounded-full transition-all group-hover:scale-125',
-          )}
+          className={cn(statusColor[status], 'h-1.5 w-1.5 shrink-0 rounded-full transition-all group-hover:scale-125')}
         />
         {isEditing ? (
           <Input
@@ -137,10 +129,7 @@ const Command = ({ command, index }: CommandProps) => {
               >
                 edit
               </li>
-              <li
-                onClick={handleDelete}
-                className='w-full cursor-pointer px-3 py-1 text-center hover:bg-[#F0F7FF]'
-              >
+              <li onClick={handleDelete} className='w-full cursor-pointer px-3 py-1 text-center hover:bg-[#F0F7FF]'>
                 delete
               </li>
             </ul>

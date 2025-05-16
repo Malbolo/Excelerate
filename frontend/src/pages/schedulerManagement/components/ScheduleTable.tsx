@@ -1,11 +1,5 @@
 import { useGetScheduleList } from '@/apis/schedulerManagement';
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 import ScheduleRow from './ScheduleRow';
 
@@ -32,10 +26,7 @@ const ScheduleTable = () => {
         </TableHeader>
         <TableBody>
           {schedules.map((schedule, index) => (
-            <ScheduleRow
-              key={`${schedule.schedule_id}-${index}`}
-              schedule={schedule}
-            />
+            <ScheduleRow key={`${schedule.schedule_id}-${index}`} schedule={schedule} />
           ))}
         </TableBody>
       </Table>

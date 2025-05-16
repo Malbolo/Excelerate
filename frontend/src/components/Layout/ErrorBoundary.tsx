@@ -15,15 +15,11 @@ const ErrorBoundary = () => {
             <AlertCircle className='h-8 w-8 text-red-600' />
           </div>
 
-          <h2 className='text-2xl font-bold text-gray-900'>
-            An Error Occurred
-          </h2>
+          <h2 className='text-2xl font-bold text-gray-900'>An Error Occurred</h2>
 
           <div className='w-full rounded-md bg-gray-50 p-4 text-center'>
             <p className='text-gray-600'>
-              {error instanceof Error
-                ? error.message
-                : 'An unexpected error has occurred.'}
+              {error instanceof Error ? error.message : 'An unexpected error has occurred.'}
             </p>
           </div>
 

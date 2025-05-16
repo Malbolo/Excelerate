@@ -9,11 +9,7 @@ import JobDisplay from '@/pages/scheduleDetail/components/JobDisplay';
 import StatusIcon from '@/pages/scheduleDetail/components/StatusIcon';
 import { useLocalDate } from '@/store/useLocalDate';
 
-import {
-  formatDate,
-  formatDateTime,
-  formatInterval,
-} from '../../../lib/dateFormat';
+import { formatDate, formatDateTime, formatInterval } from '../../../lib/dateFormat';
 import ScheduleActions from './ScheduleActions';
 
 interface ScheduleRowProps {
@@ -31,22 +27,10 @@ const ScheduleRow = ({ schedule }: ScheduleRowProps) => {
 
   return (
     <>
-      <TableRow
-        className='hover:bg-muted/50 cursor-pointer'
-        data-state={isExpanded ? 'open' : 'closed'}
-      >
+      <TableRow className='hover:bg-muted/50 cursor-pointer' data-state={isExpanded ? 'open' : 'closed'}>
         <TableCell className='w-[50px] text-center'>
-          <Button
-            variant='ghost'
-            size='icon'
-            onClick={toggleExpansion}
-            className='h-7 w-7'
-          >
-            {isExpanded ? (
-              <ChevronDown className='h-4 w-4' />
-            ) : (
-              <ChevronRight className='h-4 w-4' />
-            )}
+          <Button variant='ghost' size='icon' onClick={toggleExpansion} className='h-7 w-7'>
+            {isExpanded ? <ChevronDown className='h-4 w-4' /> : <ChevronRight className='h-4 w-4' />}
           </Button>
         </TableCell>
 
@@ -54,22 +38,14 @@ const ScheduleRow = ({ schedule }: ScheduleRowProps) => {
 
         <TableCell>{schedule.owner}</TableCell>
 
-        <TableCell>
-          {formatInterval(schedule.frequency_display, locale, place)}
-        </TableCell>
+        <TableCell>{formatInterval(schedule.frequency_display, locale, place)}</TableCell>
 
         <TableCell className='flex items-center gap-2'>
           <span className='text-sm'>
-            {schedule.last_run?.status ? (
-              <StatusIcon status={schedule.last_run.status} />
-            ) : (
-              '-'
-            )}
+            {schedule.last_run?.status ? <StatusIcon status={schedule.last_run.status} /> : '-'}
           </span>
           <span className='text-sm'>
-            {schedule.last_run?.end_time
-              ? formatDateTime(schedule.last_run.end_time, locale, place)
-              : '-'}
+            {schedule.last_run?.end_time ? formatDateTime(schedule.last_run.end_time, locale, place) : '-'}
           </span>
         </TableCell>
         <TableCell>
@@ -90,17 +66,11 @@ const ScheduleRow = ({ schedule }: ScheduleRowProps) => {
           <TableCell></TableCell>
           <TableCell colSpan={6} className='p-0'>
             <div className='space-y-2 p-4'>
-              <h4 className='mb-2 text-sm font-semibold'>
-                Jobs for : {schedule.title}
-              </h4>
+              <h4 className='mb-2 text-sm font-semibold'>Jobs for : {schedule.title}</h4>
               {schedule.jobs.length > 0 ? (
-                schedule.jobs.map(job => (
-                  <JobDisplay key={job.id} title={job.title} job={job} />
-                ))
+                schedule.jobs.map(job => <JobDisplay key={job.id} title={job.title} job={job} />)
               ) : (
-                <p className='px-2 py-1 text-sm text-gray-500'>
-                  This schedule has no jobs defined.
-                </p>
+                <p className='px-2 py-1 text-sm text-gray-500'>This schedule has no jobs defined.</p>
               )}
             </div>
           </TableCell>

@@ -17,18 +17,13 @@ const ScheduleList = ({ items }: ScheduleListProps) => {
   };
 
   if (!items || items.length === 0) {
-    return (
-      <p className='px-1 py-3 text-sm text-gray-500'>No items available.</p>
-    );
+    return <p className='px-1 py-3 text-sm text-gray-500'>No items available.</p>;
   }
 
   return (
     <div className='flow-root'>
       {items.map((item, index) => (
-        <div
-          key={`${item.run_id}-${index}`}
-          className='group relative border-b border-gray-100 py-3 last:border-b-0'
-        >
+        <div key={`${item.run_id}-${index}`} className='group relative border-b border-gray-100 py-3 last:border-b-0'>
           <h3 className='mb-1 text-base font-semibold'>{item.title}</h3>
           <p className='text-sm text-gray-600'>{item.description}</p>
 

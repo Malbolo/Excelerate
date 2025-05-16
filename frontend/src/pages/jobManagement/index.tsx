@@ -36,17 +36,11 @@ const JobManagementPage = () => {
     <div className='relative container mx-auto flex h-full w-full flex-row'>
       <main className='flex h-full w-[60%] flex-col gap-6 p-8'>
         <header className='flex items-center gap-3 border-b border-gray-200 pb-8'>
-          <h1 className='flex-1 text-xl font-bold text-gray-800'>
-            Job Management
-          </h1>
+          <h1 className='flex-1 text-xl font-bold text-gray-800'>Job Management</h1>
         </header>
         <div className='flex w-full grow flex-col overflow-hidden'>
           <JobSearchInput />
-          <AvailableJobList
-            selectedJobId={selectedJobId}
-            onJobSelect={handleJobSelect}
-            jobs={jobs}
-          />
+          <AvailableJobList selectedJobId={selectedJobId} onJobSelect={handleJobSelect} jobs={jobs} />
           <JobPagination total={total} />
         </div>
       </main>
@@ -55,9 +49,7 @@ const JobManagementPage = () => {
         <CommandList selectedJobId={selectedJobId} />
       ) : (
         <div className='flex w-[40%] flex-col overflow-hidden bg-gray-100/50 p-8'>
-          <p className='text-center text-lg font-bold'>
-            Select a job to view details
-          </p>
+          <p className='text-center text-lg font-bold'>Select a job to view details</p>
         </div>
       )}
     </div>

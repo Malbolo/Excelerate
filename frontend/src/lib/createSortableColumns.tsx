@@ -4,9 +4,7 @@ import { ArrowUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DataFrameRow } from '@/types/dataframe';
 
-export function createSortableColumns(
-  data: Record<string, any>,
-): ColumnDef<DataFrameRow>[] {
+export function createSortableColumns(data: Record<string, any>): ColumnDef<DataFrameRow>[] {
   return Object.keys(data).map(key => ({
     accessorKey: key,
     header: ({ column }) => (

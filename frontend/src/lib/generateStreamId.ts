@@ -7,8 +7,7 @@
  */
 export const generateStreamId = (length: number = 8): string => {
   const prefix = 'Stream-';
-  const characters =
-    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   const randomString = Array.from({ length }, () =>
     characters.charAt(Math.floor(Math.random() * characters.length)),
   ).join('');

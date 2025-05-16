@@ -52,11 +52,7 @@ const LLMGraph: React.FC<LLMGraphProps> = ({ logs, onLogClick, jobName }) => {
 
       <div className='flex flex-col gap-4'>
         {logs.map(log => (
-          <Node
-            key={`${log.name}-${log.timestamp}`}
-            log={log}
-            onLogClick={onLogClick}
-          />
+          <Node key={`${log.name}-${log.timestamp}`} log={log} onLogClick={onLogClick} />
         ))}
       </div>
     </section>

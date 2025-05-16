@@ -11,12 +11,7 @@ interface AvailableJobListProps {
   jobs: JobManagement[];
 }
 
-const AvailableJobList = ({
-  selectedJobIds,
-  onJobSelect,
-  selectedJobId,
-  jobs,
-}: AvailableJobListProps) => {
+const AvailableJobList = ({ selectedJobIds, onJobSelect, selectedJobId, jobs }: AvailableJobListProps) => {
   const handleJobSelectInternal = (job: JobManagement) => {
     if (onJobSelect) {
       const isCurrentlySelected = selectedJobIds?.has(job.id) || false;
@@ -37,14 +32,9 @@ const AvailableJobList = ({
                 key={`${job.id}-${job.title}`}
                 className={cn(
                   'group flex cursor-pointer items-start space-x-3 rounded-md border bg-white p-3.5 shadow-sm transition-all duration-150 ease-in-out hover:border-blue-400 hover:shadow-md',
-                  isSingleActive &&
-                    'border-blue-600 ring-2 ring-blue-500 ring-offset-1',
-                  isMultiSelected &&
-                    !isSingleActive &&
-                    'border-sky-500 bg-sky-50',
-                  isMultiSelected &&
-                    isSingleActive &&
-                    'border-blue-600 bg-sky-50 ring-2 ring-blue-500 ring-offset-1',
+                  isSingleActive && 'border-blue-600 ring-2 ring-blue-500 ring-offset-1',
+                  isMultiSelected && !isSingleActive && 'border-sky-500 bg-sky-50',
+                  isMultiSelected && isSingleActive && 'border-blue-600 bg-sky-50 ring-2 ring-blue-500 ring-offset-1',
                 )}
                 onClick={() => handleJobSelectInternal(job)}
               >
@@ -73,11 +63,7 @@ const AvailableJobList = ({
                     {job.title}
                   </span>
 
-                  {job.description && (
-                    <p className='mt-0.5 line-clamp-2 text-xs text-gray-500'>
-                      {job.description}
-                    </p>
-                  )}
+                  {job.description && <p className='mt-0.5 line-clamp-2 text-xs text-gray-500'>{job.description}</p>}
 
                   <div className='mt-2.5 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-gray-200 pt-2.5'>
                     <div className='flex items-center'>
@@ -99,9 +85,7 @@ const AvailableJobList = ({
           })
         ) : (
           <div className='flex flex-col items-center justify-center py-12 text-center'>
-            <p className='text-base font-semibold text-gray-700'>
-              No Available Jobs
-            </p>
+            <p className='text-base font-semibold text-gray-700'>No Available Jobs</p>
             <p className='mt-1 text-sm text-gray-500'>
               There are currently no jobs to display. New jobs will appear here.
             </p>

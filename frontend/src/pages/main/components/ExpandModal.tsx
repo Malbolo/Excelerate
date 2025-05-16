@@ -6,17 +6,11 @@ interface DataFrameModalProps {
   onClose: () => void;
 }
 
-const ExpandModal: React.FC<DataFrameModalProps> = ({
-  children,
-  isOpen,
-  onClose,
-}) => {
+const ExpandModal: React.FC<DataFrameModalProps> = ({ children, isOpen, onClose }) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className='h-screen min-w-full'>
-        <div className='my-4 h-full w-full overflow-auto rounded-lg border'>
-          {children}
-        </div>
+        <div className='my-4 h-full w-full overflow-auto rounded-lg border'>{children}</div>
       </DialogContent>
     </Dialog>
   );

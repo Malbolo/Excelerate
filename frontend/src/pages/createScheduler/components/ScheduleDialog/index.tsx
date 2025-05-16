@@ -9,11 +9,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { JobManagement } from '@/apis/jobManagement';
-import {
-  Schedule,
-  useCreateSchedule,
-  useUpdateSchedule,
-} from '@/apis/schedulerManagement';
+import { Schedule, useCreateSchedule, useUpdateSchedule } from '@/apis/schedulerManagement';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -26,21 +22,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -58,12 +42,7 @@ interface ScheduleDialogProps {
   scheduleDetail?: Schedule;
 }
 
-const ScheduleDialog = ({
-  isOpen,
-  onOpenChange,
-  selectedJobs,
-  scheduleDetail,
-}: ScheduleDialogProps) => {
+const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: ScheduleDialogProps) => {
   const isEditMode = !!scheduleDetail;
 
   const [currentSuccessEmail, setCurrentSuccessEmail] = useState('');
@@ -81,9 +60,7 @@ const ScheduleDialog = ({
       failEmail: isEditMode ? scheduleDetail.failure_emails : [],
       interval: isEditMode ? scheduleDetail.frequency : 'daily',
       startDate: isEditMode ? new Date(scheduleDetail.start_date) : new Date(),
-      endDate: isEditMode
-        ? new Date(scheduleDetail.end_date)
-        : new Date(2099, 11, 31),
+      endDate: isEditMode ? new Date(scheduleDetail.end_date) : new Date(2099, 11, 31),
       executionTime: isEditMode ? scheduleDetail.execution_time : '',
     },
   });
@@ -169,10 +146,7 @@ const ScheduleDialog = ({
     setEmailValue('');
   };
 
-  const handleRemoveEmail = (
-    emailToRemove: string,
-    fieldName: 'successEmail' | 'failEmail',
-  ) => {
+  const handleRemoveEmail = (emailToRemove: string, fieldName: 'successEmail' | 'failEmail') => {
     const currentEmails = form.getValues(fieldName) || [];
     form.setValue(
       fieldName,
@@ -185,9 +159,7 @@ const ScheduleDialog = ({
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className='flex max-h-[100vh] flex-col sm:max-w-4xl'>
         <DialogHeader>
-          <DialogTitle>
-            {isEditMode ? 'Edit Schedule' : 'Create Schedule'}
-          </DialogTitle>
+          <DialogTitle>{isEditMode ? 'Edit Schedule' : 'Create Schedule'}</DialogTitle>
           <DialogDescription>
             {isEditMode
               ? `Edit the schedule for the selected ${selectedJobs.length} JOBs.`
@@ -197,9 +169,7 @@ const ScheduleDialog = ({
 
         <ScrollArea className='flex-grow pr-6'>
           <div className='mb-4 rounded-md border bg-gray-50 p-3'>
-            <h4 className='mb-2 text-sm font-medium text-gray-700'>
-              Selected JOBs ({selectedJobs.length}):
-            </h4>
+            <h4 className='mb-2 text-sm font-medium text-gray-700'>Selected JOBs ({selectedJobs.length}):</h4>
             <ul className='max-h-24 list-inside list-decimal space-y-1 overflow-y-auto text-xs text-gray-600'>
               {selectedJobs.map(job => (
                 <li key={job.id}>{job.title}</li>
@@ -221,10 +191,7 @@ const ScheduleDialog = ({
                           Schedule Title <span className='text-red-500'>*</span>
                         </FormLabel>
                         <FormControl>
-                          <Input
-                            placeholder='e.g., Daily Sales Data Aggregation'
-                            {...field}
-                          />
+                          <Input placeholder='e.g., Daily Sales Data Aggregation' {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -256,8 +223,7 @@ const ScheduleDialog = ({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          Success Notification Email{' '}
-                          <span className='text-red-500'>*</span>
+                          Success Notification Email <span className='text-red-500'>*</span>
                         </FormLabel>
                         <div className='flex items-center gap-2'>
                           <FormControl>
@@ -265,17 +231,11 @@ const ScheduleDialog = ({
                               type='email'
                               placeholder='Enter email and press Add'
                               value={currentSuccessEmail}
-                              onChange={e =>
-                                setCurrentSuccessEmail(e.target.value)
-                              }
+                              onChange={e => setCurrentSuccessEmail(e.target.value)}
                               onKeyDown={e => {
                                 if (e.key === 'Enter') {
                                   e.preventDefault();
-                                  handleAddEmail(
-                                    currentSuccessEmail,
-                                    setCurrentSuccessEmail,
-                                    'successEmail',
-                                  );
+                                  handleAddEmail(currentSuccessEmail, setCurrentSuccessEmail, 'successEmail');
                                 }
                               }}
                             />
@@ -283,13 +243,7 @@ const ScheduleDialog = ({
                           <Button
                             type='button'
                             variant='outline'
-                            onClick={() =>
-                              handleAddEmail(
-                                currentSuccessEmail,
-                                setCurrentSuccessEmail,
-                                'successEmail',
-                              )
-                            }
+                            onClick={() => handleAddEmail(currentSuccessEmail, setCurrentSuccessEmail, 'successEmail')}
                           >
                             Add
                           </Button>
@@ -303,9 +257,7 @@ const ScheduleDialog = ({
                                 <button
                                   type='button'
                                   className='text-destructive-foreground ml-1.5 rounded-full p-0.5 opacity-70 hover:opacity-100'
-                                  onClick={() =>
-                                    handleRemoveEmail(email, 'successEmail')
-                                  }
+                                  onClick={() => handleRemoveEmail(email, 'successEmail')}
                                 >
                                   <X className='h-3 w-3' />
                                 </button>
@@ -321,8 +273,7 @@ const ScheduleDialog = ({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          Failure Notification Email{' '}
-                          <span className='text-red-500'>*</span>
+                          Failure Notification Email <span className='text-red-500'>*</span>
                         </FormLabel>
                         <div className='flex items-center gap-2'>
                           <FormControl>
@@ -330,17 +281,11 @@ const ScheduleDialog = ({
                               type='email'
                               placeholder='Enter email and press Add'
                               value={currentFailEmail}
-                              onChange={e =>
-                                setCurrentFailEmail(e.target.value)
-                              }
+                              onChange={e => setCurrentFailEmail(e.target.value)}
                               onKeyDown={e => {
                                 if (e.key === 'Enter') {
                                   e.preventDefault();
-                                  handleAddEmail(
-                                    currentFailEmail,
-                                    setCurrentFailEmail,
-                                    'failEmail',
-                                  );
+                                  handleAddEmail(currentFailEmail, setCurrentFailEmail, 'failEmail');
                                 }
                               }}
                             />
@@ -348,13 +293,7 @@ const ScheduleDialog = ({
                           <Button
                             type='button'
                             variant='outline'
-                            onClick={() =>
-                              handleAddEmail(
-                                currentFailEmail,
-                                setCurrentFailEmail,
-                                'failEmail',
-                              )
-                            }
+                            onClick={() => handleAddEmail(currentFailEmail, setCurrentFailEmail, 'failEmail')}
                           >
                             Add
                           </Button>
@@ -368,9 +307,7 @@ const ScheduleDialog = ({
                                 <button
                                   type='button'
                                   className='text-destructive-foreground ml-1.5 rounded-full p-0.5 opacity-70 hover:opacity-100'
-                                  onClick={() =>
-                                    handleRemoveEmail(email, 'failEmail')
-                                  }
+                                  onClick={() => handleRemoveEmail(email, 'failEmail')}
                                 >
                                   <X className='h-3 w-3' />
                                 </button>
@@ -401,25 +338,19 @@ const ScheduleDialog = ({
                               <FormControl>
                                 <RadioGroupItem value='daily' />
                               </FormControl>
-                              <FormLabel className='font-normal'>
-                                Daily
-                              </FormLabel>
+                              <FormLabel className='font-normal'>Daily</FormLabel>
                             </FormItem>
                             <FormItem className='flex items-center space-y-0 space-x-2'>
                               <FormControl>
                                 <RadioGroupItem value='weekly' />
                               </FormControl>
-                              <FormLabel className='font-normal'>
-                                Weekly
-                              </FormLabel>
+                              <FormLabel className='font-normal'>Weekly</FormLabel>
                             </FormItem>
                             <FormItem className='flex items-center space-y-0 space-x-2'>
                               <FormControl>
                                 <RadioGroupItem value='monthly' />
                               </FormControl>
-                              <FormLabel className='font-normal'>
-                                Monthly
-                              </FormLabel>
+                              <FormLabel className='font-normal'>Monthly</FormLabel>
                             </FormItem>
                           </RadioGroup>
                         </FormControl>
@@ -462,9 +393,7 @@ const ScheduleDialog = ({
                               mode='single'
                               selected={field.value}
                               onSelect={field.onChange}
-                              disabled={date =>
-                                date < new Date(new Date().setHours(0, 0, 0, 0))
-                              }
+                              disabled={date => date < new Date(new Date().setHours(0, 0, 0, 0))}
                               initialFocus
                               locale={enUS}
                             />
@@ -511,9 +440,7 @@ const ScheduleDialog = ({
                               onSelect={field.onChange}
                               disabled={date => {
                                 const start = form.getValues('startDate');
-                                const today = new Date(
-                                  new Date().setHours(0, 0, 0, 0),
-                                );
+                                const today = new Date(new Date().setHours(0, 0, 0, 0));
                                 if (start && date < start) return true;
                                 if (date < today) return true;
                                 return false;
@@ -536,15 +463,9 @@ const ScheduleDialog = ({
                           Execution Time <span className='text-red-500'>*</span>
                         </FormLabel>
                         <FormControl>
-                          <Input
-                            type='time'
-                            placeholder='HH:MM (e.g., 09:00)'
-                            {...field}
-                          />
+                          <Input type='time' placeholder='HH:MM (e.g., 09:00)' {...field} />
                         </FormControl>
-                        <FormDescription>
-                          Time the schedule will run (HH:MM format).
-                        </FormDescription>
+                        <FormDescription>Time the schedule will run (HH:MM format).</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}

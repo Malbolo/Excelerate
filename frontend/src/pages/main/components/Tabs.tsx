@@ -18,9 +18,7 @@ const Tabs = ({ tabList, tabPanels }: TabsProps) => {
             onClick={() => setActiveTab(tab)}
             className={cn(
               'cursor-pointer rounded-t-md border-t border-r border-l px-2',
-              activeTab === tab
-                ? 'bg-primary border-primary text-white'
-                : 'bg-white',
+              activeTab === tab ? 'bg-primary border-primary text-white' : 'bg-white',
             )}
           >
             {tab}
@@ -29,13 +27,7 @@ const Tabs = ({ tabList, tabPanels }: TabsProps) => {
       </div>
 
       <div className='card-gradient h-full overflow-hidden rounded-l-lg rounded-br-lg border'>
-        <Suspense
-          fallback={
-            <div className='flex h-full items-center justify-center'>
-              Loading...
-            </div>
-          }
-        >
+        <Suspense fallback={<div className='flex h-full items-center justify-center'>Loading...</div>}>
           {tabPanels[tabList.indexOf(activeTab)]}
         </Suspense>
       </div>

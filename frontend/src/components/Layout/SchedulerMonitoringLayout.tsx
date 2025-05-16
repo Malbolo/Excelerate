@@ -9,11 +9,7 @@ interface SchedulerMonitoringLayoutProps {
   children: React.ReactNode;
 }
 
-const SchedulerMonitoringLayout = ({
-  title,
-  backPath,
-  children,
-}: SchedulerMonitoringLayoutProps) => {
+const SchedulerMonitoringLayout = ({ title, backPath, children }: SchedulerMonitoringLayoutProps) => {
   const navigate = useNavigate();
 
   const handleGoBack = () => {

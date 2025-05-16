@@ -45,13 +45,9 @@ const CommandList = ({ selectedJobId }: { selectedJobId: string }) => {
           <div className='p-6'>
             <section className='space-y-6'>
               <div>
-                <h2 className='text-2xl font-semibold tracking-tight text-neutral-900'>
-                  {selectedJob.title}
-                </h2>
+                <h2 className='text-2xl font-semibold tracking-tight text-neutral-900'>{selectedJob.title}</h2>
                 {selectedJob.description && (
-                  <p className='mt-1.5 text-sm text-neutral-600'>
-                    {selectedJob.description}
-                  </p>
+                  <p className='mt-1.5 text-sm text-neutral-600'>{selectedJob.description}</p>
                 )}
               </div>
 
@@ -66,22 +62,14 @@ const CommandList = ({ selectedJobId }: { selectedJobId: string }) => {
                     <div className='space-y-3 rounded-md border border-neutral-200 bg-neutral-50 p-4 text-sm'>
                       {selectedJob.type && (
                         <div className='flex'>
-                          <span className='w-32 shrink-0 text-neutral-500'>
-                            Type
-                          </span>
-                          <span className='text-neutral-700'>
-                            {selectedJob.type}
-                          </span>
+                          <span className='w-32 shrink-0 text-neutral-500'>Type</span>
+                          <span className='text-neutral-700'>{selectedJob.type}</span>
                         </div>
                       )}
                       {selectedJob.data_load_command && (
                         <div className='flex'>
-                          <span className='w-32 shrink-0 text-neutral-500'>
-                            Data Load Cmd
-                          </span>
-                          <span className='break-all text-neutral-700'>
-                            {selectedJob.data_load_command}
-                          </span>
+                          <span className='w-32 shrink-0 text-neutral-500'>Data Load Cmd</span>
+                          <span className='break-all text-neutral-700'>{selectedJob.data_load_command}</span>
                         </div>
                       )}
                     </div>
@@ -98,12 +86,8 @@ const CommandList = ({ selectedJobId }: { selectedJobId: string }) => {
                           className='flex items-start gap-2.5 rounded-md border border-neutral-200 bg-white p-3 transition-colors hover:bg-neutral-50'
                           key={`${content}-${order}-${index}`}
                         >
-                          <span className='w-5 pt-px text-right text-xs text-neutral-400'>
-                            {order}.
-                          </span>
-                          <p className='flex-1 text-sm text-neutral-700'>
-                            {content}
-                          </p>
+                          <span className='w-5 pt-px text-right text-xs text-neutral-400'>{order}.</span>
+                          <p className='flex-1 text-sm text-neutral-700'>{content}</p>
                         </li>
                       ))}
                     </ol>
@@ -155,18 +139,12 @@ const CommandList = ({ selectedJobId }: { selectedJobId: string }) => {
         </ScrollArea>
       </div>
 
-      <AlertDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-      >
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent className='bg-white'>
           <AlertDialogHeader>
-            <AlertDialogTitle className='text-neutral-900'>
-              Are you sure?
-            </AlertDialogTitle>
+            <AlertDialogTitle className='text-neutral-900'>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription className='text-neutral-600'>
-              This will permanently delete the job "{selectedJob.title}". This
-              action cannot be undone.
+              This will permanently delete the job "{selectedJob.title}". This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

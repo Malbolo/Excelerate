@@ -24,10 +24,7 @@ const JobPagination = ({ pages }: { pages: number }) => {
         </PaginationItem>
         {pageNumbers.map(pageNum => (
           <PaginationItem key={pageNum}>
-            <PaginationLink
-              isActive={curPage === pageNum}
-              onClick={() => handlePageChange(pageNum)}
-            >
+            <PaginationLink isActive={curPage === pageNum} onClick={() => handlePageChange(pageNum)}>
               {pageNum}
             </PaginationLink>
           </PaginationItem>

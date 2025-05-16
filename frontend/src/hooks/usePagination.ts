@@ -19,10 +19,7 @@ const usePagination = (totalPages: number) => {
   const endPage = Math.min(startPage + pageRange - 1, totalPages);
 
   // 페이지 번호 배열 생성
-  const pageNumbers = Array.from(
-    { length: endPage - startPage + 1 },
-    (_, i) => startPage + i,
-  );
+  const pageNumbers = Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
 
   useEffect(() => {
     if (!page || isNaN(page) || page < 1 || page > totalPages) {

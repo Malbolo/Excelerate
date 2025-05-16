@@ -8,11 +8,7 @@ import { toast } from 'sonner';
 import { useSendCommandList } from '@/apis/job';
 import { useGetJobDetail } from '@/apis/jobManagement';
 import { Button } from '@/components/ui/button';
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from '@/components/ui/resizable';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { Textarea } from '@/components/ui/textarea';
 import useInternalRouter from '@/hooks/useInternalRouter';
 import { createSortableColumns } from '@/lib/createSortableColumns';
@@ -33,37 +29,19 @@ const JobEditPage = () => {
   const [inputCommand, setInputCommand] = useState<string>('');
   const [step] = useState<'source' | 'command'>('command');
 
-  const { data: jobDetail, isLoading: isJobDetailLoading } =
-    useGetJobDetail(jobId);
+  const { data: jobDetail, isLoading: isJobDetailLoading } = useGetJobDetail(jobId);
 
-  const { mutateAsync: commandMutation, isPending: isCommandLoading } =
-    useSendCommandList();
+  const { mutateAsync: commandMutation, isPending: isCommandLoading } = useSendCommandList();
 
-  const {
-    setSourceDataCommand,
-    setSourceDataUrl,
-    resetSource,
-    setSourceParams,
-  } = useSourceStore();
-  const {
-    addCommand,
-    resetCommand,
-    setCommandList: setStoreCommandList,
-  } = useCommandStore();
-  const {
-    dataframe,
-    setCode,
-    setColumns,
-    setDataframe: setData,
-    resetResult,
-  } = useJobResultStore();
+  const { setSourceDataCommand, setSourceDataUrl, resetSource, setSourceParams } = useSourceStore();
+  const { addCommand, resetCommand, setCommandList: setStoreCommandList } = useCommandStore();
+  const { dataframe, setCode, setColumns, setDataframe: setData, resetResult } = useJobResultStore();
   const { resetJob, setCanSaveJob } = useJobStore();
   const { connectStream, resetStream } = useStreamStore();
 
   useEffect(() => {
     if (jobDetail) {
-      const { data_load_command, data_load_url, commands, code, source_data } =
-        jobDetail;
+      const { data_load_command, data_load_url, commands, code, source_data } = jobDetail;
 
       setSourceDataCommand(data_load_command);
       setSourceDataUrl(data_load_url);
@@ -78,14 +56,7 @@ const JobEditPage = () => {
       );
       setCanSaveJob(true);
     }
-  }, [
-    jobDetail,
-    setSourceDataCommand,
-    setSourceDataUrl,
-    setCode,
-    setStoreCommandList,
-    setCanSaveJob,
-  ]);
+  }, [jobDetail, setSourceDataCommand, setSourceDataUrl, setCode, setStoreCommandList, setCanSaveJob]);
 
   const handleSubmitCommand = async () => {
     if (!inputCommand.trim()) return;
@@ -128,11 +99,7 @@ const JobEditPage = () => {
             stream_id: currentStreamId,
           });
 
-          setColumns(
-            response.dataframe[0]
-              ? createSortableColumns(response.dataframe[0])
-              : [],
-          );
+          setColumns(response.dataframe[0] ? createSortableColumns(response.dataframe[0]) : []);
           setData(response.dataframe);
         } catch (error) {
           toast.error('Failed to execute initial commands.');
@@ -179,12 +146,7 @@ const JobEditPage = () => {
         <ResizablePanel>
           <div className='mx-auto flex h-screen w-full grow-0 flex-col justify-between gap-4 p-8'>
             <div>
-              <Button
-                variant='ghost'
-                size='sm'
-                onClick={goBack}
-                className='flex items-center gap-2'
-              >
+              <Button variant='ghost' size='sm' onClick={goBack} className='flex items-center gap-2'>
                 <ArrowLeftIcon className='h-4 w-4' />
                 Back
               </Button>
@@ -212,11 +174,7 @@ const JobEditPage = () => {
                       handleSubmitCommand();
                     }
                   }}
-                  placeholder={
-                    step === 'source'
-                      ? 'Load the source data.'
-                      : 'Please enter a command.'
-                  }
+                  placeholder={step === 'source' ? 'Load the source data.' : 'Please enter a command.'}
                   className='min-h-[42px] resize-none px-4 py-2.5 transition-all'
                 />
               </div>

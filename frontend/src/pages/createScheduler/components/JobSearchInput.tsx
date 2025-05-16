@@ -13,13 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { JOB_TYPES_CONFIG } from '@/constant/job';
 
 const ALL_TYPES_OPTION = { id: 'all', label: 'All Types' };
@@ -28,14 +22,9 @@ const JobSearchInput = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const initialTypesString = searchParams.get('types') || '';
-  const initialSelectedTypes = initialTypesString
-    ? initialTypesString.split(',')
-    : [];
-  const determinedInitialSearchField = searchParams.has('title')
-    ? 'title'
-    : 'name';
-  const determinedInitialSearchQuery =
-    searchParams.get(determinedInitialSearchField) || '';
+  const initialSelectedTypes = initialTypesString ? initialTypesString.split(',') : [];
+  const determinedInitialSearchField = searchParams.has('title') ? 'title' : 'name';
+  const determinedInitialSearchQuery = searchParams.get(determinedInitialSearchField) || '';
 
   const [selectedTypes, setSelectedTypes] = useState(initialSelectedTypes);
   const [searchField, setSearchField] = useState(determinedInitialSearchField);
@@ -43,14 +32,9 @@ const JobSearchInput = () => {
 
   useEffect(() => {
     const currentTypesString = searchParams.get('types') || '';
-    const currentSelectedTypesFromParams = currentTypesString
-      ? currentTypesString.split(',')
-      : [];
+    const currentSelectedTypesFromParams = currentTypesString ? currentTypesString.split(',') : [];
 
-    if (
-      JSON.stringify(selectedTypes.sort()) !==
-      JSON.stringify(currentSelectedTypesFromParams.sort())
-    ) {
+    if (JSON.stringify(selectedTypes.sort()) !== JSON.stringify(currentSelectedTypesFromParams.sort())) {
       setSelectedTypes(currentSelectedTypesFromParams);
     }
 
@@ -107,30 +91,20 @@ const JobSearchInput = () => {
     let newSelectedTypesArray: string[];
 
     if (typeId === ALL_TYPES_OPTION.id) {
-      newSelectedTypesArray = checked
-        ? [...JOB_TYPES_CONFIG.map(t => t.id), ALL_TYPES_OPTION.id]
-        : [];
+      newSelectedTypesArray = checked ? [...JOB_TYPES_CONFIG.map(t => t.id), ALL_TYPES_OPTION.id] : [];
     } else {
-      const otherSelectedTypes = selectedTypes.filter(
-        id => id !== ALL_TYPES_OPTION.id,
-      );
+      const otherSelectedTypes = selectedTypes.filter(id => id !== ALL_TYPES_OPTION.id);
       let currentIndividualSelections = checked
         ? [...otherSelectedTypes, typeId]
         : otherSelectedTypes.filter(id => id !== typeId);
 
-      currentIndividualSelections = Array.from(
-        new Set(currentIndividualSelections),
-      );
+      currentIndividualSelections = Array.from(new Set(currentIndividualSelections));
 
       const allOtherTypesSelected =
-        JOB_TYPES_CONFIG.length > 0 &&
-        JOB_TYPES_CONFIG.every(t => currentIndividualSelections.includes(t.id));
+        JOB_TYPES_CONFIG.length > 0 && JOB_TYPES_CONFIG.every(t => currentIndividualSelections.includes(t.id));
 
       if (allOtherTypesSelected) {
-        newSelectedTypesArray = [
-          ...currentIndividualSelections,
-          ALL_TYPES_OPTION.id,
-        ];
+        newSelectedTypesArray = [...currentIndividualSelections, ALL_TYPES_OPTION.id];
       } else {
         newSelectedTypesArray = currentIndividualSelections;
       }
@@ -160,8 +134,7 @@ const JobSearchInput = () => {
   };
 
   const getSelectedTypesLabel = () => {
-    if (selectedTypes.includes(ALL_TYPES_OPTION.id))
-      return ALL_TYPES_OPTION.label;
+    if (selectedTypes.includes(ALL_TYPES_OPTION.id)) return ALL_TYPES_OPTION.label;
     if (selectedTypes.length === 0) return 'Job Type';
     if (selectedTypes.length === 1) {
       const foundType = JOB_TYPES_CONFIG.find(t => t.id === selectedTypes[0]);
@@ -188,9 +161,7 @@ const JobSearchInput = () => {
           <DropdownMenuCheckboxItem
             key={ALL_TYPES_OPTION.id}
             checked={selectedTypes.includes(ALL_TYPES_OPTION.id)}
-            onCheckedChange={checked =>
-              handleSelectedTypesChange(ALL_TYPES_OPTION.id, !!checked)
-            }
+            onCheckedChange={checked => handleSelectedTypesChange(ALL_TYPES_OPTION.id, !!checked)}
             onSelect={e => e.preventDefault()}
           >
             {ALL_TYPES_OPTION.label}
@@ -200,9 +171,7 @@ const JobSearchInput = () => {
             <DropdownMenuCheckboxItem
               key={jobType.id}
               checked={selectedTypes.includes(jobType.id)}
-              onCheckedChange={checked =>
-                handleSelectedTypesChange(jobType.id, !!checked)
-              }
+              onCheckedChange={checked => handleSelectedTypesChange(jobType.id, !!checked)}
               disabled={selectedTypes.includes(ALL_TYPES_OPTION.id)}
               onSelect={e => e.preventDefault()}
             >
@@ -229,11 +198,7 @@ const JobSearchInput = () => {
         <div className='flex min-w-[200px] flex-grow items-center'>
           <Input
             type='text'
-            placeholder={
-              searchField === 'title'
-                ? 'Search by title...'
-                : 'Search by user name...'
-            }
+            placeholder={searchField === 'title' ? 'Search by title...' : 'Search by user name...'}
             value={searchValue}
             onChange={handleSearchValueChange}
             onKeyDown={handleKeyDown}

@@ -7,11 +7,7 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
+import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { ColumnDef } from '@tanstack/react-table';
 import ClipLoader from 'react-spinners/ClipLoader';
 import { toast } from 'sonner';
@@ -33,8 +29,7 @@ import SaveJobDialog from './SaveJobDialog';
 const CommandList = ({ job }: { job?: JobManagement }) => {
   const { sourceDataUrl } = useSourceStore();
 
-  const { commandList, reorderCommands, updateCommandStatus } =
-    useCommandStore();
+  const { commandList, reorderCommands, updateCommandStatus } = useCommandStore();
 
   const {
     setDataframe: setData,
@@ -49,8 +44,7 @@ const CommandList = ({ job }: { job?: JobManagement }) => {
   const { isEditMode, setCanSaveJob } = useJobStore();
   const { streamId, resetLogs } = useStreamStore();
 
-  const { mutateAsync: commandMutation, isPending: isCommandLoading } =
-    useSendCommandList();
+  const { mutateAsync: commandMutation, isPending: isCommandLoading } = useSendCommandList();
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -133,39 +127,20 @@ const CommandList = ({ job }: { job?: JobManagement }) => {
       <div className='flex items-center justify-between gap-2'>
         <p className='text-lg font-bold'>Command List</p>
         <div className='flex gap-2'>
-          <Button
-            disabled={
-              commandList.length === 0 || isEditMode || isCommandLoading
-            }
-            onClick={handleRun}
-          >
-            {isCommandLoading ? (
-              <ClipLoader size={18} color='#ffffff' />
-            ) : (
-              'Run'
-            )}
+          <Button disabled={commandList.length === 0 || isEditMode || isCommandLoading} onClick={handleRun}>
+            {isCommandLoading ? <ClipLoader size={18} color='#ffffff' /> : 'Run'}
           </Button>
           <SaveJobDialog job={job} />
         </div>
       </div>
       <div className='flex flex-1 flex-col gap-2 overflow-x-hidden overflow-y-auto'>
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext
-            items={commandList.map(
-              (command, idx) => `${command.content}-${idx}`,
-            )}
+            items={commandList.map((command, idx) => `${command.content}-${idx}`)}
             strategy={verticalListSortingStrategy}
           >
             {commandList.map((command, index) => (
-              <Command
-                key={`${command.content}-${index}`}
-                command={command}
-                index={index}
-              />
+              <Command key={`${command.content}-${index}`} command={command} index={index} />
             ))}
           </SortableContext>
         </DndContext>

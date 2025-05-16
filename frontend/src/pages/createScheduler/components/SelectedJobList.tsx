@@ -27,11 +27,7 @@ interface SelectedJobListProps {
   handleJobDeselect: (jobId: string) => void;
 }
 
-const SelectedJobList = ({
-  selectedJobs,
-  handleJobOrderChange,
-  handleJobDeselect,
-}: SelectedJobListProps) => {
+const SelectedJobList = ({ selectedJobs, handleJobOrderChange, handleJobDeselect }: SelectedJobListProps) => {
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -59,33 +55,17 @@ const SelectedJobList = ({
 
   return (
     <>
-      <h2 className='mb-4 text-lg font-semibold'>
-        Selected JOB List ({selectedJobs.length})
-      </h2>
+      <h2 className='mb-4 text-lg font-semibold'>Selected JOB List ({selectedJobs.length})</h2>
       <ScrollArea className='h-0 flex-1 rounded-md border p-2'>
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={onDragEnd}
-        >
-          <SortableContext
-            items={jobIds}
-            strategy={verticalListSortingStrategy}
-          >
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+          <SortableContext items={jobIds} strategy={verticalListSortingStrategy}>
             <div className='space-y-2 p-2'>
               {selectedJobs.length > 0 ? (
                 selectedJobs.map((job, index) => (
-                  <SortableJobItem
-                    key={job.id}
-                    job={job}
-                    index={index}
-                    onJobDeselect={onJobDeselect}
-                  />
+                  <SortableJobItem key={job.id} job={job} index={index} onJobDeselect={onJobDeselect} />
                 ))
               ) : (
-                <div className='py-6 text-center text-gray-400'>
-                  Select JOBs from the left list.
-                </div>
+                <div className='py-6 text-center text-gray-400'>Select JOBs from the left list.</div>
               )}
             </div>
           </SortableContext>

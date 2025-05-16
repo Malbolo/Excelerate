@@ -3,11 +3,7 @@ import { useState } from 'react';
 import { Pause, Pencil, Play, PlayCircle, Trash } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-import {
-  Schedule,
-  useDeleteSchedule,
-  useOneTimeSchedule,
-} from '@/apis/schedulerManagement';
+import { Schedule, useDeleteSchedule, useOneTimeSchedule } from '@/apis/schedulerManagement';
 import { useToggleSchedule } from '@/apis/schedulerManagement';
 import {
   AlertDialog,
@@ -20,12 +16,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ScheduleActionsProps {
   schedule: Schedule;
@@ -83,15 +74,9 @@ const ScheduleActions = ({ schedule }: ScheduleActionsProps) => {
               size='icon'
               onClick={schedule.is_paused ? handleRun : handlePause}
               className='h-7 w-7'
-              aria-label={
-                schedule.is_paused ? 'Resume Schedule' : 'Pause Schedule'
-              }
+              aria-label={schedule.is_paused ? 'Resume Schedule' : 'Pause Schedule'}
             >
-              {schedule.is_paused ? (
-                <Play className='h-4 w-4' />
-              ) : (
-                <Pause className='h-4 w-4' />
-              )}
+              {schedule.is_paused ? <Play className='h-4 w-4' /> : <Pause className='h-4 w-4' />}
             </Button>
           </TooltipTrigger>
           <TooltipContent>
@@ -118,13 +103,7 @@ const ScheduleActions = ({ schedule }: ScheduleActionsProps) => {
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button
-              variant='ghost'
-              size='icon'
-              onClick={handleEdit}
-              className='h-7 w-7'
-              aria-label='Edit Schedule'
-            >
+            <Button variant='ghost' size='icon' onClick={handleEdit} className='h-7 w-7' aria-label='Edit Schedule'>
               <Pencil className='h-4 w-4' />
             </Button>
           </TooltipTrigger>
@@ -135,12 +114,7 @@ const ScheduleActions = ({ schedule }: ScheduleActionsProps) => {
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button
-              variant='ghost'
-              size='icon'
-              onClick={handleDelete}
-              className='h-7 w-7'
-            >
+            <Button variant='ghost' size='icon' onClick={handleDelete} className='h-7 w-7'>
               <Trash className='h-4 w-4' />
             </Button>
           </TooltipTrigger>
@@ -154,15 +128,11 @@ const ScheduleActions = ({ schedule }: ScheduleActionsProps) => {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Edit Schedule</AlertDialogTitle>
-            <AlertDialogDescription>
-              Would you like to edit this schedule?
-            </AlertDialogDescription>
+            <AlertDialogDescription>Would you like to edit this schedule?</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmEdit}>
-              Edit
-            </AlertDialogAction>
+            <AlertDialogAction onClick={handleConfirmEdit}>Edit</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -171,15 +141,11 @@ const ScheduleActions = ({ schedule }: ScheduleActionsProps) => {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Schedule</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this schedule?
-            </AlertDialogDescription>
+            <AlertDialogDescription>Are you sure you want to delete this schedule?</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete}>
-              Delete
-            </AlertDialogAction>
+            <AlertDialogAction onClick={handleConfirmDelete}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

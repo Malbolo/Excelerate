@@ -8,16 +8,8 @@ import { useGetJobLogs } from '@/apis/agentMonitoring';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from '@/components/ui/resizable';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import useInternalRouter from '@/hooks/useInternalRouter';
 import { cn } from '@/lib/utils';
 
@@ -25,11 +17,7 @@ import AgentCallDetail from './components/AgentCallDetail';
 import AgentCallList from './components/AgentCallList';
 
 // 유틸 함수로 분리해야함
-const disabledDate = (
-  date: Date,
-  endDate: Date | undefined,
-  startDate: Date | undefined,
-) => {
+const disabledDate = (date: Date, endDate: Date | undefined, startDate: Date | undefined) => {
   if (endDate && date > endDate) return true;
   if (startDate && date < startDate) return true;
   if (date > new Date(new Date().setHours(0, 0, 0, 0))) return true;
@@ -52,8 +40,7 @@ const AgentMonitoringPage: React.FC = () => {
     const searchParams = new URLSearchParams();
 
     if (name) searchParams.set('name', name);
-    if (startDate)
-      searchParams.set('startDate', format(startDate, 'yyyy-MM-dd'));
+    if (startDate) searchParams.set('startDate', format(startDate, 'yyyy-MM-dd'));
     if (endDate) searchParams.set('endDate', format(endDate, 'yyyy-MM-dd'));
 
     searchParams.set('page', '1');
@@ -77,11 +64,7 @@ const AgentMonitoringPage: React.FC = () => {
                       )}
                     >
                       <CalendarIcon className='mr-2 h-4 w-4' />
-                      {startDate ? (
-                        format(startDate, 'PPP')
-                      ) : (
-                        <span>Pick a start date</span>
-                      )}
+                      {startDate ? format(startDate, 'PPP') : <span>Pick a start date</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className='w-auto p-0'>
@@ -99,17 +82,10 @@ const AgentMonitoringPage: React.FC = () => {
                   <PopoverTrigger asChild>
                     <Button
                       variant={'outline'}
-                      className={cn(
-                        'flex-1 justify-start text-left font-normal',
-                        !endDate && 'text-muted-foreground',
-                      )}
+                      className={cn('flex-1 justify-start text-left font-normal', !endDate && 'text-muted-foreground')}
                     >
                       <CalendarIcon className='mr-2 h-4 w-4' />
-                      {endDate ? (
-                        format(endDate, 'PPP')
-                      ) : (
-                        <span>Pick a end date</span>
-                      )}
+                      {endDate ? format(endDate, 'PPP') : <span>Pick a end date</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className='w-auto p-0'>
@@ -133,10 +109,7 @@ const AgentMonitoringPage: React.FC = () => {
                     placeholder='Search employee name'
                   />
                 </div>
-                <Button
-                  onClick={handleSearchJobList}
-                  className='cursor-pointer'
-                >
+                <Button onClick={handleSearchJobList} className='cursor-pointer'>
                   Search
                 </Button>
               </div>
@@ -148,21 +121,13 @@ const AgentMonitoringPage: React.FC = () => {
 
         <ResizableHandle withHandle />
 
-        <ResizablePanel
-          className='h-screen border-l'
-          minSize={50}
-          maxSize={70}
-          defaultSize={60}
-        >
+        <ResizablePanel className='h-screen border-l' minSize={50} maxSize={70} defaultSize={60}>
           <section className='h-full'>
             {logs.length > 0 ? (
               <AgentCallDetail logs={logs} />
             ) : (
               <div className='animate-scale flex h-full flex-col items-center justify-center gap-2'>
-                <MousePointerClick
-                  size={20}
-                  className='text-accent-foreground'
-                />
+                <MousePointerClick size={20} className='text-accent-foreground' />
                 <p className='text-sm'>Select a log card to view details</p>
               </div>
             )}

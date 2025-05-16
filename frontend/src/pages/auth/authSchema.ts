@@ -7,12 +7,8 @@ const loginSchema = z.object({
 
 const signupSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
-  password: z
-    .string()
-    .min(8, { message: 'Password must be at least 8 characters long.' }),
-  name: z
-    .string()
-    .min(2, { message: 'name must be at least 2 characters long.' }),
+  password: z.string().min(8, { message: 'Password must be at least 8 characters long.' }),
+  name: z.string().min(2, { message: 'name must be at least 2 characters long.' }),
   department: z.string().min(1, { message: 'Please enter your department.' }),
 });
 

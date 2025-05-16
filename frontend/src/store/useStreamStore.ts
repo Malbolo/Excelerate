@@ -33,9 +33,7 @@ export const useStreamStore = create<StreamState>((set, get) => ({
     }
 
     const newStreamId = generateStreamId();
-    const eventSource = new EventSource(
-      `${import.meta.env.VITE_BASE_URL}/api/agent/logs/stream/${newStreamId}`,
-    );
+    const eventSource = new EventSource(`${import.meta.env.VITE_BASE_URL}/api/agent/logs/stream/${newStreamId}`);
 
     eventSource.addEventListener('log', event => {
       try {

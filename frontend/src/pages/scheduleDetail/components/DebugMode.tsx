@@ -1,12 +1,7 @@
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 import { JobError } from '@/apis/schedulerMonitoring';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 interface DebugModeProps {
   jobs: JobError;
@@ -27,10 +22,7 @@ const DebugMode = ({ jobs, jobTitle }: DebugModeProps) => {
 
   return (
     <Accordion type='single' collapsible className='w-full'>
-      <AccordionItem
-        value='item-1'
-        className='rounded-lg border border-red-200 bg-red-50 shadow-sm'
-      >
+      <AccordionItem value='item-1' className='rounded-lg border border-red-200 bg-red-50 shadow-sm'>
         <AccordionTrigger className='flex w-full items-center justify-between p-4 text-left text-sm font-medium text-red-700 hover:no-underline [&[data-state=open]>svg]:rotate-180'>
           <div className='flex items-center'>
             <AlertTriangle className='mr-2 h-4 w-4 flex-shrink-0' />
@@ -50,9 +42,7 @@ const DebugMode = ({ jobs, jobTitle }: DebugModeProps) => {
             {jobs.error_trace && (
               <div className='mt-2 rounded bg-red-100 p-2'>
                 <p className='mb-1 font-semibold'>Stack Trace:</p>
-                <pre className='text-xs whitespace-pre-wrap'>
-                  {jobs.error_trace}
-                </pre>
+                <pre className='text-xs whitespace-pre-wrap'>{jobs.error_trace}</pre>
               </div>
             )}
           </div>

@@ -5,23 +5,14 @@ import { enUS } from 'date-fns/locale';
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface MonthYearSelectorProps {
   currentDate: Date;
   onSelect: (date: Date) => void;
 }
 
-const MonthYearSelector = ({
-  currentDate,
-  onSelect,
-}: MonthYearSelectorProps) => {
+const MonthYearSelector = ({ currentDate, onSelect }: MonthYearSelectorProps) => {
   const initialYear = getYear(currentDate);
   const initialMonth = getMonth(currentDate);
 
@@ -43,10 +34,7 @@ const MonthYearSelector = ({
 
   const startYear = displayYear - 10;
   const endYear = displayYear + 10;
-  const yearOptions = Array.from(
-    { length: endYear - startYear + 1 },
-    (_, i) => startYear + i,
-  );
+  const yearOptions = Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i);
 
   return (
     <div className='w-64 p-4'>
@@ -61,10 +49,7 @@ const MonthYearSelector = ({
           <ChevronLeftIcon className='h-4 w-4' />
         </Button>
 
-        <Select
-          value={displayYear.toString()}
-          onValueChange={handlePickerYearSelect}
-        >
+        <Select value={displayYear.toString()} onValueChange={handlePickerYearSelect}>
           <SelectTrigger className='w-[100px] text-center font-semibold'>
             <SelectValue placeholder='Select year' />
           </SelectTrigger>
@@ -92,11 +77,7 @@ const MonthYearSelector = ({
         {Array.from({ length: 12 }).map((_, index) => (
           <Button
             key={index}
-            variant={
-              initialMonth === index && initialYear === displayYear
-                ? 'default'
-                : 'ghost'
-            }
+            variant={initialMonth === index && initialYear === displayYear ? 'default' : 'ghost'}
             size='sm'
             className='text-sm'
             onClick={() => handleMonthSelect(index)}

@@ -55,24 +55,15 @@ const TemplateList = () => {
       <div className='card-gradient flex h-38 flex-col gap-2 overflow-y-auto rounded-xl border p-2 pl-4'>
         <ul className='my-auto flex flex-col'>
           {templates.templates.map(template => (
-            <li
-              key={template}
-              className='group hover:text-accent-foreground flex items-center gap-3 rounded-lg p-1'
-            >
+            <li key={template} className='group hover:text-accent-foreground flex items-center gap-3 rounded-lg p-1'>
               <div className='bg-primary/80 h-1.5 w-1.5 shrink-0 rounded-full transition-all group-hover:scale-125' />
               {template}
               <div className='ml-auto flex items-center'>
-                <Button
-                  variant='ghost'
-                  size='icon'
-                  onClick={() => handleGetTemplateImage(template)}
-                >
+                <Button variant='ghost' size='icon' onClick={() => handleGetTemplateImage(template)}>
                   <Eye />
                 </Button>
                 <Button variant='ghost' size='icon'>
-                  <a
-                    href={`${BASE_URL}/api/agent/template/${template}/download`}
-                  >
+                  <a href={`${BASE_URL}/api/agent/template/${template}/download`}>
                     <Download />
                   </a>
                 </Button>

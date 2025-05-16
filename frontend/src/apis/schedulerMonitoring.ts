@@ -59,9 +59,7 @@ export interface JobError {
 }
 
 const getRunDetail = async (scheduleId: string, runId: string) => {
-  const { error, success, data } = await api<RunDetailResponse>(
-    `/api/schedules/${scheduleId}/runs/${runId}`,
-  );
+  const { error, success, data } = await api<RunDetailResponse>(`/api/schedules/${scheduleId}/runs/${runId}`);
 
   if (!success) {
     throw new Error(error);
@@ -104,11 +102,7 @@ export const useGetRunDetail = (scheduleId: string, runId: string) => {
   });
 };
 
-export const useGetDaySchedules = (
-  year: string,
-  month: string,
-  day: string,
-) => {
+export const useGetDaySchedules = (year: string, month: string, day: string) => {
   return useSuspenseQuery({
     queryKey: ['daySchedules', year, month, day],
     queryFn: () => getDaySchedules(year, month, day),

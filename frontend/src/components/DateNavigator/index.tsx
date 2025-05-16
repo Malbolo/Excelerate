@@ -1,25 +1,12 @@
 import { useCallback, useMemo, useState } from 'react';
 
-import {
-  addDays,
-  addMonths,
-  format,
-  isValid,
-  parse,
-  startOfMonth,
-  subDays,
-  subMonths,
-} from 'date-fns';
+import { addDays, addMonths, format, isValid, parse, startOfMonth, subDays, subMonths } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 import DayPicker from './DayPicker';
 import MonthYearSelector from './MonthYearSelector';
@@ -53,8 +40,7 @@ const SchedulerNavigator = () => {
       valid = isValid(date);
       display = valid
         ? format(date, 'MM/dd/yyyy', { locale: enUS })
-        : format(new Date(), 'MM/dd/yyyy', { locale: enUS }) +
-          ' (Invalid Value)';
+        : format(new Date(), 'MM/dd/yyyy', { locale: enUS }) + ' (Invalid Value)';
       if (!valid) {
         date = new Date();
       }
@@ -63,8 +49,7 @@ const SchedulerNavigator = () => {
       valid = isValid(date);
       display = valid
         ? format(date, 'MMMM yyyy', { locale: enUS })
-        : format(new Date(), 'MMMM yyyy', { locale: enUS }) +
-          ' (Invalid Value)';
+        : format(new Date(), 'MMMM yyyy', { locale: enUS }) + ' (Invalid Value)';
       if (!valid) {
         date = startOfMonth(new Date());
       }
@@ -114,9 +99,7 @@ const SchedulerNavigator = () => {
     (selectedDate: Date) => {
       if (viewType !== 'day') return;
       setIsDayPickerOpen(false);
-      navigate(
-        `/scheduler-monitoring/day/${format(selectedDate, 'yyyy-MM-dd')}`,
-      );
+      navigate(`/scheduler-monitoring/day/${format(selectedDate, 'yyyy-MM-dd')}`);
     },
     [navigate, viewType],
   );
@@ -125,9 +108,7 @@ const SchedulerNavigator = () => {
     (selectedDate: Date) => {
       if (viewType !== 'month') return;
       setIsMonthPickerOpen(false);
-      navigate(
-        `/scheduler-monitoring/month/${format(selectedDate, 'yyyy-MM')}`,
-      );
+      navigate(`/scheduler-monitoring/month/${format(selectedDate, 'yyyy-MM')}`);
     },
     [navigate, viewType],
   );
@@ -177,10 +158,7 @@ const SchedulerNavigator = () => {
           </PopoverTrigger>
           {isValidDate && (
             <PopoverContent className='w-auto p-0' align='center'>
-              <MonthYearSelector
-                currentDate={currentDate}
-                onSelect={handleSelectMonthYear}
-              />
+              <MonthYearSelector currentDate={currentDate} onSelect={handleSelectMonthYear} />
             </PopoverContent>
           )}
         </Popover>

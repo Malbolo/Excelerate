@@ -3,7 +3,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { api } from '@/apis/core';
 import { Log } from '@/types/agent';
 
-interface GetJobListRequest {
+interface JobListParams {
   user_name: string;
   start_date: string;
   end_date: string;
@@ -20,13 +20,13 @@ interface LogResponse {
   created_at: string;
 }
 
-interface GetJobListResponse {
+interface JobListResponse {
   logs: LogResponse[];
   pages: number;
 }
 
-const getJobList = async (request: GetJobListRequest) => {
-  const { data, error, success } = await api<GetJobListResponse>(
+const getJobList = async (request: JobListParams) => {
+  const { data, error, success } = await api<JobListResponse>(
     `/api/agent/logs?&user_name=${request.user_name}&start_date=${request.start_date}&end_date=${request.end_date}&page=${request.page}&size=${request.size}`,
   );
 
@@ -38,9 +38,7 @@ const getJobList = async (request: GetJobListRequest) => {
 };
 
 const getJobLogs = async (log_id: string) => {
-  const { data, error, success } = await api<Log[]>(
-    `/api/agent/logs/${log_id}`,
-  );
+  const { data, error, success } = await api<Log[]>(`/api/agent/logs/${log_id}`);
 
   if (!success) {
     throw new Error(error);
@@ -49,17 +47,10 @@ const getJobLogs = async (log_id: string) => {
   return data;
 };
 
-export const useGetJobList = (request: GetJobListRequest) => {
+export const useGetJobList = ({ user_name, start_date, end_date, page, size }: JobListParams) => {
   return useSuspenseQuery({
-    queryKey: [
-      'jobList',
-      request.user_name,
-      request.start_date,
-      request.end_date,
-      request.page,
-      request.size,
-    ],
-    queryFn: () => getJobList(request),
+    queryKey: ['jobList', user_name, start_date, end_date, page, size],
+    queryFn: () => getJobList({ user_name, start_date, end_date, page, size }),
   });
 };
 

@@ -3,11 +3,7 @@ import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 
 import { Job } from '@/apis/jobManagement';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { Status } from '@/types/job';
 
@@ -30,9 +26,7 @@ const JobDisplay = ({ status, title, job }: JobDisplayProps) => {
           {status && <StatusIcon status={status} />}
           <span>{title}</span>
         </div>
-        <ChevronDown
-          className={cn('h-5 w-5 transition-transform', isOpen && 'rotate-180')}
-        />
+        <ChevronDown className={cn('h-5 w-5 transition-transform', isOpen && 'rotate-180')} />
       </CollapsibleTrigger>
       <CollapsibleContent className='mt-1 rounded-md border border-gray-200 bg-white p-2 shadow'>
         <div className='space-y-1'>

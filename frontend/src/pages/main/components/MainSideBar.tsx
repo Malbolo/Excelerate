@@ -16,16 +16,10 @@ import DataTable from './DataTable';
 import ExpandModal from './ExpandModal';
 
 const MainSideBar = memo(() => {
-  const { dataframe, columns, code, downloadToken, errorMsg } =
-    useJobResultStore();
+  const { dataframe, columns, code, downloadToken, errorMsg } = useJobResultStore();
 
   const tabPanels = [
-    <DataPanel
-      key='data'
-      data={dataframe}
-      columns={columns}
-      downloadToken={downloadToken}
-    />,
+    <DataPanel key='data' data={dataframe} columns={columns} downloadToken={downloadToken} />,
     <CodePanel key='code' code={code} errorMsg={errorMsg} />,
     <TracePanel key='trace' />,
   ];
@@ -48,10 +42,7 @@ const DataPanel = memo<{
 }>(({ data, columns, downloadToken }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  if (!data)
-    return (
-      <div className='flex h-full items-center justify-center'>No data</div>
-    );
+  if (!data) return <div className='flex h-full items-center justify-center'>No data</div>;
 
   return (
     <div className='flex h-[90vh] flex-col'>
@@ -87,10 +78,7 @@ const CodePanel: React.FC<{
   errorMsg: ErrorMessage | null;
 }> = ({ code, errorMsg }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  if (!code)
-    return (
-      <div className='flex h-full items-center justify-center'>No code</div>
-    );
+  if (!code) return <div className='flex h-full items-center justify-center'>No code</div>;
 
   return (
     <div className='h-full py-2'>
@@ -139,10 +127,7 @@ const TracePanel: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { logs } = useStreamStore();
 
-  if (!logs || logs.length === 0)
-    return (
-      <div className='flex h-full items-center justify-center'>No Log</div>
-    );
+  if (!logs || logs.length === 0) return <div className='flex h-full items-center justify-center'>No Log</div>;
 
   return (
     <div className='h-full'>

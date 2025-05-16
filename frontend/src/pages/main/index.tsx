@@ -6,11 +6,7 @@ import ClipLoader from 'react-spinners/ClipLoader';
 
 import { useGetSourceData } from '@/apis/job';
 import { Button } from '@/components/ui/button';
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from '@/components/ui/resizable';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { Textarea } from '@/components/ui/textarea';
 import { createSortableColumns } from '@/lib/createSortableColumns';
 import CommandList from '@/pages/main/components/CommandList';
@@ -28,26 +24,15 @@ const MainPage: React.FC = () => {
   const [inputCommand, setInputCommand] = useState<string>('');
   const [step, setStep] = useState<'source' | 'command'>('source');
 
-  const {
-    setSourceDataCommand,
-    setSourceDataUrl,
-    setSourceDataCode,
-    setSourceParams,
-    resetSource,
-  } = useSourceStore();
+  const { setSourceDataCommand, setSourceDataUrl, setSourceDataCode, setSourceParams, resetSource } = useSourceStore();
 
   const { addCommand, resetCommand } = useCommandStore();
 
-  const {
-    setColumns,
-    setDataframe: setData,
-    resetResult,
-  } = useJobResultStore();
+  const { setColumns, setDataframe: setData, resetResult } = useJobResultStore();
 
   const { resetJob, setCanSaveJob } = useJobStore();
 
-  const { mutateAsync: sourceDataMutation, isPending: isSourceDataLoading } =
-    useGetSourceData();
+  const { mutateAsync: sourceDataMutation, isPending: isSourceDataLoading } = useGetSourceData();
 
   const { connectStream, resetStream, notice } = useStreamStore();
 
@@ -140,11 +125,7 @@ const MainPage: React.FC = () => {
                         handleSubmitCommand();
                       }
                     }}
-                    placeholder={
-                      step === 'source'
-                        ? 'Load the source data.'
-                        : 'Please enter a command.'
-                    }
+                    placeholder={step === 'source' ? 'Load the source data.' : 'Please enter a command.'}
                     disabled={isSourceDataLoading}
                     className='min-h-[42px] resize-none px-4 py-2.5 transition-all'
                   />

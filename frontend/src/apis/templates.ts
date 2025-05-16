@@ -1,8 +1,4 @@
-import {
-  useMutation,
-  useQueryClient,
-  useSuspenseQuery,
-} from '@tanstack/react-query';
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import { api } from './core';
@@ -17,9 +13,7 @@ interface CreateTemplateVariables {
 }
 
 const getTemplates = async () => {
-  const { data, error, success } = await api<GetTemplatesResponse>(
-    '/api/agent/template',
-  );
+  const { data, error, success } = await api<GetTemplatesResponse>('/api/agent/template');
 
   if (!success) {
     throw new Error(error);
@@ -29,12 +23,9 @@ const getTemplates = async () => {
 };
 
 const deleteTemplate = async (templateId: string) => {
-  const { data, error, success } = await api(
-    `/api/agent/template/${templateId}`,
-    {
-      method: 'DELETE',
-    },
-  );
+  const { data, error, success } = await api(`/api/agent/template/${templateId}`, {
+    method: 'DELETE',
+  });
 
   if (!success) {
     throw new Error(error);
@@ -64,9 +55,7 @@ const createTemplate = async ({ title, file }: CreateTemplateVariables) => {
 };
 
 const getTemplateImage = async (templateName: string) => {
-  const { data, error, success } = await api<string>(
-    `/api/agent/template/${templateName}/preview`,
-  );
+  const { data, error, success } = await api<string>(`/api/agent/template/${templateName}/preview`);
 
   if (!success) {
     throw new Error(error);

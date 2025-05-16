@@ -19,22 +19,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormMessage,
-} from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { JOB_TYPES_CONFIG } from '@/constant/job';
 import { useCommandStore } from '@/store/useCommandStore';
@@ -68,8 +56,7 @@ const SaveJobDialog = ({ job }: { job?: JobManagement }) => {
   const [open, setOpen] = useState(false);
   const isEditMode = job ? true : false;
 
-  const { sourceDataCommand, sourceDataUrl, sourceDataCode, sourceParams } =
-    useSourceStore();
+  const { sourceDataCommand, sourceDataUrl, sourceDataCode, sourceParams } = useSourceStore();
   const { commandList } = useCommandStore();
   const { code } = useJobResultStore();
   const { canSaveJob, isEditMode: isEditting } = useJobStore();
@@ -111,9 +98,7 @@ const SaveJobDialog = ({ job }: { job?: JobManagement }) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger disabled={!canSaveJob || isEditting}>
-        <Button disabled={!canSaveJob || isEditting}>
-          {isEditMode ? 'Edit Job' : 'Save Job'}
-        </Button>
+        <Button disabled={!canSaveJob || isEditting}>{isEditMode ? 'Edit Job' : 'Save Job'}</Button>
       </DialogTrigger>
 
       <DialogContent>
@@ -123,30 +108,20 @@ const SaveJobDialog = ({ job }: { job?: JobManagement }) => {
           </DialogTitle>
           <DialogDescription className='flex flex-col'>
             <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className='flex flex-col gap-3'
-              >
+              <form onSubmit={form.handleSubmit(onSubmit)} className='flex flex-col gap-3'>
                 <FormField
                   control={form.control}
                   name='jobType'
                   render={({ field }) => (
                     <FormItem>
                       <FormControl>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                          required
-                        >
+                        <Select onValueChange={field.onChange} value={field.value} required>
                           <SelectTrigger className='w-full'>
                             <SelectValue placeholder='Job Type' />
                           </SelectTrigger>
                           <SelectContent>
                             {JOB_TYPES_CONFIG.map((job, index) => (
-                              <SelectItem
-                                key={`${job.id}-${index}`}
-                                value={job.id}
-                              >
+                              <SelectItem key={`${job.id}-${index}`} value={job.id}>
                                 {job.label}
                               </SelectItem>
                             ))}
@@ -164,11 +139,7 @@ const SaveJobDialog = ({ job }: { job?: JobManagement }) => {
                   render={({ field }) => (
                     <FormItem>
                       <FormControl>
-                        <Input
-                          placeholder='Job Name'
-                          value={field.value}
-                          onChange={field.onChange}
-                        />
+                        <Input placeholder='Job Name' value={field.value} onChange={field.onChange} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -206,9 +177,7 @@ const SaveJobDialog = ({ job }: { job?: JobManagement }) => {
                             onCheckedChange={field.onChange}
                             className='cursor-pointer'
                           />
-                          <Label htmlFor='send-email'>
-                            Would you like to receive the job detail via email?
-                          </Label>
+                          <Label htmlFor='send-email'>Would you like to receive the job detail via email?</Label>
                         </div>
                       </FormControl>
                     </FormItem>
@@ -221,11 +190,7 @@ const SaveJobDialog = ({ job }: { job?: JobManagement }) => {
                       Cancel
                     </Button>
                   </DialogClose>
-                  <Button
-                    type='submit'
-                    className='flex-1'
-                    disabled={isJobSaving || isJobEditing || isEditting}
-                  >
+                  <Button type='submit' className='flex-1' disabled={isJobSaving || isJobEditing || isEditting}>
                     {isJobSaving || isJobEditing || isEditting ? (
                       <ClipLoader size={18} color='white' />
                     ) : isEditMode ? (

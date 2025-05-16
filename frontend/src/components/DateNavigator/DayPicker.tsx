@@ -21,13 +21,7 @@ import { enUS } from 'date-fns/locale';
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface DayPickerProps {
   currentDate: Date;
@@ -35,9 +29,7 @@ interface DayPickerProps {
 }
 
 const DayPicker = ({ currentDate, onSelect }: DayPickerProps) => {
-  const [displayDate, setDisplayDate] = useState<Date>(
-    startOfMonth(currentDate),
-  );
+  const [displayDate, setDisplayDate] = useState<Date>(startOfMonth(currentDate));
 
   const daysInMonth = getDaysInMonth(displayDate);
   const firstDayOfMonth = getDay(displayDate);
@@ -55,9 +47,7 @@ const DayPicker = ({ currentDate, onSelect }: DayPickerProps) => {
   };
 
   const handlePickerMonthChange = (direction: 'prev' | 'next') => {
-    setDisplayDate(prev =>
-      direction === 'prev' ? subMonths(prev, 1) : addMonths(prev, 1),
-    );
+    setDisplayDate(prev => (direction === 'prev' ? subMonths(prev, 1) : addMonths(prev, 1)));
   };
 
   const handlePickerYearSelect = (yearValue: string) => {
@@ -71,10 +61,7 @@ const DayPicker = ({ currentDate, onSelect }: DayPickerProps) => {
   };
 
   const currentDisplayYear = getYear(displayDate);
-  const yearOptions = Array.from(
-    { length: 5 },
-    (_, i) => currentDisplayYear - 2 + i,
-  );
+  const yearOptions = Array.from({ length: 5 }, (_, i) => currentDisplayYear - 2 + i);
   const monthOptions = Array.from({ length: 12 }, (_, i) => ({
     value: i.toString(),
     label: format(new Date(currentDisplayYear, i), 'MMMM', { locale: enUS }),
@@ -82,9 +69,7 @@ const DayPicker = ({ currentDate, onSelect }: DayPickerProps) => {
 
   const weekdays = useMemo(() => {
     const firstDayOfWeek = startOfWeek(new Date(), { locale: enUS });
-    return Array.from({ length: 7 }).map((_, i) =>
-      format(addDays(firstDayOfWeek, i), 'eee', { locale: enUS }),
-    );
+    return Array.from({ length: 7 }).map((_, i) => format(addDays(firstDayOfWeek, i), 'eee', { locale: enUS }));
   }, []);
 
   return (
@@ -101,10 +86,7 @@ const DayPicker = ({ currentDate, onSelect }: DayPickerProps) => {
         </Button>
 
         <div className='flex w-full items-center justify-center gap-2'>
-          <Select
-            value={currentDisplayYear.toString()}
-            onValueChange={handlePickerYearSelect}
-          >
+          <Select value={currentDisplayYear.toString()} onValueChange={handlePickerYearSelect}>
             <SelectTrigger className='h-8 w-[100px] text-sm font-semibold'>
               <SelectValue placeholder='Year' />
             </SelectTrigger>
@@ -116,10 +98,7 @@ const DayPicker = ({ currentDate, onSelect }: DayPickerProps) => {
               ))}
             </SelectContent>
           </Select>
-          <Select
-            value={getMonth(displayDate).toString()}
-            onValueChange={handlePickerMonthSelect}
-          >
+          <Select value={getMonth(displayDate).toString()} onValueChange={handlePickerMonthSelect}>
             <SelectTrigger className='h-8 w-[110px] text-sm font-semibold'>
               <SelectValue placeholder='Month' />
             </SelectTrigger>
@@ -154,10 +133,7 @@ const DayPicker = ({ currentDate, onSelect }: DayPickerProps) => {
             {day !== null ? (
               <Button
                 variant={
-                  isValid(currentDate) &&
-                  isSameDay(setDate(displayDate, day), currentDate)
-                    ? 'default'
-                    : 'ghost'
+                  isValid(currentDate) && isSameDay(setDate(displayDate, day), currentDate) ? 'default' : 'ghost'
                 }
                 size='icon'
                 className='h-8 w-8 rounded-full text-sm'

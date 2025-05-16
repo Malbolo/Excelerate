@@ -18,15 +18,7 @@ interface CalendarDayProps {
   fail: number;
 }
 
-const CalendarDay: React.FC<CalendarDayProps> = ({
-  day,
-  month,
-  year,
-  isCurrentMonth,
-  pending,
-  success,
-  fail,
-}) => {
+const CalendarDay: React.FC<CalendarDayProps> = ({ day, month, year, isCurrentMonth, pending, success, fail }) => {
   const today = new Date();
   const navigate = useNavigate();
 
@@ -50,9 +42,7 @@ const CalendarDay: React.FC<CalendarDayProps> = ({
       className={cn(
         'group relative flex min-h-[6rem] flex-col border-t border-l border-gray-200 p-2 first:border-l-0 sm:min-h-28',
         isCurrentMonth ? 'bg-white' : 'bg-gray-50 text-gray-400',
-        isCurrentMonth &&
-          isToday &&
-          'border-2 border-blue-500 ring-1 ring-blue-500',
+        isCurrentMonth && isToday && 'border-2 border-blue-500 ring-1 ring-blue-500',
         !isCurrentMonth && 'pointer-events-none',
       )}
     >

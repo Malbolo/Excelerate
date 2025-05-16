@@ -1,10 +1,4 @@
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLocalDate } from '@/store/useLocalDate';
 
 const LOCALES = [
@@ -42,15 +36,12 @@ const LocaleSelector = () => {
     }
   };
 
-  const currentLocaleLabel =
-    LOCALES.find(l => l.value === locale)?.label || 'Select language';
+  const currentLocaleLabel = LOCALES.find(l => l.value === locale)?.label || 'Select language';
 
   return (
     <Select value={locale} onValueChange={handleLocaleChange}>
       <SelectTrigger className='ring-offset-background focus:ring-ring hover:bg-accent hover:text-accent-foreground border-input bg-background w-full justify-between border px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50'>
-        <SelectValue placeholder='Select language'>
-          {currentLocaleLabel}
-        </SelectValue>
+        <SelectValue placeholder='Select language'>{currentLocaleLabel}</SelectValue>
       </SelectTrigger>
       <SelectContent>
         {LOCALES.map(l => (

@@ -40,9 +40,7 @@ export const useCommandStore = create<CommandState>(set => ({
 
   deleteCommand: index =>
     set(state => ({
-      commandList: state.commandList
-        .filter((_, i) => i !== index)
-        .map(cmd => ({ ...cmd, status: 'pending' })),
+      commandList: state.commandList.filter((_, i) => i !== index).map(cmd => ({ ...cmd, status: 'pending' })),
     })),
 
   updateCommand: (index, newCommand) =>
@@ -60,9 +58,7 @@ export const useCommandStore = create<CommandState>(set => ({
 
   updateCommandStatus: (index, status) =>
     set(state => ({
-      commandList: state.commandList.map((cmd, i) =>
-        i === index ? { ...cmd, status } : cmd,
-      ),
+      commandList: state.commandList.map((cmd, i) => (i === index ? { ...cmd, status } : cmd)),
     })),
 
   reorderCommands: (oldIndex, newIndex) =>

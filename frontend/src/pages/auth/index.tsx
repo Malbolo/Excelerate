@@ -5,22 +5,8 @@ import { useForm } from 'react-hook-form';
 
 import { useLoginAPI, useSignupAPI } from '@/apis/auth';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 
 import {
@@ -40,9 +26,7 @@ export default function AuthPage() {
 
   const form = useForm<LoginFormValues | SignupFormValues>({
     resolver: zodResolver(isLoginMode ? loginSchema : signupSchema),
-    defaultValues: isLoginMode
-      ? initialLoginFormValues
-      : initialSignupFormValues,
+    defaultValues: isLoginMode ? initialLoginFormValues : initialSignupFormValues,
     mode: 'onChange',
   });
 
@@ -65,9 +49,7 @@ export default function AuthPage() {
     <div className='flex h-full w-full items-center justify-center p-4'>
       <Card className='w-full max-w-md'>
         <CardHeader className='text-center'>
-          <CardTitle className='text-2xl font-bold'>
-            {isLoginMode ? 'Login' : 'Sign Up'}
-          </CardTitle>
+          <CardTitle className='text-2xl font-bold'>{isLoginMode ? 'Login' : 'Sign Up'}</CardTitle>
           <CardDescription>
             {isLoginMode
               ? 'Enter your email and password to login.'
@@ -76,9 +58,7 @@ export default function AuthPage() {
         </CardHeader>
         <Form {...form}>
           {form.formState.errors.root?.serverError && (
-            <div className='p-4 text-center text-sm text-red-500'>
-              {form.formState.errors.root.serverError.message}
-            </div>
+            <div className='p-4 text-center text-sm text-red-500'>{form.formState.errors.root.serverError.message}</div>
           )}
           <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
             <CardContent className='space-y-4'>
@@ -102,11 +82,7 @@ export default function AuthPage() {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input
-                        type='password'
-                        placeholder='********'
-                        {...field}
-                      />
+                      <Input type='password' placeholder='********' {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -144,26 +120,11 @@ export default function AuthPage() {
               )}
             </CardContent>
             <CardFooter className='flex flex-col gap-4'>
-              <Button
-                type='submit'
-                className='w-full'
-                disabled={form.formState.isSubmitting}
-              >
-                {form.formState.isSubmitting
-                  ? 'Processing...'
-                  : isLoginMode
-                    ? 'Login'
-                    : 'Sign Up'}
+              <Button type='submit' className='w-full' disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? 'Processing...' : isLoginMode ? 'Login' : 'Sign Up'}
               </Button>
-              <Button
-                type='button'
-                variant='link'
-                onClick={toggleMode}
-                className='text-sm'
-              >
-                {isLoginMode
-                  ? "Don't have an account? Sign Up"
-                  : 'Already have an account? Login'}
+              <Button type='button' variant='link' onClick={toggleMode} className='text-sm'>
+                {isLoginMode ? "Don't have an account? Sign Up" : 'Already have an account? Login'}
               </Button>
             </CardFooter>
           </form>

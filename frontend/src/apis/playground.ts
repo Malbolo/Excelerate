@@ -25,9 +25,7 @@ interface PostCallPromptResponse {
 }
 
 const getLLMTemplate = async () => {
-  const { data, error, success } = await api<LLMTemplate>(
-    '/api/agent/prompts/',
-  );
+  const { data, error, success } = await api<LLMTemplate>('/api/agent/prompts/');
 
   if (!success) {
     throw new Error(error);
@@ -36,10 +34,7 @@ const getLLMTemplate = async () => {
   return data;
 };
 
-const getLLMTemplateByCategory = async (
-  agent: string,
-  template_name: string,
-) => {
+const getLLMTemplateByCategory = async (agent: string, template_name: string) => {
   const { data, error, success } = await api<GetLLMTemplateByCategoryResponse>(
     `/api/agent/prompts/${agent}/${template_name}`,
   );
@@ -59,23 +54,20 @@ const postCallPrompt = async (payload: {
 }) => {
   const { systemPrompt, fewShots, userInput, variables } = payload;
 
-  const { error, success, data } = await api<PostCallPromptResponse>(
-    '/api/agent/prompts/invoke/messages',
-    {
-      method: 'POST',
-      body: JSON.stringify({
-        messages: {
-          system: systemPrompt,
-          fewshot: fewShots.map(fs => ({
-            human: fs.human,
-            ai: fs.ai,
-          })),
-          human: userInput,
-        },
-        variables,
-      }),
-    },
-  );
+  const { error, success, data } = await api<PostCallPromptResponse>('/api/agent/prompts/invoke/messages', {
+    method: 'POST',
+    body: JSON.stringify({
+      messages: {
+        system: systemPrompt,
+        fewshot: fewShots.map(fs => ({
+          human: fs.human,
+          ai: fs.ai,
+        })),
+        human: userInput,
+      },
+      variables,
+    }),
+  });
 
   if (!success) {
     throw new Error(error);

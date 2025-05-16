@@ -25,14 +25,9 @@ const NavigationBar = () => {
         {navMenu.map(({ label, to, basePath }) => {
           let isActive;
           if (label === 'Scheduler Monitoring') {
-            isActive = location.pathname.startsWith(
-              basePath || '/scheduler-monitoring',
-            );
+            isActive = location.pathname.startsWith(basePath || '/scheduler-monitoring');
           } else {
-            isActive =
-              to === '/'
-                ? location.pathname === '/'
-                : location.pathname.startsWith(to);
+            isActive = to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
           }
 
           return (
@@ -40,8 +35,7 @@ const NavigationBar = () => {
               <li
                 className={cn(
                   'hover:text-accent-foreground flex items-center rounded-lg px-4 py-4 font-bold transition-all hover:bg-[#F0F7FF]',
-                  isActive &&
-                    'box-shadow border-primary/70 text-accent-foreground border bg-[#F0F7FF]',
+                  isActive && 'box-shadow border-primary/70 text-accent-foreground border bg-[#F0F7FF]',
                 )}
               >
                 {label}

@@ -1,8 +1,4 @@
-import {
-  useMutation,
-  useQueryClient,
-  useSuspenseQuery,
-} from '@tanstack/react-query';
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -58,9 +54,7 @@ interface EditScheduleRequest {
 }
 
 const getScheduleDetail = async (scheduleId: string) => {
-  const { error, success, data } = await api<Schedule>(
-    `/api/schedules/${scheduleId}`,
-  );
+  const { error, success, data } = await api<Schedule>(`/api/schedules/${scheduleId}`);
 
   if (!success) {
     throw new Error(error);
@@ -77,8 +71,7 @@ export const useGetScheduleDetail = (scheduleId: string) => {
 };
 
 const getScheduleList = async () => {
-  const { error, success, data } =
-    await api<ScheduleListResponse>('/api/schedules');
+  const { error, success, data } = await api<ScheduleListResponse>('/api/schedules');
 
   if (!success) {
     throw new Error(error);
@@ -120,10 +113,7 @@ const createSchedule = async (schedule: CreateScheduleRequest) => {
   return;
 };
 
-const updateSchedule = async ({
-  scheduleId,
-  schedule,
-}: EditScheduleRequest) => {
+const updateSchedule = async ({ scheduleId, schedule }: EditScheduleRequest) => {
   const { error, success } = await api(`/api/schedules/${scheduleId}`, {
     method: 'PATCH',
     body: JSON.stringify({
@@ -135,13 +125,9 @@ const updateSchedule = async ({
       })),
       success_emails: schedule.successEmail,
       failure_emails: schedule.failEmail,
-      start_date: new Date(schedule.startDate.getTime() + 9 * 60 * 60 * 1000)
-        .toISOString()
-        .split('.')[0],
+      start_date: new Date(schedule.startDate.getTime() + 9 * 60 * 60 * 1000).toISOString().split('.')[0],
       end_date: schedule.endDate
-        ? new Date(schedule.endDate.getTime() + 9 * 60 * 60 * 1000)
-            .toISOString()
-            .split('.')[0]
+        ? new Date(schedule.endDate.getTime() + 9 * 60 * 60 * 1000).toISOString().split('.')[0]
         : undefined,
       execution_time: schedule.executionTime,
       frequency: schedule.interval,
@@ -274,8 +260,7 @@ export const useUpdateSchedule = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { mutate } = useMutation({
-    mutationFn: (editScheduleRequest: EditScheduleRequest) =>
-      updateSchedule(editScheduleRequest),
+    mutationFn: (editScheduleRequest: EditScheduleRequest) => updateSchedule(editScheduleRequest),
     onSuccess: () => {
       toast.success('Schedule updated successfully');
       queryClient.invalidateQueries({ queryKey: ['scheduleList'] });

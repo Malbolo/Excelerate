@@ -3,13 +3,7 @@ import { useLocation, useSearchParams } from 'react-router-dom';
 
 import { useGetJobList } from '@/apis/agentMonitoring';
 import { Badge } from '@/components/ui/badge';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import useInternalRouter from '@/hooks/useInternalRouter';
 import { formatDateTime } from '@/lib/dateFormat';
 import { useLocalDate } from '@/store/useLocalDate';
@@ -55,23 +49,15 @@ const AgentCallList = () => {
           >
             <CardHeader className=''>
               <div className='flex items-center justify-between'>
-                <CardTitle className='text-md font-bold text-slate-800'>
-                  {log.agent_name}
-                </CardTitle>
-                <Badge variant='outline'>
-                  {formatDateTime(log.created_at, locale, place)}
-                </Badge>
+                <CardTitle className='text-md font-bold text-slate-800'>{log.agent_name}</CardTitle>
+                <Badge variant='outline'>{formatDateTime(log.created_at, locale, place)}</Badge>
               </div>
-              <CardDescription className='line-clamp-2 text-xs text-slate-600'>
-                {log.log_detail}
-              </CardDescription>
+              <CardDescription className='line-clamp-2 text-xs text-slate-600'>{log.log_detail}</CardDescription>
             </CardHeader>
             <CardContent className='flex items-center gap-2 pt-0'>
               <div className='flex items-center gap-2'>
                 <User className='h-4 w-4' />
-                <span className='text-xs font-medium text-slate-700'>
-                  {log.user_name}
-                </span>
+                <span className='text-xs font-medium text-slate-700'>{log.user_name}</span>
               </div>
               <Badge
                 variant='secondary'

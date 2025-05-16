@@ -1,8 +1,4 @@
-import {
-  useMutation,
-  useQueryClient,
-  useSuspenseQuery,
-} from '@tanstack/react-query';
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import useInternalRouter from '@/hooks/useInternalRouter';
@@ -41,9 +37,7 @@ interface GetJobListParams {
 }
 
 const getJobDetail = async (jobId: string) => {
-  const { data, error, success } = await api<JobManagement>(
-    `/api/jobs/${jobId}`,
-  );
+  const { data, error, success } = await api<JobManagement>(`/api/jobs/${jobId}`);
 
   if (!success) {
     throw new Error(error);
@@ -82,13 +76,7 @@ export const useDeleteJob = () => {
   return mutate;
 };
 
-const getJobList = async ({
-  page = 1,
-  title = '',
-  mine = false,
-  types = '',
-  name = '',
-}: GetJobListParams) => {
+const getJobList = async ({ page = 1, title = '', mine = false, types = '', name = '' }: GetJobListParams) => {
   const isMine = mine ? 'True' : 'False';
 
   const { data, error, success } = await api<JobListResponse>(
@@ -102,13 +90,7 @@ const getJobList = async ({
   return data;
 };
 
-export const useGetJobList = ({
-  page = 1,
-  mine = false,
-  types = '',
-  title = '',
-  name = '',
-}) => {
+export const useGetJobList = ({ page = 1, mine = false, types = '', title = '', name = '' }) => {
   return useSuspenseQuery({
     queryKey: ['jobList', page, title, mine, types, name],
     queryFn: () => getJobList({ page, title, mine, types, name }),

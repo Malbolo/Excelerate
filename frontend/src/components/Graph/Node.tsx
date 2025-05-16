@@ -60,11 +60,7 @@ const Node = ({ log, onLogClick }: NodeProps) => {
 
             <div className='flex flex-col gap-4'>
               {log.subEvents.map(subLog => (
-                <Node
-                  key={`${subLog.name}-${subLog.timestamp}`}
-                  log={subLog}
-                  onLogClick={onLogClick}
-                />
+                <Node key={`${subLog.name}-${subLog.timestamp}`} log={subLog} onLogClick={onLogClick} />
               ))}
             </div>
           </>

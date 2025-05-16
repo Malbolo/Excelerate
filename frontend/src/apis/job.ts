@@ -79,24 +79,16 @@ const editJob = async (request: SaveJobRequest, jobId: string) => {
   return data;
 };
 
-const sendCommandList = async ({
-  command_list,
-  url,
-  stream_id,
-  original_code,
-}: SendCommandListRequest) => {
-  const { data, error, success } = await api<SendCommandListResponse>(
-    '/api/agent/code/generate',
-    {
-      method: 'POST',
-      body: JSON.stringify({
-        command_list,
-        url,
-        stream_id,
-        original_code,
-      }),
-    },
-  );
+const sendCommandList = async ({ command_list, url, stream_id, original_code }: SendCommandListRequest) => {
+  const { data, error, success } = await api<SendCommandListResponse>('/api/agent/code/generate', {
+    method: 'POST',
+    body: JSON.stringify({
+      command_list,
+      url,
+      stream_id,
+      original_code,
+    }),
+  });
 
   if (!success) {
     throw new Error(error);
@@ -106,10 +98,10 @@ const sendCommandList = async ({
 };
 
 const getSourceData = async ({ command, stream_id }: GetSourceDataRequest) => {
-  const { data, error, success } = await api<GetSourceDataResponse>(
-    '/api/agent/data/load',
-    { method: 'POST', body: JSON.stringify({ command, stream_id }) },
-  );
+  const { data, error, success } = await api<GetSourceDataResponse>('/api/agent/data/load', {
+    method: 'POST',
+    body: JSON.stringify({ command, stream_id }),
+  });
 
   if (!success) {
     throw new Error(error);

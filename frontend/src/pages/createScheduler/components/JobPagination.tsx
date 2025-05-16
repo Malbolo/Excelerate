@@ -139,9 +139,7 @@ const JobPagination = ({ total }: { total: number }) => {
                 e.preventDefault();
                 handlePageChange(currentPage - 1);
               }}
-              className={
-                currentPage === 1 ? 'pointer-events-none opacity-50' : undefined
-              }
+              className={currentPage === 1 ? 'pointer-events-none opacity-50' : undefined}
             />
           </PaginationItem>
           {renderPageNumbers()}
@@ -152,11 +150,7 @@ const JobPagination = ({ total }: { total: number }) => {
                 e.preventDefault();
                 handlePageChange(currentPage + 1);
               }}
-              className={
-                currentPage === total
-                  ? 'pointer-events-none opacity-50'
-                  : undefined
-              }
+              className={currentPage === total ? 'pointer-events-none opacity-50' : undefined}
             />
           </PaginationItem>
         </PaginationContent>

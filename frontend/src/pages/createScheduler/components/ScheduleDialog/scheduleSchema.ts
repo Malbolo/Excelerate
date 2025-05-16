@@ -5,14 +5,10 @@ const createScheduleSchema = z
     scheduleTitle: z.string().min(1, 'Please enter a schedule title.'),
     scheduleDescription: z.string().min(1, 'Please enter a description.'),
     successEmail: z
-      .array(
-        z.string().email({ message: 'Please enter a valid email address.' }),
-      )
+      .array(z.string().email({ message: 'Please enter a valid email address.' }))
       .min(1, 'Please add at least one success notification email.'),
     failEmail: z
-      .array(
-        z.string().email({ message: 'Please enter a valid email address.' }),
-      )
+      .array(z.string().email({ message: 'Please enter a valid email address.' }))
       .min(1, 'Please add at least one failure notification email.'),
     interval: z.enum(['daily', 'weekly', 'monthly'], {
       required_error: 'Please select an execution interval.',

@@ -23,12 +23,7 @@ const LogoutButton = ({ name }: LogoutButtonProps) => {
   return (
     <div className='flex flex-col items-center gap-3'>
       <span className='text-sm text-gray-800'>Hello, {name}!</span>
-      <Button
-        variant='outline'
-        size='sm'
-        className='w-full'
-        onClick={handleLogoutClick}
-      >
+      <Button variant='outline' size='sm' className='w-full' onClick={handleLogoutClick}>
         Logout
       </Button>
     </div>

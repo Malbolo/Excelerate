@@ -1,8 +1,4 @@
-import {
-  useMutation,
-  useQueryClient,
-  useSuspenseQuery,
-} from '@tanstack/react-query';
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import useInternalRouter from '@/hooks/useInternalRouter';
@@ -20,9 +16,7 @@ interface UserInfoResponse {
 }
 
 const getUserInfo = async () => {
-  const { data, success } = await api<UserInfoResponse>(
-    '/api/users/me/profile',
-  );
+  const { data, success } = await api<UserInfoResponse>('/api/users/me/profile');
 
   if (!success) {
     return null;
@@ -32,13 +26,10 @@ const getUserInfo = async () => {
 };
 
 const login = async (request: LoginFormValues) => {
-  const { data, error, success } = await api<LoginResponse>(
-    '/api/users/login',
-    {
-      method: 'POST',
-      body: JSON.stringify(request),
-    },
-  );
+  const { data, error, success } = await api<LoginResponse>('/api/users/login', {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
 
   if (!success) {
     throw new Error(error);
