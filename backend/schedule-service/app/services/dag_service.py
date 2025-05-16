@@ -343,7 +343,7 @@ def send_failure_email(**kwargs):
     
 default_args = {{
     'depends_on_past': False,
-    'owner' : {owner},
+    'owner' : '{owner}',
     'email': [{', '.join([f"'{email}'" for email in (success_emails or [])])}],
     'email_on_failure': False,
     'email_on_retry': False,
