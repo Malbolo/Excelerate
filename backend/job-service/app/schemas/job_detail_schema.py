@@ -36,6 +36,7 @@ class JobDetailSchema(BaseModel):
     data_load_command: str
     data_load_url: str
     data_load_code: Optional[str] = None
+    source_data: SourceData
     commands: List[CommandSchema]
     code: str
     created_at: str
@@ -51,6 +52,15 @@ class JobDetailSchema(BaseModel):
             data_load_command=job.data_load_command,
             data_load_url=job.data_load_url,
             data_load_code=job.data_load_code,
+            source_data=SourceData(
+                factory_name=job.source_data.factory_name,
+                system_name=job.source_data.system_name,
+                metric=job.source_data.metric,
+                factory_id=job.source_data.factory_id,
+                product_code=job.source_data.product_code,
+                start_date=job.source_data.start_date.isoformat() if job.source_data.start_date else None,
+                end_date=job.source_data.end_date.isoformat() if job.source_data.end_date else None,
+            ),
             code=job.code,
             commands=[
                 CommandSchema(content=cmd.content, order=cmd.order)

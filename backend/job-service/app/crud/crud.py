@@ -40,7 +40,10 @@ def create_job(db: Session, request: JobCreateRequest, user_id: int, user_name: 
     return db_job
 
 def get_job_by_id(db: Session, job_id: str):
-    return db.query(models.Job).filter(models.Job.id == job_id).one()
+    return db.query(models.Job) \
+        .options(joinedload(models.Job.source_data)) \
+        .filter(models.Job.id == job_id) \
+        .one()
 
 def update_job(db: Session, job_id: str, request: JobUpdateRequest, user_id: int):
     existing_job = get_job_by_id(db, job_id)
