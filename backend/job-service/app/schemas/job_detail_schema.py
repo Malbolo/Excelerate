@@ -1,9 +1,8 @@
 from typing import List, Optional
 
+from app.schemas.job_create_schema import SourceData
 from fastapi import Query
 from pydantic import BaseModel
-
-from schemas.job_create_schema import SourceData
 
 
 class JobDetailRequest:
