@@ -1,4 +1,4 @@
-import { useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 
 import { useGetJobList } from '@/apis/agentMonitoring';
 import {
@@ -34,6 +34,13 @@ const AgentCallList = () => {
   });
 
   const { push } = useInternalRouter();
+  const location = useLocation();
+
+  const handleLogClick = (logId: string) => {
+    const searchParams = new URLSearchParams(location.search);
+    searchParams.set('logId', logId);
+    push(`?${searchParams.toString()}`);
+  };
 
   return (
     <div className='flex h-full w-full flex-col justify-between'>
@@ -41,7 +48,7 @@ const AgentCallList = () => {
         {logs.map(log => (
           <Card
             key={log.log_id}
-            onClick={() => push(`?logId=${log.log_id}`)}
+            onClick={() => handleLogClick(log.log_id)}
             className='w-full cursor-pointer p-5'
           >
             <CardHeader>
