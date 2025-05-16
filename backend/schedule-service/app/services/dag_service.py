@@ -31,6 +31,8 @@ class DagService:
             db: Session = None,
     ) -> str:
         """새로운 DAG를 생성합니다."""
+        logger.info(f"Creating DAG with parameters: name='{name}', owner='{owner}'")
+
         close_db = False
         if db is None:
             db = next(database.get_db())
@@ -48,11 +50,12 @@ class DagService:
             end_date_str = end_date.strftime("%Y-%m-%d") if end_date else "None"
 
             # 태그 및 설명 설정
-            tags = ['custom', '{owner}', f'start_date:{start_date_str}', f'title:{name}']
+            tags = [f'owner:{owner}', f'start_date:{start_date_str}', f'title:{name}']
             if end_date:
                 tags.append(f'end_date:{end_date_str}')
             tags_str = str(tags)
 
+            logger.info(f"Calling _generate_dag_code with owner='{owner}'")
             # DAG 코드 생성
             dag_code = DagService._generate_dag_code(
                 dag_id, owner, start_date, end_date, success_emails, failure_emails,
@@ -267,6 +270,10 @@ class DagService:
             name: str
     ) -> str:
         """DAG 코드 생성 (내부 헬퍼 함수)"""
+        logger.info(f"Inside _generate_dag_code - received owner: '{owner}'")
+        default_args_owner = f"'owner': '{owner}'"
+        logger.info(f"Will set default_args with: {default_args_owner}")
+
         dag_code = f"""
 from airflow import DAG
 from airflow.operators.python import PythonOperator
@@ -353,7 +360,6 @@ dag = DAG(
     '{dag_id}',
     default_args=default_args,
     dag_display_name='{name}',
-    owners='{owner}',
     description='{description}',
     schedule_interval='{schedule_interval}',
     start_date= datetime({start_date.year}, {start_date.month}, {start_date.day}),
