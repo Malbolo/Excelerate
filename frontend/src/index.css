@@ -44,6 +44,20 @@
   background: linear-gradient(to bottom, #ffffff, #f8faff);
 }
 
+@keyframes scale {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+@utility animate-scale {
+  animation: scale 1s ease-in-out infinite;
+}
+
 :root {
   font-family: var(--font-sans);
   line-height: 1.5;

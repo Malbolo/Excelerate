@@ -1,6 +1,8 @@
+import { ChevronRight, User } from 'lucide-react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 
 import { useGetJobList } from '@/apis/agentMonitoring';
+import { Badge } from '@/components/ui/badge';
 import {
   Card,
   CardContent,
@@ -43,21 +45,40 @@ const AgentCallList = () => {
   };
 
   return (
-    <div className='flex h-full w-full flex-col justify-between'>
-      <section className='grid w-full grid-cols-1'>
+    <div className='flex h-full w-full flex-col justify-between gap-5'>
+      <section className='grid h-full w-full grid-cols-1 grid-rows-4 gap-2'>
         {logs.map(log => (
           <Card
             key={log.log_id}
             onClick={() => handleLogClick(log.log_id)}
-            className='w-full cursor-pointer p-5'
+            className='group w-full flex-1 cursor-pointer transition-all'
           >
-            <CardHeader>
-              <CardTitle>{log.agent_name}</CardTitle>
-              <CardDescription>{log.log_detail}</CardDescription>
+            <CardHeader className=''>
+              <div className='flex items-center justify-between'>
+                <CardTitle className='text-md font-bold text-slate-800'>
+                  {log.agent_name}
+                </CardTitle>
+                <Badge variant='outline'>
+                  {formatDateTime(log.created_at, locale, place)}
+                </Badge>
+              </div>
+              <CardDescription className='line-clamp-2 text-xs text-slate-600'>
+                {log.log_detail}
+              </CardDescription>
             </CardHeader>
-            <CardContent className='flex w-full justify-between'>
-              <p>{log.user_name}</p>
-              <p>{formatDateTime(log.created_at, locale, place)}</p>
+            <CardContent className='flex items-center gap-2 pt-0'>
+              <div className='flex items-center gap-2'>
+                <User className='h-4 w-4' />
+                <span className='text-xs font-medium text-slate-700'>
+                  {log.user_name}
+                </span>
+              </div>
+              <Badge
+                variant='secondary'
+                className='ml-auto h-6 w-6 rounded-full p-0 transition-all ease-in-out group-hover:scale-105'
+              >
+                <ChevronRight className='h-4 w-4' />
+              </Badge>
             </CardContent>
           </Card>
         ))}
