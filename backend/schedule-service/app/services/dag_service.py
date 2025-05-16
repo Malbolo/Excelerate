@@ -274,6 +274,7 @@ from airflow.operators.email import EmailOperator
 from airflow.operators.python import BranchPythonOperator
 from airflow.operators.dummy import DummyOperator
 from airflow.utils.trigger_rule import TriggerRule
+from airflow.utils.email import send_email
 
 from datetime import datetime, timedelta
 
@@ -290,55 +291,45 @@ from utils.code_util import insert_df_to_excel
 # START_DATE: {start_date.strftime("%Y-%m-%d")}
 # END_DATE: {end_date.strftime("%Y-%m-%d") if end_date else "None"}
 
-# 성공 이메일 콜백 함수
-def send_success_email(**kwargs):
-    \"\"\"DAG 성공 시 이메일 전송\"\"\"
-    success_to = {success_emails!r} 
-    if not success_to:
-        return
-        
-    dag_run = kwargs['dag_run']
-    dag_id = dag_run.dag_id
+# DAG 상태 알림 함수 - 항상 이메일 발송
+def notify_dag_status(context):
+    '''DAG 실행 완료 시 이메일 전송'''
+    dag_run = context['dag_run']
+    ti_list = dag_run.get_task_instances()
+    failed_tasks = [ti for ti in ti_list if ti.state == 'failed']
     
-    email = EmailOperator(
-        task_id='send_success_email',
-        to=success_to,  
-        subject=f"[성공] {name} (DAG ID: {dag_id})",
-        html_content='''
-        <h3>DAG {{{{ dag_run.dag_id }}}} 실행이 성공적으로 완료되었습니다.</h3>
-        <p>DAG 이름: {name}</p>
-        <p>실행 날짜: {{{{ ds }}}}</p>
-        <p>실행 시간: {{{{ execution_date }}}}</p>
-        ''',
-        dag=kwargs['dag']
-    )
-    email.execute(context=kwargs)
+    # 실행 날짜와 시간 가져오기
+    ds = context.get('ds', '')
+    execution_date = context.get('execution_date', '')
+    
+    if failed_tasks:
+        # 실패한 태스크가 있으면 실패 이메일 발송
+        failed_task_names = [ti.task_id for ti in failed_tasks]
+        send_email(
+            to={failure_emails!r},
+            subject=f"[실패] {name} (DAG ID: {{dag_run.dag_id}})",
+            html_content=f'''
+            <h3>DAG {{dag_run.dag_id}} 실행이 실패했습니다.</h3>
+            <p>DAG 이름: {name}</p>
+            <p>실패한 태스크: {{', '.join(failed_task_names)}}</p>
+            <p>실행 날짜: {{ds}}</p>
+            <p>실행 시간: {{execution_date}}</p>
+            '''
+        )
+    else:
+        # 모든 태스크가 성공 또는 스킵되었으면 성공 이메일 발송
+        send_email(
+            to={success_emails!r},
+            subject=f"[성공] {name} (DAG ID: {{dag_run.dag_id}})",
+            html_content=f'''
+            <h3>DAG {{dag_run.dag_id}} 실행이 성공적으로 완료되었습니다.</h3>
+            <p>DAG 이름: {name}</p>
+            <p>실행 날짜: {{ds}}</p>
+            <p>실행 시간: {{execution_date}}</p>
+            '''
+        )
 
-# 실패 이메일 콜백 함수
-def send_failure_email(**kwargs):
-    \"\"\"DAG 실패 시 이메일 전송\"\"\"
-    failure_to = {failure_emails!r}
-    if not failure_to:
-        return
-        
-    dag_run = kwargs['dag_run']
-    dag_id = dag_run.dag_id
-    
-    email = EmailOperator(
-        task_id='send_failure_email',
-        to=failure_to, 
-        subject=f"[실패] {name} (DAG ID: {dag_id})",
-        html_content='''
-        <h3>DAG {{{{ dag_run.dag_id }}}} 실행이 실패했습니다.</h3>
-        <p>DAG 이름: {name}</p>
-        <p>실행 날짜: {{{{ ds }}}}</p>
-        <p>실행 시간: {{{{ execution_date }}}}</p>
-        <p>실패한 작업: {{{{ task_instance.task_id }}}} </p>
-        ''',
-        dag=kwargs['dag']
-    )
-    email.execute(context=kwargs)
-    
+# DAG 설정
 default_args = {{
     'depends_on_past': False,
     'owner' : '{owner}',
@@ -359,9 +350,8 @@ dag = DAG(
     end_date= {f"datetime({end_date.year}, {end_date.month}, {end_date.day})" if end_date else "None"},
     tags={tags},
     catchup=False,
-    is_paused_upon_creation=False,
-    on_success_callback=send_success_email if {bool(success_emails)} else None,
-    on_failure_callback=send_failure_email if {bool(failure_emails)} else None
+    is_paused_upon_creation=False
+    # 콜백 함수 대신 최종 알림 태스크 사용
 )
 """
 
@@ -486,6 +476,22 @@ task_{idx}_skip    >> task_{idx}_cleanup
             dag_code += "\n"
             for i in range(len(job_details) - 1):
                 dag_code += f"task_{i}_cleanup >> task_{i + 1}\n"
+
+        # 마지막에 최종 상태 알림 태스크 추가
+        last_idx = len(job_details) - 1
+        dag_code += f"""
+# 최종 DAG 상태 알림 태스크
+notify_task = PythonOperator(
+    task_id='notify_dag_status',
+    python_callable=notify_dag_status,
+    provide_context=True,
+    trigger_rule=TriggerRule.ALL_DONE,  # 모든 태스크 완료 후 실행 (성공, 실패, 스킵 모두 포함)
+    dag=dag,
+)
+
+# 마지막 cleanup 태스크와 알림 태스크 연결
+task_{last_idx}_cleanup >> notify_task
+"""
 
         return dag_code
 
