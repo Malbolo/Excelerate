@@ -29,7 +29,7 @@ const TemplateList = () => {
   };
 
   return (
-    <section className='flex flex-1 flex-col justify-between gap-2'>
+    <section className='flex min-w-1/2 flex-1 flex-col justify-between gap-2 pr-2'>
       {openModal && (
         <ExpandModal isOpen={openModal} onClose={() => setOpenModal(false)}>
           {templateImage ? (

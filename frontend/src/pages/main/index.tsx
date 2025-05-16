@@ -110,8 +110,8 @@ const MainPage: React.FC = () => {
       <ResizablePanelGroup direction='horizontal'>
         <ResizablePanel>
           <div className='mx-auto flex h-screen w-full max-w-[800px] grow-0 flex-col justify-between gap-4 p-8'>
-            <div className='flex flex-1 flex-col gap-4 overflow-hidden'>
-              <div className='flex max-h-48 gap-4'>
+            <div className='@container flex flex-1 flex-col gap-4 overflow-hidden'>
+              <div className='flex w-full flex-col @md:flex-row'>
                 <TemplateList />
                 <SourceData />
               </div>
@@ -170,7 +170,7 @@ const MainPage: React.FC = () => {
 
         <ResizableHandle withHandle />
 
-        <ResizablePanel minSize={30} maxSize={60} defaultSize={30}>
+        <ResizablePanel minSize={30} maxSize={70} defaultSize={30}>
           <MainSideBar />
         </ResizablePanel>
       </ResizablePanelGroup>

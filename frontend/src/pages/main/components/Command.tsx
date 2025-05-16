@@ -91,6 +91,7 @@ const Command = ({ command, index }: CommandProps) => {
         className={cn(
           'group hover:text-accent-foreground flex grow items-center gap-3 rounded-lg px-2 py-1',
           !isEditMode && 'cursor-move',
+          status === 'failed' && 'text-destructive hover:text-destructive',
         )}
       >
         <div

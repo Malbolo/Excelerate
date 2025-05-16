@@ -2,20 +2,22 @@ import { memo, useState } from 'react';
 
 import Editor from '@monaco-editor/react';
 import { ColumnDef } from '@tanstack/react-table';
-import { DownloadIcon, Expand } from 'lucide-react';
+import { DownloadIcon, Expand, TriangleAlert } from 'lucide-react';
 
-import LLMGraph from '@/components/Graph/LLMGraph';
 import { BASE_URL } from '@/constant/baseURL';
+import AgentCallDetail from '@/pages/agentMonitoring/components/AgentCallDetail';
 import Tabs from '@/pages/main/components/Tabs';
 import { useJobResultStore } from '@/store/useJobResultStore';
 import { useStreamStore } from '@/store/useStreamStore';
 import { DataFrame, DataFrameRow } from '@/types/dataframe';
+import { ErrorMessage } from '@/types/job';
 
 import DataTable from './DataTable';
 import ExpandModal from './ExpandModal';
 
 const MainSideBar = memo(() => {
-  const { dataframe, columns, code, downloadToken } = useJobResultStore();
+  const { dataframe, columns, code, downloadToken, errorMsg } =
+    useJobResultStore();
 
   const tabPanels = [
     <DataPanel
@@ -24,7 +26,7 @@ const MainSideBar = memo(() => {
       columns={columns}
       downloadToken={downloadToken}
     />,
-    <CodePanel key='code' code={code} />,
+    <CodePanel key='code' code={code} errorMsg={errorMsg} />,
     <TracePanel key='trace' />,
   ];
 
@@ -80,7 +82,10 @@ const DataPanel = memo<{
 
 DataPanel.displayName = 'DataPanel';
 
-const CodePanel: React.FC<{ code: string }> = ({ code }) => {
+const CodePanel: React.FC<{
+  code: string;
+  errorMsg: ErrorMessage | null;
+}> = ({ code, errorMsg }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   if (!code)
     return (
@@ -89,6 +94,12 @@ const CodePanel: React.FC<{ code: string }> = ({ code }) => {
 
   return (
     <div className='h-full py-2'>
+      {errorMsg && (
+        <div className='text-destructive bg-destructive/10 mx-2 mb-4 flex items-center gap-2 rounded-lg p-2 px-4'>
+          <TriangleAlert className='h-4 w-4 shrink-0' />
+          <p className='text-sm'>{errorMsg.message}</p>
+        </div>
+      )}
       <Editor
         key={code}
         defaultLanguage='python'
@@ -125,6 +136,7 @@ const CodePanel: React.FC<{ code: string }> = ({ code }) => {
 };
 
 const TracePanel: React.FC = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { logs } = useStreamStore();
 
   if (!logs || logs.length === 0)
@@ -133,8 +145,20 @@ const TracePanel: React.FC = () => {
     );
 
   return (
-    <div className='h-full grow overflow-auto p-4'>
-      <LLMGraph jobName='Current Job' logs={logs ?? []} />
+    <div className='h-full'>
+      <AgentCallDetail logs={logs} />
+      <div className='absolute bottom-2 left-1 z-10 cursor-pointer rounded-full border bg-white p-3'>
+        <Expand
+          color='#374151'
+          size={18}
+          onClick={() => {
+            setIsModalOpen(true);
+          }}
+        />
+      </div>
+      <ExpandModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+        <AgentCallDetail logs={logs} />
+      </ExpandModal>
     </div>
   );
 };
