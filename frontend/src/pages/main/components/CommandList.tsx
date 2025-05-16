@@ -39,6 +39,7 @@ const CommandList = ({ job }: { job?: JobManagement }) => {
   const {
     setDataframe: setData,
     code,
+    errorMsg,
     setCode,
     setColumns,
     setDownloadToken,
@@ -83,8 +84,11 @@ const CommandList = ({ job }: { job?: JobManagement }) => {
       command_list: commands,
       url: sourceDataUrl,
       stream_id: streamId,
-      original_code: code,
     };
+
+    if (!errorMsg) {
+      Object.defineProperty(request, 'original_code', { value: code });
+    }
 
     const response = await commandMutation(request);
 
