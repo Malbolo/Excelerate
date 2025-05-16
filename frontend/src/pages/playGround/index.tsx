@@ -58,9 +58,6 @@ const LLMPlaygroundPage = () => {
     { human: '', ai: '', index: 0 },
   ]);
   const [userInput, setUserInput] = useState<string>('');
-  const [variables, setVariables] = useState<{ [key: string]: string }>({});
-  const [isVariablesDialogOpen, setIsVariablesDialogOpen] = useState(false);
-  const [modifiedOutput, setModifiedOutput] = useState<string>('');
 
   useEffect(() => {
     if (selectedCategory) {
@@ -169,10 +166,6 @@ const LLMPlaygroundPage = () => {
       variables,
     };
     toast.success('Test payload logged to console!');
-    const result = await postCallPrompt(payload);
-    setModifiedOutput(result.output);
-
-    console.log(modifiedOutput);
   };
 
   return (
