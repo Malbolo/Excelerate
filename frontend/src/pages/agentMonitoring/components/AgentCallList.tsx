@@ -1,40 +1,33 @@
 import { ChevronRight, User } from 'lucide-react';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 
-import { useGetJobList } from '@/apis/agentMonitoring';
+import { useGetLLMLogList } from '@/apis/agentMonitoring';
+import CustomPagination from '@/components/Pagination';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import useInternalRouter from '@/hooks/useInternalRouter';
 import { formatDateTime } from '@/lib/dateFormat';
 import { useLocalDate } from '@/store/useLocalDate';
 
-import JobPagination from './JobPagination';
-
 const AgentCallList = () => {
-  const [searchParams] = useSearchParams();
-  const name = searchParams.get('name') || '';
-  const startDate = searchParams.get('startDate') || '';
-  const endDate = searchParams.get('endDate') || '';
-  const page = searchParams.get('page') || '1';
-
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { push } = useInternalRouter();
   const { locale, place } = useLocalDate();
 
-  const {
-    data: { logs, pages },
-  } = useGetJobList({
-    user_name: name,
-    start_date: startDate,
-    end_date: endDate,
-    page: page,
+  const { data } = useGetLLMLogList({
+    user_name: searchParams.get('name') || '',
+    start_date: searchParams.get('startDate') || '',
+    end_date: searchParams.get('endDate') || '',
+    page: searchParams.get('page') || '1',
     size: '4',
   });
-
-  const { push } = useInternalRouter();
-  const location = useLocation();
+  const { logs, pages } = data;
 
   const handleLogClick = (logId: string) => {
-    const searchParams = new URLSearchParams(location.search);
-    searchParams.set('logId', logId);
+    setSearchParams(prev => {
+      prev.set('logId', logId);
+      return prev;
+    });
     push(`?${searchParams.toString()}`);
   };
 
@@ -43,7 +36,7 @@ const AgentCallList = () => {
       <section className='grid h-full w-full grid-cols-1 grid-rows-4 gap-2'>
         {logs.map(log => (
           <Card
-            key={log.log_id}
+            key={`${log.log_id}-${log.created_at}`}
             onClick={() => handleLogClick(log.log_id)}
             className='group w-full flex-1 cursor-pointer transition-all'
           >
@@ -69,8 +62,7 @@ const AgentCallList = () => {
           </Card>
         ))}
       </section>
-
-      <JobPagination pages={pages} />
+      <CustomPagination totalPages={pages} />
     </div>
   );
 };

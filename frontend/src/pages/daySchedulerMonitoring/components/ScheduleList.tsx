@@ -1,19 +1,20 @@
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 
 import { DaySchedule } from '@/apis/schedulerMonitoring';
 import { Button } from '@/components/ui/button';
+import useInternalRouter from '@/hooks/useInternalRouter';
 
 interface ScheduleListProps {
   items: DaySchedule[];
 }
 
 const ScheduleList = ({ items }: ScheduleListProps) => {
-  const navigate = useNavigate();
+  const { push } = useInternalRouter();
   const { dayId } = useParams<{ dayId: string }>();
 
   const handleViewDetails = (schedule_id: string, run_id: string) => {
     const url = `/scheduler-monitoring/detail/${dayId}/${schedule_id}/${run_id}`;
-    navigate(url);
+    push(url);
   };
 
   if (!items || items.length === 0) {

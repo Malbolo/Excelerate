@@ -4,14 +4,14 @@ import { JobManagement } from '@/apis/jobManagement';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
-interface AvailableJobListProps {
+interface JobListProps {
   selectedJobIds?: Set<string>;
   selectedJobId?: string;
   onJobSelect?: (job: JobManagement, isNowSelected: boolean) => void;
   jobs: JobManagement[];
 }
 
-const AvailableJobList = ({ selectedJobIds, onJobSelect, selectedJobId, jobs }: AvailableJobListProps) => {
+const JobList = ({ selectedJobIds, onJobSelect, selectedJobId, jobs }: JobListProps) => {
   const handleJobSelectInternal = (job: JobManagement) => {
     if (onJobSelect) {
       const isCurrentlySelected = selectedJobIds?.has(job.id) || false;
@@ -96,4 +96,4 @@ const AvailableJobList = ({ selectedJobIds, onJobSelect, selectedJobId, jobs }: 
   );
 };
 
-export default AvailableJobList;
+export default JobList;

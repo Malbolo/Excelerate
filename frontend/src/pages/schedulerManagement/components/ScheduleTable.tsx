@@ -5,7 +5,6 @@ import ScheduleRow from './ScheduleRow';
 
 const ScheduleTable = () => {
   const { data } = useGetScheduleList();
-
   const { schedules } = data;
 
   return (

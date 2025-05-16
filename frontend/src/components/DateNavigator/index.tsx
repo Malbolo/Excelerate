@@ -3,17 +3,18 @@ import { useCallback, useMemo, useState } from 'react';
 import { addDays, addMonths, format, isValid, parse, startOfMonth, subDays, subMonths } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import useInternalRouter from '@/hooks/useInternalRouter';
 
 import DayPicker from './DayPicker';
 import MonthYearSelector from './MonthYearSelector';
 
 const SchedulerNavigator = () => {
   const { dayId, monthId } = useParams<{ dayId: string; monthId: string }>();
-  const navigate = useNavigate();
+  const { push } = useInternalRouter();
 
   const [isDayPickerOpen, setIsDayPickerOpen] = useState(false);
   const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
@@ -76,41 +77,41 @@ const SchedulerNavigator = () => {
     const pathPrefix = '/scheduler-monitoring';
     if (viewType === 'day') {
       const previousDay = subDays(currentDate, 1);
-      navigate(`${pathPrefix}/day/${format(previousDay, 'yyyy-MM-dd')}`);
+      push(`${pathPrefix}/day/${format(previousDay, 'yyyy-MM-dd')}`);
     } else if (viewType === 'month') {
       const previousMonth = subMonths(currentDate, 1);
-      navigate(`${pathPrefix}/month/${format(previousMonth, 'yyyy-MM')}`);
+      push(`${pathPrefix}/month/${format(previousMonth, 'yyyy-MM')}`);
     }
-  }, [navigate, viewType, currentDate, isValidDate]);
+  }, [push, viewType, currentDate, isValidDate]);
 
   const handleNext = useCallback(() => {
     if (!isValidDate) return;
     const pathPrefix = '/scheduler-monitoring';
     if (viewType === 'day') {
       const nextDay = addDays(currentDate, 1);
-      navigate(`${pathPrefix}/day/${format(nextDay, 'yyyy-MM-dd')}`);
+      push(`${pathPrefix}/day/${format(nextDay, 'yyyy-MM-dd')}`);
     } else if (viewType === 'month') {
       const nextMonth = addMonths(currentDate, 1);
-      navigate(`${pathPrefix}/month/${format(nextMonth, 'yyyy-MM')}`);
+      push(`${pathPrefix}/month/${format(nextMonth, 'yyyy-MM')}`);
     }
-  }, [navigate, viewType, currentDate, isValidDate]);
+  }, [push, viewType, currentDate, isValidDate]);
 
   const handleSelectDay = useCallback(
     (selectedDate: Date) => {
       if (viewType !== 'day') return;
       setIsDayPickerOpen(false);
-      navigate(`/scheduler-monitoring/day/${format(selectedDate, 'yyyy-MM-dd')}`);
+      push(`/scheduler-monitoring/day/${format(selectedDate, 'yyyy-MM-dd')}`);
     },
-    [navigate, viewType],
+    [push, viewType],
   );
 
   const handleSelectMonthYear = useCallback(
     (selectedDate: Date) => {
       if (viewType !== 'month') return;
       setIsMonthPickerOpen(false);
-      navigate(`/scheduler-monitoring/month/${format(selectedDate, 'yyyy-MM')}`);
+      push(`/scheduler-monitoring/month/${format(selectedDate, 'yyyy-MM')}`);
     },
-    [navigate, viewType],
+    [push, viewType],
   );
 
   return (

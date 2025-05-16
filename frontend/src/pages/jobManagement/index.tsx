@@ -2,9 +2,9 @@ import { Separator } from '@radix-ui/react-separator';
 import { useSearchParams } from 'react-router-dom';
 
 import { JobManagement, useGetJobList } from '@/apis/jobManagement';
+import CustomPagination from '@/components/Pagination';
 
-import AvailableJobList from '../createScheduler/components/AvailableJobList';
-import JobPagination from '../createScheduler/components/JobPagination';
+import JobList from '../createScheduler/components/JobList';
 import JobSearchInput from '../createScheduler/components/JobSearchInput';
 import CommandList from './components/CommandList';
 
@@ -40,8 +40,8 @@ const JobManagementPage = () => {
         </header>
         <div className='flex w-full grow flex-col overflow-hidden'>
           <JobSearchInput />
-          <AvailableJobList selectedJobId={selectedJobId} onJobSelect={handleJobSelect} jobs={jobs} />
-          <JobPagination total={total} />
+          <JobList selectedJobId={selectedJobId} onJobSelect={handleJobSelect} jobs={jobs} />
+          <CustomPagination totalPages={total} />
         </div>
       </main>
       <Separator orientation='vertical' className='mx-2 hidden md:block' />

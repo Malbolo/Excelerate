@@ -5,8 +5,7 @@ import { useForm } from 'react-hook-form';
 import ClipLoader from 'react-spinners/ClipLoader';
 import { z } from 'zod';
 
-import { SaveJobRequest, useEditJob, useSaveJob } from '@/apis/job';
-import { JobManagement } from '@/apis/jobManagement';
+import { JobManagement, SaveJobRequest, usePostJob, useUpdateJob } from '@/apis/jobManagement';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -61,8 +60,8 @@ const SaveJobDialog = ({ job }: { job?: JobManagement }) => {
   const { code } = useJobResultStore();
   const { canSaveJob, isEditMode: isEditting } = useJobStore();
 
-  const { mutate: saveJobMutation, isPending: isJobSaving } = useSaveJob();
-  const { mutate: editJobMutation, isPending: isJobEditing } = useEditJob();
+  const { mutate: saveJobMutation, isPending: isJobSaving } = usePostJob();
+  const { mutate: editJobMutation, isPending: isJobEditing } = useUpdateJob();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

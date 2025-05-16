@@ -72,9 +72,9 @@ const TemplateManagementPage = () => {
   const handleConfirmDelete = async () => {
     if (templateNameToDelete) {
       deleteTemplateMutate(templateNameToDelete);
-      toast.success(`Template "${templateNameToDelete}" deleted successfully.`);
       setTemplateNameToDelete(null);
       setIsDeleteDialogOpen(false);
+      toast.success(`Template "${templateNameToDelete}" deleted successfully.`);
     }
   };
 
@@ -153,6 +153,7 @@ const TemplateManagementPage = () => {
         </ul>
       </div>
 
+      {/* 삭제 대화 모달 */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

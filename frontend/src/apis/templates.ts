@@ -12,6 +12,7 @@ interface CreateTemplateVariables {
   file: File;
 }
 
+// 템플릿 목록 조회
 const getTemplates = async () => {
   const { data, error, success } = await api<GetTemplatesResponse>('/api/agent/template');
 
@@ -22,18 +23,7 @@ const getTemplates = async () => {
   return data;
 };
 
-const deleteTemplate = async (templateId: string) => {
-  const { data, error, success } = await api(`/api/agent/template/${templateId}`, {
-    method: 'DELETE',
-  });
-
-  if (!success) {
-    throw new Error(error);
-  }
-
-  return data;
-};
-
+// 템플릿 생성
 const createTemplate = async ({ title, file }: CreateTemplateVariables) => {
   const formData = new FormData();
   formData.append('template_name', title);
@@ -54,6 +44,20 @@ const createTemplate = async ({ title, file }: CreateTemplateVariables) => {
   return data;
 };
 
+// 템플릿 삭제
+const deleteTemplate = async (templateId: string) => {
+  const { data, error, success } = await api(`/api/agent/template/${templateId}`, {
+    method: 'DELETE',
+  });
+
+  if (!success) {
+    throw new Error(error);
+  }
+
+  return data;
+};
+
+// 템플릿 이미지 조회
 const getTemplateImage = async (templateName: string) => {
   const { data, error, success } = await api<string>(`/api/agent/template/${templateName}/preview`);
 
@@ -64,6 +68,7 @@ const getTemplateImage = async (templateName: string) => {
   return data;
 };
 
+// 템플릿 이미지 조회 hook - tasntack/mutation
 export const useGetTemplateImage = () => {
   const { mutateAsync } = useMutation({
     mutationFn: (templateName: string) => getTemplateImage(templateName),
@@ -75,12 +80,14 @@ export const useGetTemplateImage = () => {
   return mutateAsync;
 };
 
+// 템플릿 목록 조회 hook - tasntack/query
 export const useGetTemplates = () =>
   useSuspenseQuery({
     queryKey: ['templates'],
     queryFn: getTemplates,
   });
 
+// 템플릿 삭제 hook - tasntack/mutation
 export const useDeleteTemplate = () => {
   const queryClient = useQueryClient();
 
@@ -98,6 +105,7 @@ export const useDeleteTemplate = () => {
   return mutate;
 };
 
+// 템플릿 생성 hook - tasntack/mutation
 export const useCreateTemplate = () => {
   const queryClient = useQueryClient();
 

@@ -12,7 +12,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import ClipLoader from 'react-spinners/ClipLoader';
 import { toast } from 'sonner';
 
-import { useSendCommandList } from '@/apis/job';
+import { useGetDataFrame } from '@/apis/job';
 import { JobManagement } from '@/apis/jobManagement';
 import { Button } from '@/components/ui/button';
 import { createSortableColumns } from '@/lib/createSortableColumns';
@@ -44,7 +44,7 @@ const CommandList = ({ job }: { job?: JobManagement }) => {
   const { isEditMode, setCanSaveJob } = useJobStore();
   const { streamId, resetLogs } = useStreamStore();
 
-  const { mutateAsync: commandMutation, isPending: isCommandLoading } = useSendCommandList();
+  const { mutateAsync: commandMutation, isPending: isCommandLoading } = useGetDataFrame();
 
   const sensors = useSensors(
     useSensor(PointerSensor),

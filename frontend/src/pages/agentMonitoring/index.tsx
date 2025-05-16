@@ -4,25 +4,18 @@ import { format } from 'date-fns';
 import { CalendarIcon, MousePointerClick } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 
-import { useGetJobLogs } from '@/apis/agentMonitoring';
+import { useGetLLMLog } from '@/apis/agentMonitoring';
+import AgentCallDetail from '@/components/AgentCall';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import useInternalRouter from '@/hooks/useInternalRouter';
+import { disabledDate } from '@/lib/disabledDate';
 import { cn } from '@/lib/utils';
 
-import AgentCallDetail from './components/AgentCallDetail';
 import AgentCallList from './components/AgentCallList';
-
-// 유틸 함수로 분리해야함
-const disabledDate = (date: Date, endDate: Date | undefined, startDate: Date | undefined) => {
-  if (endDate && date > endDate) return true;
-  if (startDate && date < startDate) return true;
-  if (date > new Date(new Date().setHours(0, 0, 0, 0))) return true;
-  return false;
-};
 
 const AgentMonitoringPage: React.FC = () => {
   const [startDate, setStartDate] = useState<Date>();
@@ -34,7 +27,7 @@ const AgentMonitoringPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const logId = searchParams.get('logId') || '';
 
-  const { data: logs } = useGetJobLogs(logId);
+  const { data: logs } = useGetLLMLog(logId);
 
   const handleSearchJobList = () => {
     const searchParams = new URLSearchParams();
@@ -54,6 +47,7 @@ const AgentMonitoringPage: React.FC = () => {
           <section className='flex h-screen flex-1 flex-col justify-between gap-5 p-8'>
             <div className='flex w-full flex-col items-center gap-3'>
               <div className='flex w-full items-center gap-3'>
+                {/* 시작일 선택 */}
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -78,6 +72,7 @@ const AgentMonitoringPage: React.FC = () => {
                   </PopoverContent>
                 </Popover>
 
+                {/* 종료일 선택 */}
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -100,6 +95,7 @@ const AgentMonitoringPage: React.FC = () => {
                 </Popover>
               </div>
 
+              {/* 검색 입력 및 검색 버튼 */}
               <div className='flex w-full items-center gap-3'>
                 <div className='relative h-full flex-1'>
                   <Input
@@ -115,12 +111,15 @@ const AgentMonitoringPage: React.FC = () => {
               </div>
             </div>
 
+            {/* 로그 목록 조회 */}
             <AgentCallList />
           </section>
         </ResizablePanel>
 
+        {/* 로그 목록 조회 영역과 로그 상세 조회 영역 사이의 구분 영역 */}
         <ResizableHandle withHandle />
 
+        {/* 로그 상세 조회 영역 */}
         <ResizablePanel className='h-screen border-l' minSize={50} maxSize={70} defaultSize={60}>
           <section className='h-full'>
             {logs.length > 0 ? (

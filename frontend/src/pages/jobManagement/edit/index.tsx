@@ -5,7 +5,7 @@ import { useParams } from 'react-router-dom';
 import ClipLoader from 'react-spinners/ClipLoader';
 import { toast } from 'sonner';
 
-import { useSendCommandList } from '@/apis/job';
+import { useGetDataFrame } from '@/apis/job';
 import { useGetJobDetail } from '@/apis/jobManagement';
 import { Button } from '@/components/ui/button';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
@@ -31,7 +31,7 @@ const JobEditPage = () => {
 
   const { data: jobDetail, isLoading: isJobDetailLoading } = useGetJobDetail(jobId);
 
-  const { mutateAsync: commandMutation, isPending: isCommandLoading } = useSendCommandList();
+  const { mutateAsync: commandMutation, isPending: isCommandLoading } = useGetDataFrame();
 
   const { setSourceDataCommand, setSourceDataUrl, resetSource, setSourceParams } = useSourceStore();
   const { addCommand, resetCommand, setCommandList: setStoreCommandList } = useCommandStore();

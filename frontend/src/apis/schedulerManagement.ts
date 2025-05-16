@@ -1,8 +1,7 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { CreateScheduleFormData } from '@/pages/createScheduler/components/ScheduleDialog/scheduleSchema';
+import useInternalRouter from '@/hooks/useInternalRouter';
 
 import { api } from './core';
 import { JobManagement } from './jobManagement';
@@ -44,15 +43,16 @@ interface ScheduleListResponse {
   schedules: Schedule[];
 }
 
-interface CreateScheduleRequest extends CreateScheduleFormData {
-  selectedJobs: JobManagement[];
+interface CreateScheduleRequest {
+  schedule: string;
 }
 
 interface EditScheduleRequest {
-  schedule: CreateScheduleRequest;
+  schedule: string;
   scheduleId: string;
 }
 
+// 스케쥴 상세 조회 - 수정페이지에서 초기 데이터 로드할 때 필요
 const getScheduleDetail = async (scheduleId: string) => {
   const { error, success, data } = await api<Schedule>(`/api/schedules/${scheduleId}`);
 
@@ -63,13 +63,7 @@ const getScheduleDetail = async (scheduleId: string) => {
   return data;
 };
 
-export const useGetScheduleDetail = (scheduleId: string) => {
-  return useSuspenseQuery({
-    queryKey: ['scheduleDetail', scheduleId],
-    queryFn: () => getScheduleDetail(scheduleId),
-  });
-};
-
+// 스케쥴 목록 조회
 const getScheduleList = async () => {
   const { error, success, data } = await api<ScheduleListResponse>('/api/schedules');
 
@@ -80,30 +74,11 @@ const getScheduleList = async () => {
   return data;
 };
 
-export const useGetScheduleList = () => {
-  return useSuspenseQuery({
-    queryKey: ['scheduleList'],
-    queryFn: getScheduleList,
-  });
-};
-
-const createSchedule = async (schedule: CreateScheduleRequest) => {
+// 스케쥴 생성
+const createSchedule = async ({ schedule }: CreateScheduleRequest) => {
   const { error, success } = await api('/api/schedules', {
     method: 'POST',
-    body: JSON.stringify({
-      title: schedule.scheduleTitle,
-      description: schedule.scheduleDescription,
-      jobs: schedule.selectedJobs.map((job, index) => ({
-        id: String(job.id),
-        order: index + 1,
-      })),
-      success_emails: schedule.successEmail,
-      failure_emails: schedule.failEmail,
-      start_date: schedule.startDate,
-      end_date: schedule.endDate,
-      execution_time: schedule.executionTime,
-      frequency: schedule.interval,
-    }),
+    body: schedule,
   });
 
   if (!success) {
@@ -113,25 +88,11 @@ const createSchedule = async (schedule: CreateScheduleRequest) => {
   return;
 };
 
+// 스케쥴 수정
 const updateSchedule = async ({ scheduleId, schedule }: EditScheduleRequest) => {
   const { error, success } = await api(`/api/schedules/${scheduleId}`, {
     method: 'PATCH',
-    body: JSON.stringify({
-      title: schedule.scheduleTitle,
-      description: schedule.scheduleDescription,
-      jobs: schedule.selectedJobs.map((job, index) => ({
-        id: String(job.id),
-        order: index + 1,
-      })),
-      success_emails: schedule.successEmail,
-      failure_emails: schedule.failEmail,
-      start_date: new Date(schedule.startDate.getTime() + 9 * 60 * 60 * 1000).toISOString().split('.')[0],
-      end_date: schedule.endDate
-        ? new Date(schedule.endDate.getTime() + 9 * 60 * 60 * 1000).toISOString().split('.')[0]
-        : undefined,
-      execution_time: schedule.executionTime,
-      frequency: schedule.interval,
-    }),
+    body: schedule,
   });
 
   if (!success) {
@@ -141,6 +102,7 @@ const updateSchedule = async ({ scheduleId, schedule }: EditScheduleRequest) => 
   return;
 };
 
+// 스케쥴 활성화/비활성화
 const toggleSchedule = async (scheduleId: string) => {
   const { error, success } = await api(`/api/schedules/${scheduleId}/toggle`, {
     method: 'PATCH',
@@ -153,6 +115,7 @@ const toggleSchedule = async (scheduleId: string) => {
   return;
 };
 
+// 스케쥴 일회성 실행
 const oneTimeSchedule = async (scheduleId: string) => {
   const { error, success } = await api(`/api/schedules/${scheduleId}/start`, {
     method: 'POST',
@@ -165,6 +128,7 @@ const oneTimeSchedule = async (scheduleId: string) => {
   return;
 };
 
+// 스케쥴 삭제
 const deleteSchedule = async (scheduleId: string) => {
   const { error, success } = await api(`/api/schedules/${scheduleId}`, {
     method: 'DELETE',
@@ -177,6 +141,23 @@ const deleteSchedule = async (scheduleId: string) => {
   return;
 };
 
+// 스케쥴 목록 조회 hook - tasntack/query
+export const useGetScheduleList = () => {
+  return useSuspenseQuery({
+    queryKey: ['scheduleList'],
+    queryFn: getScheduleList,
+  });
+};
+
+// 스케쥴 상세 조회 hook - tasntack/query
+export const useGetScheduleDetail = (scheduleId: string) => {
+  return useSuspenseQuery({
+    queryKey: ['scheduleDetail', scheduleId],
+    queryFn: () => getScheduleDetail(scheduleId),
+  });
+};
+
+// 스케쥴 활성화/비활성화 hook - tasntack/mutation
 export const useToggleSchedule = () => {
   const queryClient = useQueryClient();
   const { mutate } = useMutation({
@@ -184,9 +165,6 @@ export const useToggleSchedule = () => {
     onSuccess: () => {
       toast.success('Schedule toggled successfully');
       queryClient.invalidateQueries({ queryKey: ['scheduleList'] });
-      queryClient.invalidateQueries({ queryKey: ['daySchedules'] });
-      queryClient.invalidateQueries({ queryKey: ['monthSchedules'] });
-      queryClient.invalidateQueries({ queryKey: ['scheduleDetail'] });
     },
     onError: error => {
       toast.error(error.message);
@@ -196,6 +174,7 @@ export const useToggleSchedule = () => {
   return mutate;
 };
 
+// 스케쥴 일회성 실행 hook - tasntack/mutation
 export const useOneTimeSchedule = () => {
   const queryClient = useQueryClient();
   const { mutate } = useMutation({
@@ -203,9 +182,6 @@ export const useOneTimeSchedule = () => {
     onSuccess: () => {
       toast.success('Schedule started successfully');
       queryClient.invalidateQueries({ queryKey: ['scheduleList'] });
-      queryClient.invalidateQueries({ queryKey: ['daySchedules'] });
-      queryClient.invalidateQueries({ queryKey: ['monthSchedules'] });
-      queryClient.invalidateQueries({ queryKey: ['scheduleDetail'] });
     },
     onError: error => {
       toast.error(error.message);
@@ -215,19 +191,17 @@ export const useOneTimeSchedule = () => {
   return mutate;
 };
 
+// 스케쥴 생성 hook - tasntack/mutation
 export const useCreateSchedule = () => {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
+  const { push } = useInternalRouter();
 
   const { mutate } = useMutation({
     mutationFn: (schedule: CreateScheduleRequest) => createSchedule(schedule),
     onSuccess: () => {
       toast.success('Schedule created successfully');
       queryClient.invalidateQueries({ queryKey: ['scheduleList'] });
-      queryClient.invalidateQueries({ queryKey: ['daySchedules'] });
-      queryClient.invalidateQueries({ queryKey: ['monthSchedules'] });
-      queryClient.invalidateQueries({ queryKey: ['scheduleDetail'] });
-      navigate('/scheduler-management');
+      push('/scheduler-management');
     },
     onError: error => {
       toast.error(error.message);
@@ -237,6 +211,7 @@ export const useCreateSchedule = () => {
   return mutate;
 };
 
+// 스케쥴 삭제 hook - tasntack/mutation
 export const useDeleteSchedule = () => {
   const queryClient = useQueryClient();
   const { mutate } = useMutation({
@@ -244,9 +219,6 @@ export const useDeleteSchedule = () => {
     onSuccess: () => {
       toast.success('Schedule deleted successfully');
       queryClient.invalidateQueries({ queryKey: ['scheduleList'] });
-      queryClient.invalidateQueries({ queryKey: ['daySchedules'] });
-      queryClient.invalidateQueries({ queryKey: ['monthSchedules'] });
-      queryClient.invalidateQueries({ queryKey: ['scheduleDetail'] });
     },
     onError: error => {
       toast.error(error.message);
@@ -256,18 +228,16 @@ export const useDeleteSchedule = () => {
   return mutate;
 };
 
+// 스케쥴 수정 hook - tasntack/mutation
 export const useUpdateSchedule = () => {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
+  const { push } = useInternalRouter();
   const { mutate } = useMutation({
     mutationFn: (editScheduleRequest: EditScheduleRequest) => updateSchedule(editScheduleRequest),
     onSuccess: () => {
       toast.success('Schedule updated successfully');
       queryClient.invalidateQueries({ queryKey: ['scheduleList'] });
-      queryClient.invalidateQueries({ queryKey: ['daySchedules'] });
-      queryClient.invalidateQueries({ queryKey: ['monthSchedules'] });
-      queryClient.invalidateQueries({ queryKey: ['scheduleDetail'] });
-      navigate('/scheduler-management');
+      push('/scheduler-management');
     },
     onError: error => {
       toast.error(error.message);

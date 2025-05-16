@@ -29,6 +29,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
+import { disabledDate } from '@/lib/disabledDate';
 import { cn } from '@/lib/utils';
 import {
   CreateScheduleFormData,
@@ -54,31 +55,31 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
   const form = useForm<CreateScheduleFormData>({
     resolver: zodResolver(createScheduleSchema),
     defaultValues: {
-      scheduleTitle: isEditMode ? scheduleDetail.title : '',
-      scheduleDescription: isEditMode ? scheduleDetail.description : '',
-      successEmail: isEditMode ? scheduleDetail.success_emails : [],
-      failEmail: isEditMode ? scheduleDetail.failure_emails : [],
-      interval: isEditMode ? scheduleDetail.frequency : 'daily',
-      startDate: isEditMode ? new Date(scheduleDetail.start_date) : new Date(),
-      endDate: isEditMode ? new Date(scheduleDetail.end_date) : new Date(2099, 11, 31),
-      executionTime: isEditMode ? scheduleDetail.execution_time : '',
+      title: isEditMode ? scheduleDetail.title : '',
+      description: isEditMode ? scheduleDetail.description : '',
+      success_emails: isEditMode ? scheduleDetail.success_emails : [],
+      failure_emails: isEditMode ? scheduleDetail.failure_emails : [],
+      frequency: isEditMode ? scheduleDetail.frequency : 'daily',
+      start_date: isEditMode ? new Date(scheduleDetail.start_date) : new Date(),
+      end_date: isEditMode ? new Date(scheduleDetail.end_date) : new Date(2099, 11, 31),
+      execution_time: isEditMode ? scheduleDetail.execution_time : '',
     },
   });
 
   const onSubmit = (values: CreateScheduleFormData) => {
     const k_startDate = new Date(
-      values.startDate.getFullYear(),
-      values.startDate.getMonth(),
-      values.startDate.getDate(),
-      parseInt(values.executionTime.split(':')[0]),
-      parseInt(values.executionTime.split(':')[1]),
+      values.start_date.getFullYear(),
+      values.start_date.getMonth(),
+      values.start_date.getDate(),
+      parseInt(values.execution_time.split(':')[0]),
+      parseInt(values.execution_time.split(':')[1]),
       0,
     );
 
     const k_endDate = new Date(
-      values.endDate.getFullYear(),
-      values.endDate.getMonth(),
-      values.endDate.getDate(),
+      values.end_date.getFullYear(),
+      values.end_date.getMonth(),
+      values.end_date.getDate(),
       0,
       0,
       0,
@@ -88,16 +89,16 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
     const server_execution_time = server_start_date.substring(11, 16);
     const server_end_date = k_endDate.toISOString().split('.')[0];
 
-    console.log(server_start_date, server_execution_time, server_end_date);
-
-    const submissionData = {
+    const submissionData = JSON.stringify({
       ...values,
-      selectedJobs,
+      jobs: selectedJobs.map((job, index) => ({
+        id: String(job.id),
+        order: index + 1,
+      })),
       start_date: server_start_date,
       end_date: server_end_date,
-      executionTime: server_execution_time,
-      frequency: values.interval,
-    };
+      execution_time: server_execution_time,
+    });
 
     if (isEditMode && scheduleDetail) {
       editSchedule({
@@ -105,7 +106,7 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
         schedule: submissionData,
       });
     } else {
-      createSchedule(submissionData);
+      createSchedule({ schedule: submissionData });
     }
 
     onOpenChange(false);
@@ -126,7 +127,7 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
   const handleAddEmail = (
     emailValue: string,
     setEmailValue: Dispatch<React.SetStateAction<string>>,
-    fieldName: 'successEmail' | 'failEmail',
+    fieldName: 'success_emails' | 'failure_emails',
   ) => {
     if (emailValue.trim() === '') return;
     const emailCheck = z.string().email().safeParse(emailValue);
@@ -146,7 +147,7 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
     setEmailValue('');
   };
 
-  const handleRemoveEmail = (emailToRemove: string, fieldName: 'successEmail' | 'failEmail') => {
+  const handleRemoveEmail = (emailToRemove: string, fieldName: 'success_emails' | 'failure_emails') => {
     const currentEmails = form.getValues(fieldName) || [];
     form.setValue(
       fieldName,
@@ -182,9 +183,10 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
             <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
               <div className='grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-2'>
                 <div className='space-y-6'>
+                  {/* 스케줄 제목 */}
                   <FormField
                     control={form.control}
-                    name='scheduleTitle'
+                    name='title'
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
@@ -197,9 +199,11 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
                       </FormItem>
                     )}
                   />
+
+                  {/* 스케줄 설명 */}
                   <FormField
                     control={form.control}
-                    name='scheduleDescription'
+                    name='description'
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
@@ -217,9 +221,11 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
                     )}
                   />
                   <Separator className='my-4 md:hidden' />
+
+                  {/* 성공 알림 이메일 */}
                   <FormField
                     control={form.control}
-                    name='successEmail'
+                    name='success_emails'
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
@@ -235,7 +241,7 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
                               onKeyDown={e => {
                                 if (e.key === 'Enter') {
                                   e.preventDefault();
-                                  handleAddEmail(currentSuccessEmail, setCurrentSuccessEmail, 'successEmail');
+                                  handleAddEmail(currentSuccessEmail, setCurrentSuccessEmail, 'success_emails');
                                 }
                               }}
                             />
@@ -243,7 +249,9 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
                           <Button
                             type='button'
                             variant='outline'
-                            onClick={() => handleAddEmail(currentSuccessEmail, setCurrentSuccessEmail, 'successEmail')}
+                            onClick={() =>
+                              handleAddEmail(currentSuccessEmail, setCurrentSuccessEmail, 'success_emails')
+                            }
                           >
                             Add
                           </Button>
@@ -257,7 +265,7 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
                                 <button
                                   type='button'
                                   className='text-destructive-foreground ml-1.5 rounded-full p-0.5 opacity-70 hover:opacity-100'
-                                  onClick={() => handleRemoveEmail(email, 'successEmail')}
+                                  onClick={() => handleRemoveEmail(email, 'success_emails')}
                                 >
                                   <X className='h-3 w-3' />
                                 </button>
@@ -267,9 +275,11 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
                       </FormItem>
                     )}
                   />
+
+                  {/* 실패 알림 이메일 */}
                   <FormField
                     control={form.control}
-                    name='failEmail'
+                    name='failure_emails'
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
@@ -285,7 +295,7 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
                               onKeyDown={e => {
                                 if (e.key === 'Enter') {
                                   e.preventDefault();
-                                  handleAddEmail(currentFailEmail, setCurrentFailEmail, 'failEmail');
+                                  handleAddEmail(currentFailEmail, setCurrentFailEmail, 'failure_emails');
                                 }
                               }}
                             />
@@ -293,7 +303,7 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
                           <Button
                             type='button'
                             variant='outline'
-                            onClick={() => handleAddEmail(currentFailEmail, setCurrentFailEmail, 'failEmail')}
+                            onClick={() => handleAddEmail(currentFailEmail, setCurrentFailEmail, 'failure_emails')}
                           >
                             Add
                           </Button>
@@ -307,7 +317,7 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
                                 <button
                                   type='button'
                                   className='text-destructive-foreground ml-1.5 rounded-full p-0.5 opacity-70 hover:opacity-100'
-                                  onClick={() => handleRemoveEmail(email, 'failEmail')}
+                                  onClick={() => handleRemoveEmail(email, 'failure_emails')}
                                 >
                                   <X className='h-3 w-3' />
                                 </button>
@@ -318,10 +328,12 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
                     )}
                   />
                 </div>
+
+                {/* 실행 간격 */}
                 <div className='space-y-6'>
                   <FormField
                     control={form.control}
-                    name='interval'
+                    name='frequency'
                     render={({ field }) => (
                       <FormItem className='space-y-3'>
                         <FormLabel>
@@ -358,9 +370,11 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
                       </FormItem>
                     )}
                   />
+
+                  {/* 실행 시작 날짜 */}
                   <FormField
                     control={form.control}
-                    name='startDate'
+                    name='start_date'
                     render={({ field }) => (
                       <FormItem className='flex flex-col'>
                         <FormLabel>
@@ -377,13 +391,9 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
                                   !field.value && 'text-muted-foreground',
                                 )}
                               >
-                                {field.value ? (
-                                  formatDate(field.value, 'MMM d, yyyy', {
-                                    locale: enUS,
-                                  })
-                                ) : (
-                                  <span>Select date</span>
-                                )}
+                                {formatDate(field.value, 'MMM d, yyyy', {
+                                  locale: enUS,
+                                })}
                                 <CalendarIcon className='ml-auto h-4 w-4 opacity-50' />
                               </Button>
                             </PopoverTrigger>
@@ -393,7 +403,7 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
                               mode='single'
                               selected={field.value}
                               onSelect={field.onChange}
-                              disabled={date => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                              disabled={date => disabledDate(date, field.value, form.getValues('start_date'))}
                               initialFocus
                               locale={enUS}
                             />
@@ -403,9 +413,11 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
                       </FormItem>
                     )}
                   />
+
+                  {/* 실행 종료 날짜 */}
                   <FormField
                     control={form.control}
-                    name='endDate'
+                    name='end_date'
                     render={({ field }) => (
                       <FormItem className='flex flex-col'>
                         <FormLabel>
@@ -422,13 +434,9 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
                                   !field.value && 'text-muted-foreground',
                                 )}
                               >
-                                {field.value ? (
-                                  formatDate(field.value, 'MMM d, yyyy', {
-                                    locale: enUS,
-                                  })
-                                ) : (
-                                  <span>Select date</span>
-                                )}
+                                {formatDate(field.value, 'MMM d, yyyy', {
+                                  locale: enUS,
+                                })}
                                 <CalendarIcon className='ml-auto h-4 w-4 opacity-50' />
                               </Button>
                             </PopoverTrigger>
@@ -438,13 +446,7 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
                               mode='single'
                               selected={field.value}
                               onSelect={field.onChange}
-                              disabled={date => {
-                                const start = form.getValues('startDate');
-                                const today = new Date(new Date().setHours(0, 0, 0, 0));
-                                if (start && date < start) return true;
-                                if (date < today) return true;
-                                return false;
-                              }}
+                              disabled={date => disabledDate(date, field.value, form.getValues('start_date'))}
                               initialFocus
                               locale={enUS}
                             />
@@ -454,9 +456,11 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
                       </FormItem>
                     )}
                   />
+
+                  {/* 실행 시간 */}
                   <FormField
                     control={form.control}
-                    name='executionTime'
+                    name='execution_time'
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>

@@ -3,7 +3,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { api } from '@/apis/core';
 import { Log } from '@/types/agent';
 
-interface JobListParams {
+interface LLMLogListParams {
   user_name: string;
   start_date: string;
   end_date: string;
@@ -11,7 +11,7 @@ interface JobListParams {
   size: string;
 }
 
-interface LogResponse {
+interface LLMLogResponse {
   log_id: string;
   user_name: string;
   agent_name: string;
@@ -20,15 +20,19 @@ interface LogResponse {
   created_at: string;
 }
 
-interface JobListResponse {
-  logs: LogResponse[];
+interface LLMLogListResponse {
+  logs: LLMLogResponse[];
   pages: number;
 }
 
-const getJobList = async (request: JobListParams) => {
-  const { data, error, success } = await api<JobListResponse>(
-    `/api/agent/logs?&user_name=${request.user_name}&start_date=${request.start_date}&end_date=${request.end_date}&page=${request.page}&size=${request.size}`,
-  );
+// LLM 로그 목록 조회
+const getLLMLogList = async (logListParams: LLMLogListParams) => {
+  const params = new URLSearchParams();
+  Object.entries(logListParams).forEach(([key, value]) => {
+    params.set(key, value);
+  });
+
+  const { data, error, success } = await api<LLMLogListResponse>(`/api/agent/logs?${params.toString()}`);
 
   if (!success) {
     throw new Error(error);
@@ -37,7 +41,8 @@ const getJobList = async (request: JobListParams) => {
   return data;
 };
 
-const getJobLogs = async (log_id: string) => {
+// LLM 로그 조회
+const getLLMLog = async (log_id: string) => {
   const { data, error, success } = await api<Log[]>(`/api/agent/logs/${log_id}`);
 
   if (!success) {
@@ -47,16 +52,18 @@ const getJobLogs = async (log_id: string) => {
   return data;
 };
 
-export const useGetJobList = ({ user_name, start_date, end_date, page, size }: JobListParams) => {
+// LLM 로그 목록 조회 hook - tasntack/query
+export const useGetLLMLogList = ({ user_name, start_date, end_date, page, size }: LLMLogListParams) => {
   return useSuspenseQuery({
     queryKey: ['jobList', user_name, start_date, end_date, page, size],
-    queryFn: () => getJobList({ user_name, start_date, end_date, page, size }),
+    queryFn: () => getLLMLogList({ user_name, start_date, end_date, page, size }),
   });
 };
 
-export const useGetJobLogs = (log_id: string) => {
+// LLM 로그 조회 hook - tasntack/query
+export const useGetLLMLog = (log_id: string) => {
   return useSuspenseQuery({
     queryKey: ['agentLogs', log_id],
-    queryFn: () => getJobLogs(log_id),
+    queryFn: () => getLLMLog(log_id),
   });
 };

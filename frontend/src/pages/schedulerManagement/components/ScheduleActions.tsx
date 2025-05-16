@@ -1,7 +1,6 @@
 import { useState } from 'react';
 
 import { Pause, Pencil, Play, PlayCircle, Trash } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 
 import { Schedule, useDeleteSchedule, useOneTimeSchedule } from '@/apis/schedulerManagement';
 import { useToggleSchedule } from '@/apis/schedulerManagement';
@@ -17,13 +16,14 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import useInternalRouter from '@/hooks/useInternalRouter';
 
 interface ScheduleActionsProps {
   schedule: Schedule;
 }
 
 const ScheduleActions = ({ schedule }: ScheduleActionsProps) => {
-  const navigate = useNavigate();
+  const { push } = useInternalRouter();
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const toggleSchedule = useToggleSchedule();
@@ -51,7 +51,7 @@ const ScheduleActions = ({ schedule }: ScheduleActionsProps) => {
   };
 
   const handleConfirmEdit = () => {
-    navigate(`/scheduler-management/edit/${schedule.schedule_id}`);
+    push(`/scheduler-management/edit/${schedule.schedule_id}`);
   };
 
   const handleDelete = (e: React.MouseEvent) => {
@@ -67,6 +67,7 @@ const ScheduleActions = ({ schedule }: ScheduleActionsProps) => {
   return (
     <TooltipProvider delayDuration={300}>
       <div className='flex items-center space-x-1'>
+        {/* 일시정지 버튼 */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -84,6 +85,7 @@ const ScheduleActions = ({ schedule }: ScheduleActionsProps) => {
           </TooltipContent>
         </Tooltip>
 
+        {/* 단일 실행 버튼 */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -101,6 +103,7 @@ const ScheduleActions = ({ schedule }: ScheduleActionsProps) => {
           </TooltipContent>
         </Tooltip>
 
+        {/* 수정 버튼 */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant='ghost' size='icon' onClick={handleEdit} className='h-7 w-7' aria-label='Edit Schedule'>
@@ -112,6 +115,7 @@ const ScheduleActions = ({ schedule }: ScheduleActionsProps) => {
           </TooltipContent>
         </Tooltip>
 
+        {/* 삭제 버튼 */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant='ghost' size='icon' onClick={handleDelete} className='h-7 w-7'>
@@ -124,6 +128,7 @@ const ScheduleActions = ({ schedule }: ScheduleActionsProps) => {
         </Tooltip>
       </div>
 
+      {/* 수정 대화 모달 */}
       <AlertDialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -137,6 +142,7 @@ const ScheduleActions = ({ schedule }: ScheduleActionsProps) => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* 삭제 대화 모달 */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

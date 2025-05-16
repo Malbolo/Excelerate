@@ -3,9 +3,9 @@ import React from 'react';
 import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { ArrowRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
+import useInternalRouter from '@/hooks/useInternalRouter';
 import { cn } from '@/lib/utils';
 
 interface CalendarDayProps {
@@ -20,7 +20,7 @@ interface CalendarDayProps {
 
 const CalendarDay: React.FC<CalendarDayProps> = ({ day, month, year, isCurrentMonth, pending, success, fail }) => {
   const today = new Date();
-  const navigate = useNavigate();
+  const { push } = useInternalRouter();
 
   const cellDate = new Date(year, month - 1, Number(day));
   const isToday =
@@ -32,7 +32,7 @@ const CalendarDay: React.FC<CalendarDayProps> = ({ day, month, year, isCurrentMo
   const hasData = pending + success + fail > 0;
 
   const handleDetailClick = (dayId: string) => {
-    navigate(`/scheduler-monitoring/day/${dayId}`);
+    push(`/scheduler-monitoring/day/${dayId}`);
   };
 
   const formattedDayId = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;

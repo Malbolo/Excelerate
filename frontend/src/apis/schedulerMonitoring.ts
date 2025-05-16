@@ -58,6 +58,7 @@ export interface JobError {
   error_trace?: string;
 }
 
+// runId 실행된 스케쥴 상세 조회
 const getRunDetail = async (scheduleId: string, runId: string) => {
   const { error, success, data } = await api<RunDetailResponse>(`/api/schedules/${scheduleId}/runs/${runId}`);
 
@@ -68,6 +69,7 @@ const getRunDetail = async (scheduleId: string, runId: string) => {
   return data;
 };
 
+// 일별 스케쥴 조회
 const getDaySchedules = async (year: string, month: string, day: string) => {
   const { data } = await api<GetDayScheduleResponse>(
     `/api/schedules/statistics/daily?year=${year}&month=${month}&day=${day}`,
@@ -82,6 +84,7 @@ const getDaySchedules = async (year: string, month: string, day: string) => {
   return data;
 };
 
+// 월별 스케쥴 조회
 const getMonthSchedules = async (year: string, month: string) => {
   const { data } = await api<GetMonthScheduleResponse>(
     `/api/schedules/statistics/monthly?year=${year}&month=${month}`,
@@ -95,6 +98,7 @@ const getMonthSchedules = async (year: string, month: string) => {
   return data;
 };
 
+// runId 실행된 스케쥴 상세 조회 hook - tasntack/query
 export const useGetRunDetail = (scheduleId: string, runId: string) => {
   return useSuspenseQuery({
     queryKey: ['scheduleDetail', scheduleId, runId],
@@ -102,6 +106,7 @@ export const useGetRunDetail = (scheduleId: string, runId: string) => {
   });
 };
 
+// 일별 스케쥴 조회 hook - tasntack/query
 export const useGetDaySchedules = (year: string, month: string, day: string) => {
   return useSuspenseQuery({
     queryKey: ['daySchedules', year, month, day],
@@ -109,6 +114,7 @@ export const useGetDaySchedules = (year: string, month: string, day: string) => 
   });
 };
 
+// 월별 스케쥴 조회 hook - tasntack/query
 export const useGetMonthSchedules = (year: string, month: string) => {
   return useSuspenseQuery({
     queryKey: ['monthSchedules', year, month],

@@ -5,11 +5,11 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { JobManagement, useGetJobList } from '@/apis/jobManagement';
 import { useGetScheduleDetail } from '@/apis/schedulerManagement';
 import SchedulerMonitoringLayout from '@/components/Layout/SchedulerMonitoringLayout';
+import CustomPagination from '@/components/Pagination';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 
-import AvailableJobList from '../createScheduler/components/AvailableJobList';
-import JobPagination from '../createScheduler/components/JobPagination';
+import JobList from '../createScheduler/components/JobList';
 import JobSearchInput from '../createScheduler/components/JobSearchInput';
 import ScheduleDialog from '../createScheduler/components/ScheduleDialog';
 import SelectedJobList from '../createScheduler/components/SelectedJobList';
@@ -56,12 +56,12 @@ const CreateSchedulerPage = () => {
   const selectedJobIds = useMemo(() => new Set(selectedJobs.map(job => job.id)), [selectedJobs]);
 
   return (
-    <SchedulerMonitoringLayout title={'Edit Schedule'} backPath={'/scheduler-management'}>
+    <SchedulerMonitoringLayout title='Edit Schedule' backPath={'/scheduler-management'}>
       <div className='flex h-[calc(100vh-150px)] flex-col md:flex-row md:gap-6'>
         <div className='flex w-full flex-col overflow-hidden md:w-1/2'>
           <JobSearchInput />
-          <AvailableJobList selectedJobIds={selectedJobIds} onJobSelect={handleJobSelect} jobs={jobs} />
-          <JobPagination total={total} />
+          <JobList selectedJobIds={selectedJobIds} onJobSelect={handleJobSelect} jobs={jobs} />
+          <CustomPagination totalPages={total} />
         </div>
         <Separator orientation='vertical' className='mx-2 hidden md:block' />
         <div className='mt-6 flex w-full flex-col overflow-hidden md:mt-0 md:w-1/2'>

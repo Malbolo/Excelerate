@@ -4,11 +4,11 @@ import { useSearchParams } from 'react-router-dom';
 
 import { JobManagement, useGetJobList } from '@/apis/jobManagement';
 import SchedulerMonitoringLayout from '@/components/Layout/SchedulerMonitoringLayout';
+import CustomPagination from '@/components/Pagination';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 
-import AvailableJobList from './components/AvailableJobList';
-import JobPagination from './components/JobPagination';
+import JobList from './components/JobList';
 import JobSearchInput from './components/JobSearchInput';
 import ScheduleDialog from './components/ScheduleDialog';
 import SelectedJobList from './components/SelectedJobList';
@@ -59,8 +59,8 @@ const CreateSchedulerPage = () => {
       <div className='flex h-[calc(100vh-150px)] flex-col md:flex-row md:gap-6'>
         <div className='flex w-full flex-col overflow-hidden md:w-1/2'>
           <JobSearchInput />
-          <AvailableJobList selectedJobIds={selectedJobIds} onJobSelect={handleJobSelect} jobs={jobs} />
-          <JobPagination total={total} />
+          <JobList selectedJobIds={selectedJobIds} onJobSelect={handleJobSelect} jobs={jobs} />
+          <CustomPagination totalPages={total} />
         </div>
         <Separator orientation='vertical' className='mx-2 hidden md:block' />
         <div className='mt-6 flex w-full flex-col overflow-hidden md:mt-0 md:w-1/2'>

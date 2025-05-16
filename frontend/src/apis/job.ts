@@ -1,25 +1,12 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-import useInternalRouter from '@/hooks/useInternalRouter';
 import { DataFrame } from '@/types/dataframe';
 import { ErrorMessage } from '@/types/job';
 
 import { api } from './core';
 
-export interface SaveJobRequest {
-  type: string;
-  title: string;
-  description: string;
-  data_load_command: string;
-  data_load_url: string;
-  commands: string[];
-  code: string;
-  data_load_code?: string;
-  source_data: Record<string, string>;
-}
-
-interface SendCommandListResponse {
+interface DataframeResponse {
   codes: string[];
   dataframe: DataFrame;
   download_token: string;
@@ -27,12 +14,12 @@ interface SendCommandListResponse {
   error_msg?: ErrorMessage;
 }
 
-interface GetSourceDataRequest {
+interface SourceDataRequest {
   command: string;
   stream_id?: string;
 }
 
-interface GetSourceDataResponse {
+interface SourceDataResponse {
   url: string;
   dataframe: DataFrame;
   data_load_code?: string;
@@ -41,46 +28,16 @@ interface GetSourceDataResponse {
   };
 }
 
-interface SendCommandListRequest {
+interface DataframeRequest {
   command_list: string[];
   url: string;
   stream_id: string;
   original_code?: string;
 }
 
-interface EditJobRequest {
-  request: SaveJobRequest;
-  jobId: string;
-}
-
-const saveJob = async (request: SaveJobRequest) => {
-  const { data, error, success } = await api('/api/jobs', {
-    method: 'POST',
-    body: JSON.stringify(request),
-  });
-
-  if (!success) {
-    throw new Error(error);
-  }
-
-  return data;
-};
-
-const editJob = async (request: SaveJobRequest, jobId: string) => {
-  const { data, error, success } = await api(`/api/jobs/${jobId}`, {
-    method: 'PUT',
-    body: JSON.stringify(request),
-  });
-
-  if (!success) {
-    throw new Error(error);
-  }
-
-  return data;
-};
-
-const sendCommandList = async ({ command_list, url, stream_id, original_code }: SendCommandListRequest) => {
-  const { data, error, success } = await api<SendCommandListResponse>('/api/agent/code/generate', {
+// ai agent 기반의 코드 생성
+const getDataFrame = async ({ command_list, url, stream_id, original_code }: DataframeRequest) => {
+  const { data, error, success } = await api<DataframeResponse>('/api/agent/code/generate', {
     method: 'POST',
     body: JSON.stringify({
       command_list,
@@ -97,8 +54,9 @@ const sendCommandList = async ({ command_list, url, stream_id, original_code }: 
   return data;
 };
 
-const getSourceData = async ({ command, stream_id }: GetSourceDataRequest) => {
-  const { data, error, success } = await api<GetSourceDataResponse>('/api/agent/data/load', {
+// ai agent 기반으로 원본 데이터 로드
+const getSourceData = async ({ command, stream_id }: SourceDataRequest) => {
+  const { data, error, success } = await api<SourceDataResponse>('/api/agent/data/load', {
     method: 'POST',
     body: JSON.stringify({ command, stream_id }),
   });
@@ -110,45 +68,10 @@ const getSourceData = async ({ command, stream_id }: GetSourceDataRequest) => {
   return data;
 };
 
-export const useSaveJob = () => {
-  const queryClient = useQueryClient();
-  const { push } = useInternalRouter();
-  const { mutate, isPending } = useMutation({
-    mutationFn: (request: SaveJobRequest) => saveJob(request),
-    onSuccess: () => {
-      toast.success('Job saved successfully');
-      queryClient.invalidateQueries({ queryKey: ['jobList'] });
-      push('/job-management');
-    },
-    onError: () => {
-      toast.error('Failed to save job');
-    },
-  });
-
-  return { mutate, isPending };
-};
-
-export const useEditJob = () => {
-  const queryClient = useQueryClient();
-  const { push } = useInternalRouter();
-  const { mutate, isPending } = useMutation({
-    mutationFn: ({ request, jobId }: EditJobRequest) => editJob(request, jobId),
-    onSuccess: () => {
-      toast.success('Job edited successfully');
-      queryClient.invalidateQueries({ queryKey: ['jobList'] });
-      push('/job-management');
-    },
-    onError: () => {
-      toast.error('Failed to edit job');
-    },
-  });
-
-  return { mutate, isPending };
-};
-
-export const useSendCommandList = () => {
+// ai agent 기반의 코드 생성 hook - tasntack/mutation
+export const useGetDataFrame = () => {
   const { mutateAsync, isPending } = useMutation({
-    mutationFn: (request: SendCommandListRequest) => sendCommandList(request),
+    mutationFn: (request: DataframeRequest) => getDataFrame(request),
     onError: () => {
       toast.error('Failed to send command list');
     },
@@ -157,9 +80,10 @@ export const useSendCommandList = () => {
   return { mutateAsync, isPending };
 };
 
+// ai agent 기반으로 원본 데이터 로드 hook - tasntack/mutation
 export const useGetSourceData = () => {
   const { mutateAsync, isPending } = useMutation({
-    mutationFn: (request: GetSourceDataRequest) => getSourceData(request),
+    mutationFn: (request: SourceDataRequest) => getSourceData(request),
     onError: () => {
       toast.error('Failed to get source data');
     },

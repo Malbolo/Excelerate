@@ -1,7 +1,7 @@
 import { ArrowLeftIcon } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
+import useInternalRouter from '@/hooks/useInternalRouter';
 
 interface SchedulerMonitoringLayoutProps {
   title: string;
@@ -10,10 +10,10 @@ interface SchedulerMonitoringLayoutProps {
 }
 
 const SchedulerMonitoringLayout = ({ title, backPath, children }: SchedulerMonitoringLayoutProps) => {
-  const navigate = useNavigate();
+  const { push } = useInternalRouter();
 
   const handleGoBack = () => {
-    navigate(backPath);
+    push(backPath);
   };
 
   return (
