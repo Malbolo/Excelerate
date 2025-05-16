@@ -31,8 +31,6 @@ class DagService:
             db: Session = None,
     ) -> str:
         """새로운 DAG를 생성합니다."""
-        logger.info(f"Creating DAG with parameters: name='{name}', owner='{owner}'")
-
         close_db = False
         if db is None:
             db = next(database.get_db())
@@ -55,7 +53,6 @@ class DagService:
                 tags.append(f'end_date:{end_date_str}')
             tags_str = str(tags)
 
-            logger.info(f"Calling _generate_dag_code with owner='{owner}'")
             # DAG 코드 생성
             dag_code = DagService._generate_dag_code(
                 dag_id, owner, start_date, end_date, success_emails, failure_emails,
@@ -270,10 +267,6 @@ class DagService:
             name: str
     ) -> str:
         """DAG 코드 생성 (내부 헬퍼 함수)"""
-        logger.info(f"Inside _generate_dag_code - received owner: '{owner}'")
-        default_args_owner = f"'owner': '{owner}'"
-        logger.info(f"Will set default_args with: {default_args_owner}")
-
         dag_code = f"""
 from airflow import DAG
 from airflow.operators.python import PythonOperator
@@ -312,10 +305,10 @@ def send_success_email(**kwargs):
         to=success_to,  
         subject=f"[성공] {name} (DAG ID: {dag_id})",
         html_content='''
-        <h3>DAG {{ dag_run.dag_id }} 실행이 성공적으로 완료되었습니다.</h3>
+        <h3>DAG {{{{ dag_run.dag_id }}}} 실행이 성공적으로 완료되었습니다.</h3>
         <p>DAG 이름: {name}</p>
-        <p>실행 날짜: {{ ds }}</p>
-        <p>실행 시간: {{ execution_date }}</p>
+        <p>실행 날짜: {{{{ ds }}}}</p>
+        <p>실행 시간: {{{{ execution_date }}}}</p>
         ''',
         dag=kwargs['dag']
     )
@@ -336,11 +329,11 @@ def send_failure_email(**kwargs):
         to=failure_to, 
         subject=f"[실패] {name} (DAG ID: {dag_id})",
         html_content='''
-        <h3>DAG {{ dag_run.dag_id }} 실행이 실패했습니다.</h3>
+        <h3>DAG {{{{ dag_run.dag_id }}}} 실행이 실패했습니다.</h3>
         <p>DAG 이름: {name}</p>
-        <p>실행 날짜: {{ ds }}</p>
-        <p>실행 시간: {{ execution_date }}</p>
-        <p>실패한 작업: {{ task_instance.task_id }}</p>
+        <p>실행 날짜: {{{{ ds }}}}</p>
+        <p>실행 시간: {{{{ execution_date }}}}</p>
+        <p>실패한 작업: {{{{ task_instance.task_id }}}} </p>
         ''',
         dag=kwargs['dag']
     )
