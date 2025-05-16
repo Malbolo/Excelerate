@@ -1,7 +1,7 @@
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 import os
-import ulid
+# import ulid
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -40,7 +40,7 @@ class DagService:
             # DAG ID는 고유해야 함
             # DAG ID는 userid_time 형식으로 생성 (밀리초까지 포함하여 추가 고유성 확보)
             timestamp = date_utils.get_now_utc().strftime('%Y%m%d%H%M%S%f')[:18]
-            dag_id = f"dag_{ulid.ULID().str}"
+            dag_id = f"{owner}_{timestamp}"
 
             # Job Service에서 job 정보 가져오기
             job_details = DagService._get_job_basic_info(job_ids, user_id)
