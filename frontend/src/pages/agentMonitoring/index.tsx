@@ -150,9 +150,9 @@ const AgentMonitoringPage: React.FC = () => {
 
         <ResizablePanel
           className='h-screen border-l'
-          minSize={30}
-          maxSize={60}
-          defaultSize={40}
+          minSize={50}
+          maxSize={70}
+          defaultSize={60}
         >
           <section className='h-full'>
             {logs.length > 0 ? (
