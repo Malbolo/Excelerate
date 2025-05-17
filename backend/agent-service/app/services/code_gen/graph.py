@@ -426,11 +426,15 @@ class CodeGenerator:
         out = namespace.get("out")
 
         if out:
-            file_name  = f"{out}.xlsx"
+            file_name   = os.path.basename(out)
             object_key = f"outputs/{file_name}"
-            self.minio_client.upload_excel(object_key, out)
-            signer = TimestampSigner(settings.TOKEN_SECRET_KEY)
-            token = signer.sign(object_key.encode()).decode()
+            try:
+                self.minio_client.upload_excel(object_key, out)
+                signer = TimestampSigner(settings.TOKEN_SECRET_KEY)
+                token = signer.sign(object_key.encode()).decode()
+            except:
+                self.q.put_nowait({"type": "notice", "content": "엑셀 파일 업로드 중 에러가 발생했습니다."})
+                token = None
         
         # temp 파일 삭제
 
