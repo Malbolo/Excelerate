@@ -19,7 +19,7 @@ from app.core.config import settings
 from app.models.log import LogDetail
 from app.utils.minio_client import MinioClient
 
-from app.services.code_gen.graph_util import extract_error_info, insert_df_to_excel, make_excel_code_snippet, make_excel_template
+from app.services.code_gen.graph_util import extract_error_info, insert_df_to_excel, make_excel_code_snippet, make_excel_template, log_filter
 from app.services.code_gen.merge_utils import merge_code_snippets
 
 from app.utils.memory_logger import MemoryLogger
@@ -126,7 +126,8 @@ class CodeGenerator:
 
         # stream_id로 쏘기
         if llm_entry:
-            self.q.put_nowait({"type": "log", "content": llm_entry.model_dump_json()})
+            log = log_filter(llm_entry)
+            self.q.put_nowait({"type": "log", "content": log})
 
         # State 업데이트
         return {
@@ -225,7 +226,8 @@ class CodeGenerator:
 
         # stream_id로 쏘기
         if llm_entry:
-            self.q.put_nowait({"type": "log", "content": llm_entry.model_dump_json()})
+            log = log_filter(llm_entry)
+            self.q.put_nowait({"type": "log", "content": log})
 
         # 응답 메시지를 포함하는 새로운 state를 반환합니다.
         return {'messages': [response], 'python_code': response.content, 'logs': new_logs}
@@ -372,8 +374,9 @@ class CodeGenerator:
 
         # stream_id로 쏘기
         if llm_entry:
+            log = log_filter(llm_entry)
             self.q.put_nowait({"type": "notice", "content": "엑셀 파일을 생성하였습니다."})
-            self.q.put_nowait({"type": "log", "content": llm_entry.model_dump_json()})
+            self.q.put_nowait({"type": "log", "content": log})
             self.q.put_nowait({"type": "code", "content": merged_code})
 
         return {"download_token": token, "error_msg": None, "logs": new_logs, "python_code":merged_code, "python_codes_list": codes}
@@ -442,8 +445,9 @@ class CodeGenerator:
 
         # stream_id로 쏘기
         if llm_entry:
+            log = log_filter(llm_entry)
             self.q.put_nowait({"type": "notice", "content": "엑셀 파일을 생성하였습니다."})
-            self.q.put_nowait({"type": "log", "content": llm_entry.model_dump_json()})
+            self.q.put_nowait({"type": "log", "content": log})
             self.q.put_nowait({"type": "code", "content": merged_code})
 
         return {"download_token": token, "error_msg": None, "logs": new_logs, "python_code":merged_code, "python_codes_list": codes}

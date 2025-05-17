@@ -1,6 +1,9 @@
 
 import re
 import traceback
+import json
+from datetime import datetime
+from pydantic import BaseModel
 from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate, AIMessagePromptTemplate
 from difflib import SequenceMatcher
 from typing import Optional
@@ -155,6 +158,28 @@ def extract_error_info(exc: Exception, code_body: str, stage: str, commands: lis
             "code":     snippet,
         }
     }
+
+def log_filter(entry: BaseModel) -> str:
+    # Pydantic 객체 → dict
+    entry_dict = entry.model_dump()
+    msgs = entry_dict.get("input", [])
+
+    # 첫 번째 system 메시지
+    first_sys = next((m for m in msgs if m.get("role") == "system"), None)
+    # 마지막 human 메시지
+    last_hum  = next((m for m in reversed(msgs) if m.get("role") == "human"), None)
+
+    # input 필드에 두 메시지만 남기기
+    entry_dict["input"] = [m for m in (first_sys, last_hum) if m]
+
+    # datetime 직렬화 처리용 default 함수
+    def _json_default(o):
+        if isinstance(o, datetime):
+            return o.isoformat()
+        raise TypeError(f"{o!r} is not JSON serializable")
+
+    # JSON 문자열로 반환 (한글 깨짐 방지, datetime → ISO 포맷)
+    return json.dumps(entry_dict, ensure_ascii=False, default=_json_default)
 
 def insert_df_to_excel(df: pd.DataFrame,
                        input_path: str,
