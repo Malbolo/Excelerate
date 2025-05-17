@@ -1,8 +1,9 @@
-import { Separator } from '@radix-ui/react-separator';
+import { MousePointerClick } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 
 import { JobManagement, useGetJobList } from '@/apis/jobManagement';
 import CustomPagination from '@/components/Pagination';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 
 import JobList from '../createScheduler/components/JobList';
 import JobSearchInput from '../createScheduler/components/JobSearchInput';
@@ -21,6 +22,7 @@ const JobManagementPage = () => {
     title,
     types,
     name,
+    size: 6,
     mine: true,
   });
 
@@ -33,25 +35,43 @@ const JobManagementPage = () => {
   };
 
   return (
-    <div className='relative container mx-auto flex h-full w-full flex-row'>
-      <main className='flex h-full w-[60%] flex-col gap-6 p-8'>
-        <header className='flex items-center gap-3 border-b border-gray-200 pb-8'>
-          <h1 className='flex-1 text-xl font-bold text-gray-800'>Job Management</h1>
-        </header>
-        <div className='flex w-full grow flex-col overflow-hidden'>
-          <JobSearchInput />
-          <JobList selectedJobId={selectedJobId} onJobSelect={handleJobSelect} jobs={jobs} />
-          <CustomPagination totalPages={total} />
-        </div>
-      </main>
-      <Separator orientation='vertical' className='mx-2 hidden md:block' />
-      {selectedJobId ? (
-        <CommandList selectedJobId={selectedJobId} />
-      ) : (
-        <div className='flex w-[40%] flex-col overflow-hidden bg-gray-100/50 p-8'>
-          <p className='text-center text-lg font-bold'>Select a job to view details</p>
-        </div>
-      )}
+    <div className='bg-gradient relative flex h-screen w-full flex-row'>
+      <ResizablePanelGroup direction='horizontal'>
+        <ResizablePanel>
+          <main className='flex h-full flex-col justify-baseline gap-6 p-8'>
+            <header className='flex items-baseline gap-3'>
+              <h1 className='text-lg font-bold whitespace-nowrap'>Job Management</h1>
+              <p className='text-accent-foreground truncate text-xs'>
+                You can view, edit, and delete the details of the job you created
+              </p>
+            </header>
+            <div className='@container flex h-full w-full flex-col overflow-y-auto'>
+              <div className='mb-4'>
+                <JobSearchInput />
+              </div>
+              <div className='flex flex-1 flex-col gap-4 overflow-y-auto'>
+                <JobList selectedJobId={selectedJobId} onJobSelect={handleJobSelect} jobs={jobs} />
+                {jobs.length > 0 && <CustomPagination totalPages={total} />}
+              </div>
+            </div>
+          </main>
+        </ResizablePanel>
+
+        <ResizableHandle withHandle />
+
+        <ResizablePanel minSize={40} maxSize={70} defaultSize={50}>
+          <div className='h-screen w-full border-l bg-[#FAFCFF]'>
+            {selectedJobId ? (
+              <CommandList selectedJobId={selectedJobId} />
+            ) : (
+              <div className='animate-scale flex h-full w-full flex-col items-center justify-center gap-2'>
+                <MousePointerClick size={20} className='text-accent-foreground' />
+                <p className='text-sm'>Select a job to view details</p>
+              </div>
+            )}
+          </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </div>
   );
 };

@@ -8,7 +8,6 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -144,75 +143,72 @@ const JobSearchInput = () => {
   };
 
   return (
-    <div className='flex flex-col gap-4 rounded-md border p-4 md:flex-row md:items-start'>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant='outline'
-            className='data-[state=open]:bg-accent h-9 w-full justify-between text-xs focus:ring-0 focus:ring-offset-0 sm:text-sm md:w-auto md:min-w-[200px]'
-          >
-            {getSelectedTypesLabel()}
-            <ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className='w-[--radix-dropdown-menu-trigger-width]'>
-          <DropdownMenuLabel>Select Job Types</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuCheckboxItem
-            key={ALL_TYPES_OPTION.id}
-            checked={selectedTypes.includes(ALL_TYPES_OPTION.id)}
-            onCheckedChange={checked => handleSelectedTypesChange(ALL_TYPES_OPTION.id, !!checked)}
-            onSelect={e => e.preventDefault()}
-          >
-            {ALL_TYPES_OPTION.label}
-          </DropdownMenuCheckboxItem>
-          <DropdownMenuSeparator />
-          {JOB_TYPES_CONFIG.map(jobType => (
-            <DropdownMenuCheckboxItem
-              key={jobType.id}
-              checked={selectedTypes.includes(jobType.id)}
-              onCheckedChange={checked => handleSelectedTypesChange(jobType.id, !!checked)}
-              disabled={selectedTypes.includes(ALL_TYPES_OPTION.id)}
-              onSelect={e => e.preventDefault()}
+    <div className='flex flex-col gap-2 rounded-md @md:flex-row'>
+      <div className='flex flex-1 flex-row gap-2'>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant='outline'
+              className='data-[state=open]:bg-accent h-9 flex-1 justify-between text-xs focus:ring-0 focus:ring-offset-0'
             >
-              {jobType.label}
+              {getSelectedTypesLabel()}
+              <ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className='w-[var(--radix-dropdown-menu-trigger-width)]'>
+            <DropdownMenuSeparator />
+            <DropdownMenuCheckboxItem
+              key={ALL_TYPES_OPTION.id}
+              checked={selectedTypes.includes(ALL_TYPES_OPTION.id)}
+              onCheckedChange={checked => handleSelectedTypesChange(ALL_TYPES_OPTION.id, !!checked)}
+              onSelect={e => e.preventDefault()}
+              className='text-xs'
+            >
+              {ALL_TYPES_OPTION.label}
             </DropdownMenuCheckboxItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+            <DropdownMenuSeparator />
+            {JOB_TYPES_CONFIG.map(jobType => (
+              <DropdownMenuCheckboxItem
+                key={jobType.id}
+                checked={selectedTypes.includes(jobType.id)}
+                onCheckedChange={checked => handleSelectedTypesChange(jobType.id, !!checked)}
+                disabled={selectedTypes.includes(ALL_TYPES_OPTION.id)}
+                onSelect={e => e.preventDefault()}
+                className='text-xs'
+              >
+                {jobType.label}
+              </DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-      <div className='flex flex-grow flex-col gap-2 md:flex-row md:items-center'>
         <Select value={searchField} onValueChange={handleSearchFieldChange}>
-          <SelectTrigger className='h-9 w-auto min-w-[110px] text-xs focus:ring-0 focus:ring-offset-0 sm:text-sm'>
+          <SelectTrigger className='h-9 flex-1 text-xs focus:ring-0 focus:ring-offset-0'>
             <SelectValue placeholder='Search By' />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value='title' className='text-xs sm:text-sm'>
+            <SelectItem value='title' className='text-xs'>
               Title
             </SelectItem>
-            <SelectItem value='name' className='text-xs sm:text-sm'>
+            <SelectItem value='name' className='text-xs'>
               User
             </SelectItem>
           </SelectContent>
         </Select>
-        <div className='flex min-w-[200px] flex-grow items-center'>
-          <Input
-            type='text'
-            placeholder={searchField === 'title' ? 'Search by title...' : 'Search by user name...'}
-            value={searchValue}
-            onChange={handleSearchValueChange}
-            onKeyDown={handleKeyDown}
-            className='h-9 flex-grow rounded-r-none border-r-0 text-xs focus:ring-0 focus:ring-offset-0 sm:text-sm'
-          />
-          <Button
-            onClick={executeSearch}
-            size='sm'
-            className='h-9 rounded-l-none px-3 text-xs sm:text-sm'
-            aria-label='Search'
-          >
-            <SearchIcon className='h-4 w-4' />
-          </Button>
-        </div>
+      </div>
+
+      <div className='flex flex-1 flex-col gap-2 md:flex-row md:items-center'>
+        <Input
+          type='text'
+          placeholder={searchField === 'title' ? 'Search by title...' : 'Search by user name...'}
+          value={searchValue}
+          onChange={handleSearchValueChange}
+          onKeyDown={handleKeyDown}
+          className='rtext-xs h-9 flex-grow focus:ring-0 focus:ring-offset-0 sm:text-sm'
+        />
+        <Button onClick={executeSearch} size='sm' className='h-9 px-3 text-xs sm:text-sm' aria-label='Search'>
+          <SearchIcon className='h-4 w-4' />
+        </Button>
       </div>
     </div>
   );

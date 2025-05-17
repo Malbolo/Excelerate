@@ -1,12 +1,11 @@
 import { useState } from 'react';
 
 import { Editor } from '@monaco-editor/react';
+import { Command, TagIcon } from 'lucide-react';
 
 import { useDeleteJob, useGetJobDetail } from '@/apis/jobManagement';
 import {
   AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -14,8 +13,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import useInternalRouter from '@/hooks/useInternalRouter';
 
 const CommandList = ({ selectedJobId }: { selectedJobId: string }) => {
@@ -40,126 +37,110 @@ const CommandList = ({ selectedJobId }: { selectedJobId: string }) => {
 
   return (
     <>
-      <div className='flex h-full w-[40%] flex-col overflow-hidden border-l border-neutral-200 bg-white'>
-        <ScrollArea className='h-full flex-grow'>
-          <div className='p-6'>
-            <section className='space-y-6'>
+      <div className='flex h-full w-full flex-col overflow-y-auto p-6'>
+        <section className='space-y-4 divide-y'>
+          <div className='pb-4'>
+            <div className='flex items-center justify-between pb-2'>
+              <h2 className='text-lg font-bold tracking-tight'>{selectedJob.title}</h2>
+              <div className='flex shrink-0 items-center justify-center gap-2'>
+                <Button variant='outline' onClick={handleJobEdit}>
+                  Edit
+                </Button>
+                <Button variant='destructive' onClick={handleOpenDeleteDialog}>
+                  Delete
+                </Button>
+              </div>
+            </div>
+
+            {selectedJob.description && <p className='mt-1.5 text-sm break-words'>{selectedJob.description}</p>}
+          </div>
+
+          <div className='space-y-6'>
+            {(selectedJob.type || selectedJob.data_load_command) && (
               <div>
-                <h2 className='text-2xl font-semibold tracking-tight text-neutral-900'>{selectedJob.title}</h2>
-                {selectedJob.description && (
-                  <p className='mt-1.5 text-sm text-neutral-600'>{selectedJob.description}</p>
-                )}
-              </div>
-
-              <Separator className='bg-neutral-200' />
-
-              <div className='space-y-6'>
-                {(selectedJob.type || selectedJob.data_load_command) && (
-                  <div>
-                    <h3 className='mb-3 text-xs font-semibold tracking-wider text-neutral-500 uppercase'>
-                      Basic Information
-                    </h3>
-                    <div className='space-y-3 rounded-md border border-neutral-200 bg-neutral-50 p-4 text-sm'>
-                      {selectedJob.type && (
-                        <div className='flex'>
-                          <span className='w-32 shrink-0 text-neutral-500'>Type</span>
-                          <span className='text-neutral-700'>{selectedJob.type}</span>
-                        </div>
-                      )}
-                      {selectedJob.data_load_command && (
-                        <div className='flex'>
-                          <span className='w-32 shrink-0 text-neutral-500'>Data Load Cmd</span>
-                          <span className='break-all text-neutral-700'>{selectedJob.data_load_command}</span>
-                        </div>
-                      )}
+                <h3 className='text-accent-foreground mb-3 text-xs font-bold tracking-wider uppercase'>
+                  Basic Information
+                </h3>
+                <div className='space-y-3 rounded-md border bg-white p-4 text-sm'>
+                  {selectedJob.type && (
+                    <div className='flex items-center'>
+                      <span className='flex w-32 shrink-0 items-center gap-1 text-xs font-bold'>
+                        <TagIcon className='mr-1.5 h-3.5 w-3.5 flex-shrink-0' />
+                        Type
+                      </span>
+                      <span>{selectedJob.type}</span>
                     </div>
-                  </div>
-                )}
-                {selectedJob.commands && selectedJob.commands.length > 0 && (
-                  <div>
-                    <h3 className='mb-3 text-xs font-semibold tracking-wider text-neutral-500 uppercase'>
-                      Command List
-                    </h3>
-                    <ol className='space-y-2'>
-                      {selectedJob.commands.map(({ content, order }, index) => (
-                        <li
-                          className='flex items-start gap-2.5 rounded-md border border-neutral-200 bg-white p-3 transition-colors hover:bg-neutral-50'
-                          key={`${content}-${order}-${index}`}
-                        >
-                          <span className='w-5 pt-px text-right text-xs text-neutral-400'>{order}.</span>
-                          <p className='flex-1 text-sm text-neutral-700'>{content}</p>
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-                )}
-                {selectedJob.code && (
-                  <div>
-                    <h3 className='mb-3 text-xs font-semibold tracking-wider text-neutral-500 uppercase'>
-                      Source Code
-                    </h3>
-                    <div className='h-[300px] overflow-hidden rounded-md border border-neutral-200'>
-                      <Editor
-                        height='100%'
-                        defaultLanguage='python'
-                        value={selectedJob.code}
-                        options={{
-                          readOnly: true,
-                          domReadOnly: true,
-                          minimap: { enabled: false },
-                          scrollBeyondLastLine: false,
-                          fontSize: 13,
-                          renderWhitespace: 'boundary',
-                          automaticLayout: true,
-                        }}
-                        theme='vs'
-                      />
+                  )}
+                  {selectedJob.data_load_command && (
+                    <div className='flex items-center'>
+                      <span className='flex w-32 shrink-0 items-center gap-1 text-xs font-bold'>
+                        <Command className='mr-1.5 h-3.5 w-3.5 flex-shrink-0' />
+                        Data Load Cmd
+                      </span>
+                      <span className='break-all'>{selectedJob.data_load_command}</span>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-            </section>
+            )}
+            {selectedJob.commands && selectedJob.commands.length > 0 && (
+              <div>
+                <h3 className='text-accent-foreground mb-3 text-xs font-bold tracking-wider uppercase'>Command List</h3>
+                <ol className='space-y-2'>
+                  {selectedJob.commands.map(({ content, order }, index) => (
+                    <li
+                      className='flex items-center gap-2.5 rounded-md border bg-white p-3'
+                      key={`${content}-${order}-${index}`}
+                    >
+                      <span className='w-5 text-right text-xs'>{order}.</span>
+                      <p className='flex-1 text-sm'>{content}</p>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+            {selectedJob.code && (
+              <div>
+                <h3 className='text-accent-foreground mb-3 text-xs font-bold tracking-wider uppercase'>Source Code</h3>
+                <div className='h-[400px] overflow-hidden rounded-md border'>
+                  <Editor
+                    height='100%'
+                    defaultLanguage='python'
+                    value={selectedJob.code}
+                    options={{
+                      readOnly: true,
+                      domReadOnly: true,
+                      minimap: { enabled: false },
+                      scrollBeyondLastLine: false,
+                      fontSize: 13,
+                      renderWhitespace: 'boundary',
+                      automaticLayout: true,
+                    }}
+                    theme='vs'
+                  />
+                </div>
+              </div>
+            )}
           </div>
-          <div className='flex shrink-0 items-center justify-center gap-3 border-t border-neutral-200 p-4'>
-            <Button
-              variant='destructive'
-              className='h-10 w-full sm:w-auto sm:flex-grow'
-              onClick={handleOpenDeleteDialog}
-            >
-              Delete
-            </Button>
-            <Button
-              variant='outline'
-              className='h-10 w-full border-neutral-300 text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 sm:w-auto sm:flex-grow'
-              onClick={handleJobEdit}
-            >
-              Edit
-            </Button>
-          </div>
-        </ScrollArea>
+        </section>
       </div>
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent className='bg-white'>
           <AlertDialogHeader>
-            <AlertDialogTitle className='text-neutral-900'>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle className='font-bold'>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription className='text-neutral-600'>
-              This will permanently delete the job "{selectedJob.title}". This action cannot be undone.
+              <p>This will permanently delete the job "{selectedJob.title}".</p>
+              <p>This action cannot be undone.</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel
-              className='border-neutral-300 text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900'
-              onClick={() => setIsDeleteDialogOpen(false)}
-            >
+            <Button variant='outline' onClick={() => setIsDeleteDialogOpen(false)}>
               Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              className='bg-neutral-900 text-neutral-50 hover:bg-neutral-700'
-              onClick={handleConfirmDelete}
-            >
-              Confirm Delete
-            </AlertDialogAction>
+            </Button>
+            <Button variant='destructive' onClick={handleConfirmDelete}>
+              Delete
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

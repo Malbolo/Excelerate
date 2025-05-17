@@ -42,6 +42,7 @@ interface JobListResponse {
 
 interface GetJobListParams {
   page: number;
+  size: number;
   title: string;
   mine: boolean;
   types: string;
@@ -54,11 +55,18 @@ interface EditJobRequest {
 }
 
 // job 목록 조회
-const getJobList = async ({ page = 1, title = '', mine = false, types = '', name = '' }: GetJobListParams) => {
+const getJobList = async ({
+  page = 1,
+  size = 4,
+  title = '',
+  mine = false,
+  types = '',
+  name = '',
+}: GetJobListParams) => {
   const isMine = mine ? 'True' : 'False';
 
   const { data, error, success } = await api<JobListResponse>(
-    `/api/jobs?mine=${isMine}&page=${page}&size=6&title=${title}&types=${types}&name=${name}`,
+    `/api/jobs?mine=${isMine}&page=${page}&size=${size}&title=${title}&types=${types}&name=${name}`,
   );
 
   if (!success) {
@@ -119,10 +127,10 @@ const deleteJob = async (jobId: string) => {
 };
 
 // job 목록 조회 hook - tasntack/query
-export const useGetJobList = ({ page = 1, mine = false, types = '', title = '', name = '' }) => {
+export const useGetJobList = ({ page = 1, size = 4, mine = false, types = '', title = '', name = '' }) => {
   return useSuspenseQuery({
-    queryKey: ['jobList', page, title, mine, types, name],
-    queryFn: () => getJobList({ page, title, mine, types, name }),
+    queryKey: ['jobList', page, size, title, mine, types, name],
+    queryFn: () => getJobList({ page, size, title, mine, types, name }),
   });
 };
 
