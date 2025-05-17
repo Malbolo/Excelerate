@@ -161,8 +161,8 @@ def insert_df_to_excel(df: pd.DataFrame,
                        input_path: str,
                        output_path: str = None,
                        sheet_name: str = None,
-                       start_row: int = 6,
-                       start_col: int = 2):
+                       start_row: int = 5,
+                       start_col: int = 1):
     """
     기존 Excel 파일에 df를 특정 위치에 삽입하고 저장합니다.
     
@@ -171,8 +171,8 @@ def insert_df_to_excel(df: pd.DataFrame,
     - input_path: 원본 엑셀 파일 경로(.xlsx, .xlsm)
     - output_path: 저장할 경로. None이면 input_path에 덮어쓰기
     - sheet_name: None이면 active sheet
-    - start_row: 1부터 시작하는 삽입 시작 행 (기본 6)
-    - start_col: 1부터 시작하는 삽입 시작 열 (기본 2 → B열)
+    - start_row: 1부터 시작하는 삽입 시작 행 (기본 5)
+    - start_col: 1부터 시작하는 삽입 시작 열 (기본 1 → A열)
     """
     # 1) 워크북 로드 (매크로 보존이 필요하면 keep_vba=True)
     wb = load_workbook(filename=input_path, keep_vba=False)
