@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import re
 import json
@@ -11,14 +12,14 @@ from langchain_core.messages import AIMessage
 from langchain_openai import ChatOpenAI
 from langgraph.graph import START, END
 
-from tempfile import TemporaryDirectory
+from tempfile import TemporaryDirectory, mkdtemp
 from itsdangerous import TimestampSigner
 
 from app.core.config import settings
 from app.models.log import LogDetail
 from app.utils.minio_client import MinioClient
 
-from app.services.code_gen.graph_util import extract_error_info, insert_df_to_excel, make_excel_code_snippet
+from app.services.code_gen.graph_util import extract_error_info, insert_df_to_excel, make_excel_code_snippet, make_excel_template
 from app.services.code_gen.merge_utils import merge_code_snippets
 
 from app.utils.memory_logger import MemoryLogger
@@ -374,6 +375,65 @@ class CodeGenerator:
 
         return {"download_token": token, "error_msg": None, "logs": new_logs, "python_code":merged_code, "python_codes_list": codes}
 
+    def excel_manipulate2(self, state: AgentState) -> AgentState:
+        """
+        'excel' 타입 명령 처리:
+        - 커맨드에서 템플릿 이름 추출
+        - MinIO에서 템플릿 다운로드
+        - 마지막 DataFrame을 템플릿에 삽입
+        - 결과 엑셀을 MinIO에 업로드하고 download_token 반환
+        """
+        self.logger.set_name("LLM Call: Manipulate Excel")
+        self.logger.reset()
+        unit = state['current_unit']
+        cmd = unit.get("cmd", "")
+        df = state["dataframe"][-1]
+
+        self.q.put_nowait({"type": "notice", "content": f"엑셀작업을 수행합니다."})
+        prompt   = make_excel_template()
+        schain   = prompt | self.sllm
+        response = schain.invoke({"input": cmd})
+        code_str = response.content
+        
+        namespace = {
+            "pd": pd,
+            "df": df,
+            "insert_df_to_excel": insert_df_to_excel,
+            "MinioClient": MinioClient,
+            "mkdtemp": mkdtemp,
+            "os": os,
+        }
+        exec(code_str, namespace)
+
+        out = namespace.get("out")
+
+        if out:
+            file_name  = f"{out}.xlsx"
+            object_key = f"outputs/{file_name}"
+            self.minio_client.upload_excel(object_key, out)
+            signer = TimestampSigner(settings.TOKEN_SECRET_KEY)
+            token = signer.sign(object_key.encode()).decode()
+        
+        # temp 파일 삭제
+
+        codes = state.get("python_codes_list", []) + [code_str]
+
+        merged_code = merge_code_snippets(codes)
+
+        # 가장 마지막 LLM 로그 항목 추출
+        llm_entry = self.logger.get_logs()[-1] if self.logger.get_logs() else None
+        # state 업데이트
+        new_logs = state.get("logs", []) + [llm_entry] if llm_entry else state.get("logs", [])
+
+        # stream_id로 쏘기
+        if llm_entry:
+            self.q.put_nowait({"type": "notice", "content": "엑셀 파일을 생성하였습니다."})
+            self.q.put_nowait({"type": "log", "content": llm_entry.model_dump_json()})
+            self.q.put_nowait({"type": "code", "content": merged_code})
+
+        return {"download_token": token, "error_msg": None, "logs": new_logs, "python_code":merged_code, "python_codes_list": codes}
+
+
     def build(self):
         graph_builder = StateGraph(AgentState)
         handlers = {
@@ -384,7 +444,7 @@ class CodeGenerator:
             'retry':   self.retry,
             'error':   self.error_node,
             'execute': self.execute_code,
-            'excel_manipulate': self.excel_manipulate
+            'excel_manipulate': self.excel_manipulate2
         }
         # 노드로 등록
         for name, fn in handlers.items():
