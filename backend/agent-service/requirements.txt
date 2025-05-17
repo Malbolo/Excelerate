@@ -22,7 +22,6 @@ distlib
 distro
 dulwich
 executing
-# excel2img
 fastapi
 fastjsonschema
 filelock
@@ -98,7 +97,6 @@ python-dateutil
 python-dotenv
 python-multipart
 pytz
-# pywin32 # 로컬 테스트용
 PyYAML
 pyzmq
 RapidFuzz

@@ -37,6 +37,16 @@ async def get_logs_data(
             "result": "success",
             "data":   dummy_log
         })
+    
+    # 3) input 필터링: system과 마지막 human만 남기기
+    for entry in logs:
+        msgs = entry.get("input", [])
+        # 첫 번째 system 메시지
+        first_sys = next((m for m in msgs if m.get("role") == "system"), None)
+        # 마지막 human 메시지
+        last_hum = next((m for m in reversed(msgs) if m.get("role") == "human"), None)
+        # entry["input"]를 두 개의 메시지만 담은 리스트로 교체
+        entry["input"] = [x for x in (first_sys, last_hum) if x]
 
     # 3) 정상 응답
     return JSONResponse(status_code=200, content={

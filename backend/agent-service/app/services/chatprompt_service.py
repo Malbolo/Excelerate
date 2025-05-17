@@ -45,7 +45,7 @@ def get_prompt_json(agent: str, template_name: str) -> Dict[str, Any]:
         role_a = msgs[i+1]["role"].lower() if i+1 < len(msgs) else None
         if role_h == "human" and role_a == "ai":
             fewshot.append({"human": msgs[i]["text"], "ai": msgs[i+1]["text"]})
-    return {"system": system_text, "fewshot": fewshot, "human": human_text}
+    return {"template_name": template_name ,"system": system_text, "fewshot": fewshot, "human": human_text}
 
 
 def invoke_with_messages(messages: List[Dict[str, str]], variables: Dict[str, Any]) -> str:
