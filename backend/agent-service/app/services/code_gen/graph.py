@@ -168,7 +168,10 @@ class CodeGenerator:
         """
         unit = state['current_unit']
         cmd = unit.get('cmd', '')
+
+        # none 타입도 코드 생성 로직을 추가해야할까 고민
         comment = f"# {cmd}"
+        
         codes = state.get('python_codes_list', []) + [comment]
         merged = merge_code_snippets(codes)
         self.q.put_nowait({"type": "notice", "content": f"{cmd} -> none 타입 명령으로 처리합니다."})
@@ -444,7 +447,6 @@ class CodeGenerator:
             self.q.put_nowait({"type": "code", "content": merged_code})
 
         return {"download_token": token, "error_msg": None, "logs": new_logs, "python_code":merged_code, "python_codes_list": codes}
-
 
     def build(self):
         graph_builder = StateGraph(AgentState)
