@@ -20,10 +20,14 @@ def make_excel_template() -> ChatPromptTemplate:
         # 시스템 메시지: 역할 정의
         SystemMessagePromptTemplate.from_template(
             """
-당신은 Airflow Task 내에서 실행될 Python 코드 스니펫을 생성하는 전문가입니다.
+당신은 MinioClient에 저장된 엑셀 템플릿 파일을 불러와 Dataframe을 붙여넣는 Python 코드를 생성하는 전문가입니다.
 - 작업 디렉토리는 mkdtemp()로 만들고 자동 삭제 코드는 작성하지 마세요.
 - 기존 템플릿 파일 다운로드 → DataFrame 삽입 → 결과 업로드 로직만 포함해주세요.
-- insert_df_to_excel과 MinioClient를 사용하여 코드를 완성하세요.
+- insert_df_to_excel과 minio = MinioClient()를 사용하여 코드를 완성하세요.
+- import문이나 함수 정의(`def …`)나 `return` 문은 쓰지 마세요.
+- ```로 감싸지 말고 코드를 작성해 주세요.
+- 코드 위, 아래에 `# Excel 작업시작`, `# Excel 작업 끝`이라는 주석을 달아주세요.
+- 사용자 요청을 코드 최상단에 주석으로 표시해주세요.
 """
         ),
 
@@ -35,59 +39,49 @@ def make_excel_template() -> ChatPromptTemplate:
         ),
         AIMessagePromptTemplate.from_template(
             """
+# 템플릿 EOE 의 2열 2행에 DataFrame을 붙여넣고, 결과를 out1으로 저장 후 업로드해주세요.
 # Excel 작업 시작
 workdir = mkdtemp()
 tpl    = os.path.join(workdir, "EOE.xlsx")
 out    = os.path.join(workdir, "out1.xlsx")
-
-# 다운로드
 minio = MinioClient()
 minio.download_template("EOE", tpl)
-
-# 삽입
 insert_df_to_excel(
     df, tpl, out,
     sheet_name=None,
     start_row=2,
     start_col=2,
 )
-
-# 업로드
 minio.upload_result("auto", "out1.xlsx", out)
 # Excel 작업 끝
 """
         ),
 
-        # 두 번째 페어: C5 예시
-        HumanMessagePromptTemplate.from_template(
-            """
-report 템플릿의 C5 위치에 DataFrame을 삽입 후 동일 이름으로 업로드해주세요.
-"""
-        ),
-        AIMessagePromptTemplate.from_template(
-            """
-# Excel 작업 시작
-workdir = mkdtemp()
-tpl    = os.path.join(workdir, "report.xlsx")
-out    = os.path.join(workdir, "report.xlsx")
-
-# 다운로드
-minio = MinioClient()
-minio.download_template("report.xlsx", tpl)
-
-# 삽입
-insert_df_to_excel(
-    df, tpl, out,
-    sheet_name=None,
-    start_row=5,
-    start_col=3,
-)
-
-# 업로드
-minio.upload_result("auto", "report.xlsx", out)
-# Excel 작업 끝
-"""
-        ),
+#         # 두 번째 페어: C5 예시
+#         HumanMessagePromptTemplate.from_template(
+#             """
+# report 템플릿의 C5 위치에 DataFrame을 삽입 후 동일 이름으로 업로드해주세요.
+# """
+#         ),
+#         AIMessagePromptTemplate.from_template(
+#             """
+# # report 템플릿의 C5 위치에 DataFrame을 삽입 후 동일 이름으로 업로드해주세요.
+# # Excel 작업 시작
+# workdir = mkdtemp()
+# tpl    = os.path.join(workdir, "report.xlsx")
+# out    = os.path.join(workdir, "report.xlsx")
+# minio = MinioClient()
+# minio.download_template("report.xlsx", tpl)
+# insert_df_to_excel(
+#     df, tpl, out,
+#     sheet_name=None,
+#     start_row=5,
+#     start_col=3,
+# )
+# minio.upload_result("auto", "report.xlsx", out)
+# # Excel 작업 끝
+# """
+#         ),
 
         # 실제 사용자 요청
         HumanMessagePromptTemplate.from_template(

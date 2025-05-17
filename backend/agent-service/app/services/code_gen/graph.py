@@ -394,6 +394,10 @@ class CodeGenerator:
         schain   = prompt | self.sllm
         response = schain.invoke({"input": cmd})
         code_str = response.content
+
+        fence_pattern = re.compile(r"```(?:python)?\n([\s\S]*?)```", re.IGNORECASE)
+        m = fence_pattern.search(code_str)
+        code_body = m.group(1) if m else code_str
         
         namespace = {
             "pd": pd,
@@ -403,7 +407,15 @@ class CodeGenerator:
             "mkdtemp": mkdtemp,
             "os": os,
         }
-        exec(code_str, namespace)
+
+        # exec
+        try:
+            compiled = compile(code_body, "<user_code>", "exec")
+            exec(compiled, namespace)
+        except Exception as e:
+            self.q.put_nowait({"type": "notice", "content": "코드를 실행 중 에러가 발생했습니다."})
+            commands = state["command_list"]
+            return extract_error_info(e, code_body, "exec", commands)
 
         out = namespace.get("out")
 
@@ -416,7 +428,7 @@ class CodeGenerator:
         
         # temp 파일 삭제
 
-        codes = state.get("python_codes_list", []) + [code_str]
+        codes = state.get("python_codes_list", []) + [code_body]
 
         merged_code = merge_code_snippets(codes)
 
