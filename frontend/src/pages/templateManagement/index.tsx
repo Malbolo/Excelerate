@@ -72,6 +72,7 @@ const TemplateManagementPage = () => {
   const handleConfirmDelete = async () => {
     if (templateNameToDelete) {
       deleteTemplateMutate(templateNameToDelete);
+
       setTemplateNameToDelete(null);
       setIsDeleteDialogOpen(false);
       toast.success(`Template "${templateNameToDelete}" deleted successfully.`);
@@ -79,31 +80,49 @@ const TemplateManagementPage = () => {
   };
 
   return (
-    <section className='flex flex-1 flex-col gap-6 bg-white p-6'>
+    <section className='bg-gradient flex h-screen flex-1 flex-col overflow-hidden p-8'>
       <div className='mb-6 flex items-center gap-4'>
         <Button variant='ghost' size='sm' onClick={goBack} className='flex items-center gap-2'>
           <ArrowLeftIcon className='h-4 w-4' />
           Back
         </Button>
       </div>
-      <div className='mb-6 border-b border-gray-200 pb-6'>
-        <h2 className='mb-4 text-xl font-semibold text-gray-700'>Add New Template</h2>
-        <div className='flex flex-col gap-y-6 md:flex-row md:items-end md:gap-x-4'>
+      <div className='@container mb-6 flex flex-col border-b pb-6'>
+        <div className='flex items-center justify-between'>
+          <h2 className='mb-4 text-xl font-bold'>Add New Template</h2>
+          <Button onClick={handleCreateTemplate}>
+            <PlusCircle className='h-4 w-4' />
+            Add Template
+          </Button>
+        </div>
+
+        <div className='flex flex-col gap-6 @2xl:flex-row'>
           <div className='space-y-2'>
-            <Label htmlFor='template-name'>Template Name</Label>
+            <Label htmlFor='template-name' className='text-sm font-bold'>
+              Template Name
+            </Label>
             <Input
               id='template-name'
               value={newTemplateTitle}
               onChange={e => setNewTemplateTitle(e.target.value)}
-              placeholder='e.g., Monthly Sales Report'
-              className='w-full'
+              placeholder='e.g. Monthly Sales Report'
+              className='w-96'
             />
           </div>
 
           <div className='space-y-2'>
-            <Label htmlFor='template-file'>Template File</Label>
+            <Label htmlFor='template-file' className='text-sm font-bold'>
+              Template File
+            </Label>
             <Input id='template-file' type='file' ref={fileInputRef} onChange={handleFileChange} className='hidden' />
-            <div className='flex items-center gap-3'>
+            <div className='flex items-center gap-4'>
+              {newTemplateFile ? (
+                <span className='min-w-0 truncate text-sm text-gray-600' title={newTemplateFile.name}>
+                  {newTemplateFile.name}
+                </span>
+              ) : (
+                <span className='text-sm text-gray-500'>No file selected</span>
+              )}
               <Button
                 type='button'
                 variant='outline'
@@ -112,32 +131,17 @@ const TemplateManagementPage = () => {
               >
                 {newTemplateFile ? 'Change File' : 'Choose File'}
               </Button>
-              {newTemplateFile ? (
-                <span className='min-w-0 truncate text-sm text-gray-600' title={newTemplateFile.name}>
-                  {newTemplateFile.name}
-                </span>
-              ) : (
-                <span className='text-sm text-gray-500'>No file selected</span>
-              )}
             </div>
           </div>
-
-          <Button onClick={handleCreateTemplate} className='mt-2 w-full shrink-0 md:mt-0 md:w-auto'>
-            <PlusCircle className='mr-2 h-4 w-4' />
-            Add Template
-          </Button>
         </div>
       </div>
 
-      <div>
-        <h2 className='mb-4 text-xl font-semibold text-gray-700'>Template List</h2>
+      <div className='flex h-full flex-1 flex-col overflow-hidden'>
+        <h2 className='mb-4 text-xl font-bold'>Template List</h2>
 
-        <ul className='space-y-2'>
+        <ul className='flex-1 space-y-2 overflow-y-auto pr-2'>
           {templatesData.map(template => (
-            <li
-              key={template}
-              className='flex items-center justify-between rounded-md border border-gray-200 bg-white p-3'
-            >
+            <li key={template} className='card-gradient flex items-center justify-between rounded-lg border p-3'>
               <span className='text-sm font-medium text-gray-800'>{template}</span>
               <Button
                 variant='ghost'
@@ -157,10 +161,12 @@ const TemplateManagementPage = () => {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle className='font-bold'>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the template "
-              <strong>{templateNameToDelete}</strong>".
+              <p>This action cannot be undone.</p>
+              <p>This will permanently delete the template</p>
+
+              <p className='py-1 font-bold text-black'>"{templateNameToDelete}"</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
