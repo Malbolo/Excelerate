@@ -501,7 +501,18 @@ class CodeGenerator:
         graph_builder.add_edge('retry', 'codegen')
 
         # excel_manipulate 처리 후 다음 명령으로 복귀
-        graph_builder.add_edge('excel_manipulate', 'next_unit')
+        graph_builder.add_conditional_edges(
+            'excel_manipulate',
+            # 엑셀 명령은 오류날 시 바로 오류 반환. (파일이 잘못 생성된건 눈으로 확인하기 힘듬)
+            lambda state: (
+                'success' if state['error_msg'] is None
+                else 'error'
+            ),
+            {
+                'success': 'next_unit',
+                'error':   'error'
+            }
+        )
 
         # 오류 노드 → 종료
         graph_builder.add_edge('error', END)
