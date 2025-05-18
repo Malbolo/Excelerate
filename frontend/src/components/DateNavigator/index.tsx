@@ -115,7 +115,7 @@ const SchedulerNavigator = () => {
   );
 
   return (
-    <div className='flex w-full items-center justify-center gap-2 md:gap-4'>
+    <div className='flex w-full items-center justify-center gap-2 pb-4 md:gap-4'>
       <Button
         variant='outline'
         size='icon'

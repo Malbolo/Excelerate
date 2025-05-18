@@ -23,15 +23,15 @@ const CalendarGrid = ({ year, month }: CalendarGridProps) => {
   const matrix = getCalendarMatrix(Number(year), Number(month), monthSchedules);
 
   return (
-    <div className='mx-auto w-full max-w-4xl'>
-      <div className='grid grid-cols-7 border-b bg-gray-50 text-center text-xs font-medium text-gray-500'>
+    <div className='mx-auto flex h-[calc(100vh-160px)] max-w-4xl flex-col overflow-hidden rounded-lg border'>
+      <div className='grid grid-cols-7 text-center text-xs font-medium'>
         {DAYS_OF_WEEK.map(day => (
-          <div key={day} className='py-2'>
+          <div key={day} className='py-2 uppercase'>
             {day}
           </div>
         ))}
       </div>
-      <div className='grid grid-cols-7 grid-rows-6 border border-t-0 border-gray-200'>
+      <div className='grid min-h-0 flex-1 grid-cols-7 grid-rows-6 border-t'>
         {matrix.map((cell, idx) => (
           <CalendarDay
             key={idx}

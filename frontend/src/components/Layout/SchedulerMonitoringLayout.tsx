@@ -15,7 +15,7 @@ const SchedulerMonitoringLayout = ({ title, backPath, children, description }: S
 
   return (
     <div className='bg-gradient h-screen w-full overflow-y-hidden'>
-      <header className='flex flex-col items-start gap-2 border-b p-6'>
+      <header className='flex flex-col items-start gap-2 p-6'>
         {backPath !== '/' && (
           <Button variant='ghost' size='sm' onClick={() => push(backPath)} className='flex items-center gap-2'>
             <ArrowLeftIcon className='h-4 w-4' />

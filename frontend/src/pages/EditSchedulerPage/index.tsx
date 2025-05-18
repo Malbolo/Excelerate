@@ -63,7 +63,7 @@ const CreateSchedulerPage = () => {
       backPath={'/scheduler-management'}
       description='Edit the schedule to include the jobs you want to run.'
     >
-      <div className='bg-gradient relative mx-auto flex h-[calc(100vh-120px)] w-full'>
+      <div className='bg-gradient relative mx-auto flex h-[calc(100vh-120px)] w-full border-t'>
         <ResizablePanelGroup direction='horizontal'>
           <ResizablePanel>
             <div className='mx-auto flex h-full w-full grow-0 flex-col justify-between gap-4'>
