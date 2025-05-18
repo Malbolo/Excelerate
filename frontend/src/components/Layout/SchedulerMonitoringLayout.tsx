@@ -14,7 +14,7 @@ const SchedulerMonitoringLayout = ({ title, backPath, children, description }: S
   const { push } = useInternalRouter();
 
   return (
-    <div className='bg-gradient container mx-auto h-screen overflow-y-hidden'>
+    <div className='bg-gradient h-screen w-full overflow-y-hidden'>
       <header className='flex flex-col items-start gap-2 border-b p-6'>
         {backPath !== '/' && (
           <Button variant='ghost' size='sm' onClick={() => push(backPath)} className='flex items-center gap-2'>

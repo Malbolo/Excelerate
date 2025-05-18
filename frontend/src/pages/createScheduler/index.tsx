@@ -5,8 +5,9 @@ import { useSearchParams } from 'react-router-dom';
 import { JobManagement, useGetJobList } from '@/apis/jobManagement';
 import SchedulerMonitoringLayout from '@/components/Layout/SchedulerMonitoringLayout';
 import CustomPagination from '@/components/Pagination';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 
 import JobList from './components/JobList';
 import JobSearchInput from './components/JobSearchInput';
@@ -29,6 +30,7 @@ const CreateSchedulerPage = () => {
     types,
     name,
     mine: false,
+    size: 6,
   });
 
   const { total, jobs } = jobList;
@@ -55,26 +57,60 @@ const CreateSchedulerPage = () => {
   const backPath = `/scheduler-monitoring/month/${currentYear}-${String(currentMonth).padStart(2, '0')}`;
 
   return (
-    <SchedulerMonitoringLayout title={layoutTitle} backPath={backPath}>
-      <div className='flex h-[calc(100vh-150px)] flex-col md:flex-row md:gap-6'>
-        <div className='flex w-full flex-col overflow-hidden md:w-1/2'>
-          <JobSearchInput />
-          <JobList selectedJobIds={selectedJobIds} onJobSelect={handleJobSelect} jobs={jobs} />
-          <CustomPagination totalPages={total} />
-        </div>
-        <Separator orientation='vertical' className='mx-2 hidden md:block' />
-        <div className='mt-6 flex w-full flex-col overflow-hidden md:mt-0 md:w-1/2'>
-          <SelectedJobList
-            selectedJobs={selectedJobs}
-            handleJobDeselect={handleJobDeselect}
-            handleJobOrderChange={handleJobOrderChange}
-          />
-          <div className='mt-4 flex-shrink-0'>
-            <Button className='w-full' disabled={selectedJobs.length === 0} onClick={() => setIsModalOpen(true)}>
-              Done ({selectedJobs.length})
-            </Button>
-          </div>
-        </div>
+    <SchedulerMonitoringLayout
+      title={layoutTitle}
+      backPath={backPath}
+      description='Create a new schedule to include the jobs you want to run.'
+    >
+      <div className='bg-gradient relative flex h-[calc(100vh-120px)] w-full'>
+        <ResizablePanelGroup direction='horizontal'>
+          <ResizablePanel>
+            <div className='mx-auto flex h-full w-full grow-0 flex-col justify-between gap-4 p-8'>
+              <div className='@container flex flex-1 flex-col gap-4 overflow-hidden'>
+                <JobSearchInput />
+                <div className='flex flex-1 flex-col justify-between overflow-y-auto'>
+                  <div className='flex flex-col gap-4'>
+                    <JobList selectedJobIds={selectedJobIds} onJobSelect={handleJobSelect} jobs={jobs} />
+                  </div>
+                  {jobs.length > 0 && (
+                    <div className='mt-4 flex-shrink-0'>
+                      <CustomPagination totalPages={total} />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </ResizablePanel>
+
+          <ResizableHandle withHandle />
+
+          <ResizablePanel minSize={40} maxSize={70} defaultSize={50}>
+            <div className='h-full w-full border-l bg-[#FAFCFF]'>
+              <div className='flex h-full flex-col p-8'>
+                <header className='mb-6 flex items-center justify-between'>
+                  <div className='flex flex-col gap-2'>
+                    <h2 className='text-lg font-bold'>Selected Jobs</h2>
+                    <Badge variant='secondary' className='text-xs'>
+                      {selectedJobs.length} jobs selected
+                    </Badge>
+                  </div>
+                  <Button disabled={selectedJobs.length === 0} onClick={() => setIsModalOpen(true)}>
+                    Done
+                  </Button>
+                </header>
+                <div className='flex flex-1 flex-col overflow-y-auto'>
+                  <div className='flex h-full flex-col gap-4'>
+                    <SelectedJobList
+                      selectedJobs={selectedJobs}
+                      handleJobDeselect={handleJobDeselect}
+                      handleJobOrderChange={handleJobOrderChange}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
 
       <ScheduleDialog isOpen={isModalOpen} onOpenChange={setIsModalOpen} selectedJobs={selectedJobs} />
