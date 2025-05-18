@@ -4,6 +4,7 @@ import { createBrowserRouter } from 'react-router-dom';
 
 import ErrorBoundary from '@/components/Layout/ErrorBoundary';
 import Layout from '@/components/Layout/Layout';
+import Loading from '@/components/Layout/Loading';
 import EditSchedulerPage from '@/pages/EditSchedulerPage';
 import AgentMonitoringPage from '@/pages/agentMonitoring';
 import LoginPage from '@/pages/auth';
@@ -23,7 +24,7 @@ const routes = [
     path: '/',
     element: (
       <Layout>
-        <Suspense fallback={<div>로딩중...</div>}>
+        <Suspense fallback={<Loading />}>
           <MainPage />
         </Suspense>
       </Layout>
@@ -35,7 +36,7 @@ const routes = [
     path: '/agent-monitoring',
     element: (
       <Layout>
-        <Suspense fallback={<div>로딩중...</div>}>
+        <Suspense fallback={<Loading />}>
           <AgentMonitoringPage />
         </Suspense>
       </Layout>
@@ -47,7 +48,7 @@ const routes = [
     path: '/job-management',
     element: (
       <Layout>
-        <Suspense fallback={<div>로딩중...</div>}>
+        <Suspense fallback={<Loading />}>
           <JobManagementPage />
         </Suspense>
       </Layout>
@@ -59,7 +60,7 @@ const routes = [
     path: '/playground',
     element: (
       <Layout>
-        <Suspense fallback={<div>로딩중...</div>}>
+        <Suspense fallback={<Loading />}>
           <PlayGroundPage />
         </Suspense>
       </Layout>
@@ -74,7 +75,7 @@ const routes = [
         path: 'scheduler-monitoring/day/:dayId',
         element: (
           <Layout>
-            <Suspense fallback={<div>로딩중...</div>}>
+            <Suspense fallback={<Loading />}>
               <DaySchedulePage />
             </Suspense>
           </Layout>
@@ -87,7 +88,7 @@ const routes = [
     path: '/job-management/edit/:jobId',
     element: (
       <Layout>
-        <Suspense fallback={<div>로딩중...</div>}>
+        <Suspense fallback={<Loading />}>
           <JobEditPage />
         </Suspense>
       </Layout>
@@ -99,7 +100,7 @@ const routes = [
     path: '/scheduler-monitoring/month/:monthId',
     element: (
       <Layout>
-        <Suspense fallback={<div>로딩중...</div>}>
+        <Suspense fallback={<Loading />}>
           <MonthSchedulePage />
         </Suspense>
       </Layout>
@@ -111,7 +112,7 @@ const routes = [
     path: '/scheduler-monitoring/detail/:dayId/:scheduleId/:runId',
     element: (
       <Layout>
-        <Suspense fallback={<div>로딩중...</div>}>
+        <Suspense fallback={<Loading />}>
           <ScheduleDetail />
         </Suspense>
       </Layout>
@@ -123,7 +124,7 @@ const routes = [
     path: '/scheduler-monitoring/create',
     element: (
       <Layout>
-        <Suspense fallback={<div>로딩중...</div>}>
+        <Suspense fallback={<Loading />}>
           <CreateSchedulerPage />
         </Suspense>
       </Layout>
@@ -135,7 +136,7 @@ const routes = [
     path: '/scheduler-management',
     element: (
       <Layout>
-        <Suspense fallback={<div>로딩중...</div>}>
+        <Suspense fallback={<Loading />}>
           <SchedulerManagementPage />
         </Suspense>
       </Layout>
@@ -147,7 +148,7 @@ const routes = [
     path: '/scheduler-management/create',
     element: (
       <Layout>
-        <Suspense fallback={<div>로딩중...</div>}>
+        <Suspense fallback={<Loading />}>
           <CreateSchedulerPage />
         </Suspense>
       </Layout>
@@ -159,7 +160,7 @@ const routes = [
     path: '/scheduler-management/edit/:scheduleId',
     element: (
       <Layout>
-        <Suspense fallback={<div>로딩중...</div>}>
+        <Suspense fallback={<Loading />}>
           <EditSchedulerPage />
         </Suspense>
       </Layout>
@@ -170,7 +171,7 @@ const routes = [
     path: '/auth',
     element: (
       <Layout>
-        <Suspense fallback={<div>로딩중...</div>}>
+        <Suspense fallback={<Loading />}>
           <LoginPage />
         </Suspense>
       </Layout>
@@ -182,7 +183,7 @@ const routes = [
     path: '/template-management',
     element: (
       <Layout>
-        <Suspense fallback={<div>로딩중...</div>}>
+        <Suspense fallback={<Loading />}>
           <TemplateManagementPage />
         </Suspense>
       </Layout>
