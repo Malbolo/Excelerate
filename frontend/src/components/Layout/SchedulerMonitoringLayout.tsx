@@ -7,30 +7,25 @@ interface SchedulerMonitoringLayoutProps {
   title: string;
   backPath: string;
   children: React.ReactNode;
+  description?: string;
 }
 
-const SchedulerMonitoringLayout = ({ title, backPath, children }: SchedulerMonitoringLayoutProps) => {
-  const { push } = useInternalRouter();
-
-  const handleGoBack = () => {
-    push(backPath);
-  };
+const SchedulerMonitoringLayout = ({ title, backPath, children, description }: SchedulerMonitoringLayoutProps) => {
+  const { goBack } = useInternalRouter();
 
   return (
-    <div className='container mx-auto h-full p-8'>
-      <header className='mb-6 flex items-center gap-3 border-b border-gray-200 pb-4 md:gap-4'>
+    <div className='bg-gradient container mx-auto h-screen overflow-y-hidden'>
+      <header className='flex flex-col items-start gap-2 border-b p-6'>
         {backPath !== '/' && (
-          <Button
-            variant='outline'
-            size='icon'
-            onClick={handleGoBack}
-            aria-label='back'
-            className='h-9 w-9 flex-shrink-0'
-          >
-            <ArrowLeftIcon className='h-5 w-5' />
+          <Button variant='ghost' size='sm' onClick={goBack} className='flex items-center gap-2'>
+            <ArrowLeftIcon className='h-4 w-4' />
+            Back
           </Button>
         )}
-        <h1 className='flex-1 text-xl font-bold text-gray-800'>{title}</h1>
+        <div className='flex items-baseline gap-3 pl-3'>
+          <h1 className='flex-1 text-lg font-bold'>{title}</h1>
+          {description && <p className='text-accent-foreground truncate text-xs'>{description}</p>}
+        </div>
       </header>
       <main>{children}</main>
     </div>

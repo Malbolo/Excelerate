@@ -15,6 +15,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
+import { MousePointerClick } from 'lucide-react';
 
 import { JobManagement } from '@/apis/jobManagement';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -54,24 +55,28 @@ const SelectedJobList = ({ selectedJobs, handleJobOrderChange, handleJobDeselect
   }, []);
 
   return (
-    <>
-      <h2 className='mb-4 text-lg font-semibold'>Selected JOB List ({selectedJobs.length})</h2>
-      <ScrollArea className='h-0 flex-1 rounded-md border p-2'>
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-          <SortableContext items={jobIds} strategy={verticalListSortingStrategy}>
-            <div className='space-y-2 p-2'>
-              {selectedJobs.length > 0 ? (
-                selectedJobs.map((job, index) => (
+    <div className='flex h-full flex-col'>
+      {selectedJobs.length > 0 ? (
+        <ScrollArea className='flex-1'>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+            <SortableContext items={jobIds} strategy={verticalListSortingStrategy}>
+              <div className='space-y-2 p-2'>
+                {selectedJobs.map((job, index) => (
                   <SortableJobItem key={job.id} job={job} index={index} onJobDeselect={onJobDeselect} />
-                ))
-              ) : (
-                <div className='py-6 text-center text-gray-400'>Select JOBs from the left list.</div>
-              )}
-            </div>
-          </SortableContext>
-        </DndContext>
-      </ScrollArea>
-    </>
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        </ScrollArea>
+      ) : (
+        <div className='flex flex-1 items-center justify-center'>
+          <div className='animate-scale flex flex-col items-center gap-2'>
+            <MousePointerClick size={20} className='text-accent-foreground' />
+            <p className='text-sm'>Choose jobs to include in your schedule.</p>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

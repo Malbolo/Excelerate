@@ -29,9 +29,9 @@ const JobDisplay = ({ status, title, job }: JobDisplayProps) => {
             <Book className='text-accent-foreground h-3.5 w-3.5' />
           </div>
 
-          <div className='flex items-center gap-2 overflow-hidden'>
-            {status && <StatusIcon status={status} />}
+          <div className='flex items-center gap-3 overflow-hidden'>
             <span className='truncate text-sm'>{title}</span>
+            {status && <StatusIcon status={status} />}
           </div>
         </div>
 
