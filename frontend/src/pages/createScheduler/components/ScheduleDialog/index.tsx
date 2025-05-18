@@ -26,8 +26,6 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { disabledDate } from '@/lib/disabledDate';
 import { cn } from '@/lib/utils';
@@ -158,26 +156,27 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className='flex max-h-[100vh] flex-col sm:max-w-4xl'>
+      <DialogContent className='flex max-h-[calc(100vh-80px)] flex-col sm:max-w-4xl'>
         <DialogHeader>
-          <DialogTitle>{isEditMode ? 'Edit Schedule' : 'Create Schedule'}</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className='text-lg font-bold'>{isEditMode ? 'Edit Schedule' : 'Create Schedule'}</DialogTitle>
+          <DialogDescription className='text-sm'>
             {isEditMode
-              ? `Edit the schedule for the selected ${selectedJobs.length} JOBs.`
-              : `Create a new schedule for the selected ${selectedJobs.length} JOBs.`}
+              ? `Edit the schedule for the selected ${selectedJobs.length} Jobs.`
+              : `Create a new schedule for the selected ${selectedJobs.length} Jobs.`}
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className='flex-grow pr-6'>
-          <div className='mb-4 rounded-md border bg-gray-50 p-3'>
-            <h4 className='mb-2 text-sm font-medium text-gray-700'>Selected JOBs ({selectedJobs.length}):</h4>
+        <section className='h-full overflow-y-auto pr-6'>
+          <div className='card-gradient mb-4 rounded-md border p-3'>
+            <Badge variant='secondary' className='mb-2 text-xs'>
+              {selectedJobs.length} Selected Jobs
+            </Badge>
             <ul className='max-h-24 list-inside list-decimal space-y-1 overflow-y-auto text-xs text-gray-600'>
               {selectedJobs.map(job => (
                 <li key={job.id}>{job.title}</li>
               ))}
             </ul>
           </div>
-          <Separator className='my-4' />
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
@@ -189,7 +188,7 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
                     name='title'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>
+                        <FormLabel className='font-bold'>
                           Schedule Title <span className='text-red-500'>*</span>
                         </FormLabel>
                         <FormControl>
@@ -206,7 +205,7 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
                     name='description'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>
+                        <FormLabel className='font-bold'>
                           Description <span className='text-red-500'>*</span>
                         </FormLabel>
                         <FormControl>
@@ -220,7 +219,6 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
                       </FormItem>
                     )}
                   />
-                  <Separator className='my-4 md:hidden' />
 
                   {/* 성공 알림 이메일 */}
                   <FormField
@@ -228,7 +226,7 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
                     name='success_emails'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>
+                        <FormLabel className='font-bold'>
                           Success Notification Email <span className='text-red-500'>*</span>
                         </FormLabel>
                         <div className='flex items-center gap-2'>
@@ -282,7 +280,7 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
                     name='failure_emails'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>
+                        <FormLabel className='font-bold'>
                           Failure Notification Email <span className='text-red-500'>*</span>
                         </FormLabel>
                         <div className='flex items-center gap-2'>
@@ -336,7 +334,7 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
                     name='frequency'
                     render={({ field }) => (
                       <FormItem className='space-y-3'>
-                        <FormLabel>
+                        <FormLabel className='font-bold'>
                           Execution Interval
                           <span className='text-red-500'>*</span>
                         </FormLabel>
@@ -377,7 +375,7 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
                     name='start_date'
                     render={({ field }) => (
                       <FormItem className='flex flex-col'>
-                        <FormLabel>
+                        <FormLabel className='font-bold'>
                           Start Date <span className='text-red-500'>*</span>
                         </FormLabel>
                         <Popover>
@@ -420,7 +418,7 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
                     name='end_date'
                     render={({ field }) => (
                       <FormItem className='flex flex-col'>
-                        <FormLabel>
+                        <FormLabel className='font-bold'>
                           End Date <span className='text-red-500'>*</span>
                         </FormLabel>
                         <Popover>
@@ -463,7 +461,7 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
                     name='execution_time'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>
+                        <FormLabel className='font-bold'>
                           Execution Time <span className='text-red-500'>*</span>
                         </FormLabel>
                         <FormControl>
@@ -478,9 +476,9 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
               </div>
             </form>
           </Form>
-        </ScrollArea>
+        </section>
 
-        <DialogFooter className='mt-4 border-t pt-4'>
+        <DialogFooter className='mt-4 pt-4'>
           <DialogClose asChild>
             <Button variant='outline' type='button'>
               Cancel
