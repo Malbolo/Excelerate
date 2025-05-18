@@ -366,7 +366,7 @@ class ScheduleService:
                 # 모든 스케줄 정보를 한 번에 가져옴
                 all_db_schedules = schedule_crud.get_all_schedules(db)
                 for schedule in all_db_schedules:
-                    db_schedules[schedule.dag_id] = schedule
+                    db_schedules[schedule.id] = schedule
 
                 # 스케줄별 job_ids 가져오기 (N+1 쿼리 방지)
                 for schedule_job in db.query(ScheduleJob).all():

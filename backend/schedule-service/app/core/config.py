@@ -16,8 +16,8 @@ class Settings(BaseSettings):
     DATABASE_URL: Optional[str] = None
 
     # Airflow 설정
-    AIRFLOW__CORE__DAGS_FOLDER: str = "/opt/airflow/dags"
-    AIRFLOW_DAGS_PATH: str = "/opt/airflow/dags"
+    AIRFLOW__CORE__DAGS_FOLDER: str
+    AIRFLOW_DAGS_PATH: str
     AIRFLOW_API_URL: str
     AIRFLOW_USERNAME: str
     AIRFLOW_PASSWORD: str
@@ -32,6 +32,16 @@ class Settings(BaseSettings):
     # 로깅 설정
     LOG_LEVEL: str = "INFO"
 
+    # Redis 설정
+    REDIS_HOST: str
+    REDIS_PORT: int
+    REDIS_DB: int
+    REDIS_PASSWORD: Optional[str] = None
+    REDIS_URL: Optional[str] = None
+
+    # 캐시 설정
+    REDIS_CALENDAR_CACHE_TTL: int
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
@@ -41,6 +51,11 @@ class Settings(BaseSettings):
         # DATABASE_URL이 직접 설정되지 않은 경우 다른 DB 설정으로부터 구성
         if not self.DATABASE_URL and self.DB_USER:
             self.DATABASE_URL = f"mysql+pymysql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}?charset=utf8mb4"
+
+        # REDIS_URL이 직접 설정되지 않은 경우 다른 Redis 설정으로부터 구성
+        if not self.REDIS_URL and self.REDIS_HOST:
+            auth_part = f":{self.REDIS_PASSWORD}@" if self.REDIS_PASSWORD else ""
+            self.REDIS_URL = f"redis://{auth_part}{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
 
 @lru_cache()
 def get_settings():

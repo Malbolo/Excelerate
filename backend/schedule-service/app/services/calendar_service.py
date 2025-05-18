@@ -2,13 +2,64 @@ from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime, timezone
 from croniter import croniter
 
-from app.core.log_config import logger
+from app.core.log_config import logger, settings
 from app.services.airflow_client import airflow_client
 from app.utils import date_utils, cron_utils
 from app.crud import schedule_crud
 from app.db.database import SessionLocal
+from app.utils.redis_calendar import RedisCalendarCache
 
-def build_monthly_dag_calendar(dags: List[Dict[str, Any]], year: int, month: int, db=None) -> List[Dict[str, Any]]:
+calendar_cache = RedisCalendarCache(
+    redis_url=settings.REDIS_URL,
+    ttl_seconds=settings.REDIS_CALENDAR_CACHE_TTL
+)
+
+def build_monthly_dag_calendar(year: int, month: int, refresh: bool = False, db=None) -> Dict[str, Any]:
+    """
+    월별 DAG 실행 통계 생성 (캐싱 로직 포함)
+
+    Args:
+        year: 년도
+        month: 월
+        refresh: 캐시 무시 여부 (True면 캐시를 무시하고 새로 생성)
+        db: 데이터베이스 세션 (None이면 새로 생성)
+
+    Returns:
+        Dictionary containing:
+        - calendar_data: 달력 데이터
+        - updated_at: 업데이트 시간 (ISO 형식)
+        - cached: 캐시에서 가져왔는지 여부
+    """
+    # 캐시 확인 (refresh가 아닌 경우)
+    if not refresh:
+        cache_hit, cached_result = calendar_cache.get(year, month)
+        if cache_hit:
+            return {
+                "calendar_data": cached_result["calendar_data"],
+                "updated_at": cached_result["updated_at"],
+                "cached": True
+            }
+
+    # 캐시 미스 또는 리프레시: 데이터 생성
+    # Airflow에서 모든 DAG 목록 가져오기
+    dags = airflow_client.get_all_dags()
+
+    # 달력 데이터 생성
+    calendar_data = _generate_calendar_data(dags, year, month, db)
+
+    # 결과 캐싱
+    calendar_cache.set(year, month, calendar_data)
+
+    # 현재 시간 (방금 업데이트됨)
+    now = datetime.now().isoformat()
+
+    return {
+        "calendar_data": calendar_data,
+        "updated_at": now,
+        "cached": False
+    }
+
+def _generate_calendar_data(dags: List[Dict[str, Any]], year: int, month: int, db=None) -> List[Dict[str, Any]]:
     """
     월별 DAG 실행 통계 생성 (현재까지는 실제 실행 이력, 미래는 예측 실행 기반)
     """
@@ -45,7 +96,7 @@ def build_monthly_dag_calendar(dags: List[Dict[str, Any]], year: int, month: int
         try:
             all_db_schedules = schedule_crud.get_all_schedules(db)
             for schedule in all_db_schedules:
-                db_schedules[schedule.dag_id] = schedule
+                db_schedules[schedule.id] = schedule
         except Exception as e:
             logger.error(f"Error getting DB data: {str(e)}")
 
