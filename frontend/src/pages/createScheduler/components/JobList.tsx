@@ -1,4 +1,4 @@
-import { ChevronRight, TagIcon, UserCircle2Icon } from 'lucide-react';
+import { Check, ChevronRight, TagIcon, UserCircle2Icon } from 'lucide-react';
 
 import { JobManagement } from '@/apis/jobManagement';
 import { Badge } from '@/components/ui/badge';
@@ -36,30 +36,11 @@ const JobList = ({ selectedJobIds, onJobSelect, selectedJobId, jobs }: JobListPr
                 key={`${job.id}-${job.title}`}
                 className={cn(
                   'group flex h-fit cursor-pointer items-start rounded-md border p-3.5 transition-all duration-150 ease-in-out',
-                  isSingleActive && 'border-primary/70 box-shadow',
+                  isSingleActive && 'border-primary/70',
+                  selectedJobIds && selectedJobIds.has(job.id) && 'border-primary/70',
                 )}
                 onClick={() => handleJobSelectInternal(job)}
               >
-                {/* {selectedJobIds && (
-                  <div className='pt-0.5'>
-                    {isMultiSelected ? (
-                      <CheckCircle2 className='h-5 w-5 text-blue-600' />
-                    ) : (
-                      <Circle className='h-5 w-5 text-gray-300 transition-colors group-hover:text-gray-400' />
-                    )}
-                  </div>
-                )}
-
-                {!selectedJobIds && selectedJobId && (
-                  <div className='pt-0.5'>
-                    {isSingleActive ? (
-                      <CheckCircle2 className='h-5 w-5 text-blue-600' />
-                    ) : (
-                      <Circle className='h-5 w-5 text-gray-300 transition-colors group-hover:text-gray-400' />
-                    )}
-                  </div>
-                )} */}
-
                 <div className='flex w-full flex-1 flex-col justify-between gap-2'>
                   <div className='pb-2'>
                     <span className='flex w-full justify-between pb-1'>
@@ -88,7 +69,11 @@ const JobList = ({ selectedJobIds, onJobSelect, selectedJobId, jobs }: JobListPr
                       variant='secondary'
                       className='ml-auto h-6 w-6 rounded-full p-0 transition-all ease-in-out group-hover:scale-105'
                     >
-                      <ChevronRight className='h-4 w-4' />
+                      {isSingleActive || (selectedJobIds && selectedJobIds.has(job.id)) ? (
+                        <Check className='h-4 w-4' />
+                      ) : (
+                        <ChevronRight className='h-4 w-4' />
+                      )}
                     </Badge>
                   </div>
                 </div>
