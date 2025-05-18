@@ -118,11 +118,16 @@ const ScheduleActions = ({ schedule }: ScheduleActionsProps) => {
         {/* 삭제 버튼 */}
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant='ghost' size='icon' onClick={handleDelete} className='h-7 w-7'>
+            <Button
+              variant='ghost'
+              size='icon'
+              onClick={handleDelete}
+              className='text-destructive hover:bg-destructive/10 hover:text-destructive-foreground h-7 w-7'
+            >
               <Trash className='h-4 w-4' />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>
+          <TooltipContent className='border-destructive bg-destructive fill-destructive text-white'>
             <p>Delete Schedule</p>
           </TooltipContent>
         </Tooltip>
@@ -132,7 +137,7 @@ const ScheduleActions = ({ schedule }: ScheduleActionsProps) => {
       <AlertDialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Edit Schedule</AlertDialogTitle>
+            <AlertDialogTitle className='text-lg font-bold'>Edit Schedule</AlertDialogTitle>
             <AlertDialogDescription>Would you like to edit this schedule?</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -146,12 +151,14 @@ const ScheduleActions = ({ schedule }: ScheduleActionsProps) => {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Schedule</AlertDialogTitle>
+            <AlertDialogTitle className='text-lg font-bold'>Delete Schedule</AlertDialogTitle>
             <AlertDialogDescription>Are you sure you want to delete this schedule?</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete}>Delete</AlertDialogAction>
+            <Button variant='destructive' onClick={handleConfirmDelete}>
+              Delete
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

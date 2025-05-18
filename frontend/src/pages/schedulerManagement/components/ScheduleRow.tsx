@@ -27,7 +27,7 @@ const ScheduleRow = ({ schedule }: ScheduleRowProps) => {
 
   return (
     <>
-      <TableRow className='hover:bg-muted/50 cursor-pointer' data-state={isExpanded ? 'open' : 'closed'}>
+      <TableRow className='w-full cursor-pointer items-center' data-state={isExpanded ? 'open' : 'closed'}>
         <TableCell className='w-[50px] text-center'>
           <Button variant='ghost' size='icon' onClick={toggleExpansion} className='h-7 w-7'>
             {isExpanded ? <ChevronDown className='h-4 w-4' /> : <ChevronRight className='h-4 w-4' />}
@@ -40,13 +40,15 @@ const ScheduleRow = ({ schedule }: ScheduleRowProps) => {
 
         <TableCell>{formatInterval(schedule.frequency_display, locale, place)}</TableCell>
 
-        <TableCell className='flex items-center gap-2'>
-          <span className='text-sm'>
-            {schedule.last_run?.status ? <StatusIcon status={schedule.last_run.status} /> : '-'}
-          </span>
-          <span className='text-sm'>
-            {schedule.last_run?.end_time ? formatDateTime(schedule.last_run.end_time, locale, place) : '-'}
-          </span>
+        <TableCell>
+          <div className='flex items-center gap-2'>
+            <span className='text-sm'>
+              {schedule.last_run?.status && <StatusIcon status={schedule.last_run.status} />}
+            </span>
+            <span className='text-sm'>
+              {schedule.last_run?.end_time ? formatDateTime(schedule.last_run.end_time, locale, place) : '-'}
+            </span>
+          </div>
         </TableCell>
         <TableCell>
           {schedule.next_run && schedule.next_run.data_interval_end
@@ -62,11 +64,9 @@ const ScheduleRow = ({ schedule }: ScheduleRowProps) => {
       </TableRow>
 
       {isExpanded && (
-        <TableRow className='bg-slate-50 hover:bg-slate-50'>
-          <TableCell></TableCell>
-          <TableCell colSpan={6} className='p-0'>
-            <div className='space-y-2 p-4'>
-              <h4 className='mb-2 text-sm font-semibold'>Jobs for : {schedule.title}</h4>
+        <TableRow className='hover:bg-transparent'>
+          <TableCell colSpan={8}>
+            <div className='flex flex-col gap-2'>
               {schedule.jobs.length > 0 ? (
                 schedule.jobs.map(job => <JobDisplay key={job.id} title={job.title} job={job} />)
               ) : (

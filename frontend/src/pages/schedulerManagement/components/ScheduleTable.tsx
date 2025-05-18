@@ -8,7 +8,7 @@ const ScheduleTable = () => {
   const { schedules } = data;
 
   return (
-    <div className='rounded-md border'>
+    <div className='card-gradient rounded-md border'>
       <Table>
         <TableHeader>
           <TableRow>

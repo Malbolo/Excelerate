@@ -1,12 +1,12 @@
 const ADMIN_NAV_ITEMS = [
   { label: 'Main', to: '/' },
   { label: 'Job Management', to: '/job-management' },
+  { label: 'Scheduler Management', to: '/scheduler-management' },
   {
     label: 'Scheduler Monitoring',
     to: `/scheduler-monitoring/month/${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`,
     basePath: '/scheduler-monitoring',
   },
-  { label: 'Scheduler Management', to: '/scheduler-management' },
   { label: 'Agent Monitoring', to: '/agent-monitoring' },
   { label: 'Play Ground', to: '/playground' },
 ];

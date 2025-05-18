@@ -1,3 +1,4 @@
+import { Workflow } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 import { useGetUserInfoAPI } from '@/apis/auth';
@@ -17,8 +18,12 @@ const NavigationBar = () => {
 
   return (
     <nav className='flex h-full min-w-66 shrink-0 flex-col border-r bg-[#FAFCFF] pt-6 pb-2'>
-      <div className='mt-9 mb-15 flex justify-center'>
+      <div className='mt-10 mb-9 flex flex-col items-center justify-center gap-3'>
         <img src={logo} alt='Samsung Logo' width={150} height={23} />
+        <div className='flex items-center gap-1'>
+          <Workflow className='h-3 w-3' />
+          <p className='text-xs'>GenAI Report Automation</p>
+        </div>
       </div>
 
       <ul className='flex grow flex-col gap-2 p-4'>

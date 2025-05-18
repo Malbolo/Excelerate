@@ -42,7 +42,7 @@ const JobManagementPage = () => {
             <header className='flex items-baseline gap-3'>
               <h1 className='text-lg font-bold whitespace-nowrap'>Job Management</h1>
               <p className='text-accent-foreground truncate text-xs'>
-                You can view, edit, and delete the details of the job you created
+                You can view, edit, and delete the details of the job you created.
               </p>
             </header>
             <div className='@container flex h-full w-full flex-col overflow-y-auto'>
