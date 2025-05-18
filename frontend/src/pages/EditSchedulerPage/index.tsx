@@ -66,8 +66,8 @@ const CreateSchedulerPage = () => {
       <div className='bg-gradient relative mx-auto flex h-[calc(100vh-120px)] w-full'>
         <ResizablePanelGroup direction='horizontal'>
           <ResizablePanel>
-            <div className='mx-auto flex h-full w-full grow-0 flex-col justify-between gap-4 p-8'>
-              <div className='@container flex flex-1 flex-col gap-4 overflow-hidden'>
+            <div className='mx-auto flex h-full w-full grow-0 flex-col justify-between gap-4'>
+              <div className='@container flex flex-1 flex-col gap-4 overflow-hidden p-8'>
                 <JobSearchInput />
                 <div className='flex flex-1 flex-col justify-between overflow-y-auto'>
                   <div className='flex flex-col gap-4'>

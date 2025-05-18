@@ -82,7 +82,7 @@ const JobList = ({ selectedJobIds, onJobSelect, selectedJobId, jobs }: JobListPr
           })}
         </div>
       ) : (
-        <div className='flex flex-1 flex-col items-center justify-center text-center'>
+        <div className='flex flex-col items-center justify-center text-center'>
           <p className='text-base font-bold'>No Available Jobs</p>
           <p className='text-sm text-gray-500'>There are currently no jobs to display.</p>
           <p className='text-sm text-gray-500'>New jobs will appear here.</p>
