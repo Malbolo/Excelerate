@@ -1,12 +1,9 @@
-import { useGetScheduleList } from '@/apis/schedulerManagement';
+import { Schedule } from '@/apis/schedulerManagement';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 import ScheduleRow from './ScheduleRow';
 
-const ScheduleTable = () => {
-  const { data } = useGetScheduleList();
-  const { schedules } = data;
-
+const ScheduleTable = ({ schedules }: { schedules: Schedule[] }) => {
   return (
     <div className='card-gradient rounded-md border'>
       <Table>

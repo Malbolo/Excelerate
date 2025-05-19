@@ -46,6 +46,7 @@ export interface Schedule {
 
 interface ScheduleListResponse {
   schedules: Schedule[];
+  total_pages: number;
 }
 
 interface CreateScheduleRequest {
@@ -55,6 +56,15 @@ interface CreateScheduleRequest {
 interface EditScheduleRequest {
   schedule: string;
   scheduleId: string;
+}
+
+interface ScheduleParams {
+  page?: string;
+  size?: string;
+  title?: string;
+  owner?: string;
+  frequency?: string;
+  status?: string;
 }
 
 // 스케쥴 상세 조회 - 수정페이지에서 초기 데이터 로드할 때 필요
@@ -69,8 +79,23 @@ const getScheduleDetail = async (scheduleId: string) => {
 };
 
 // 스케쥴 목록 조회
-const getScheduleList = async () => {
-  const { error, success, data } = await api<ScheduleListResponse>('/api/schedules');
+const getScheduleList = async ({
+  page = '1',
+  size = '10',
+  title = '',
+  owner = '',
+  frequency = '',
+  status = '',
+}: ScheduleParams) => {
+  const searchParams = new URLSearchParams();
+
+  Object.entries({ page, size, title, owner, frequency, status }).forEach(([key, value]) => {
+    if (value) {
+      searchParams.set(key, value);
+    }
+  });
+
+  const { error, success, data } = await api<ScheduleListResponse>(`/api/schedules?${searchParams.toString()}`);
 
   if (!success) {
     throw new Error(error);
@@ -147,10 +172,10 @@ const deleteSchedule = async (scheduleId: string) => {
 };
 
 // 스케쥴 목록 조회 hook - tasntack/query
-export const useGetScheduleList = () => {
+export const useGetScheduleList = ({ page, size, title, owner, frequency, status }: ScheduleParams) => {
   return useSuspenseQuery({
-    queryKey: ['scheduleList'],
-    queryFn: getScheduleList,
+    queryKey: ['scheduleList', page, size, title, owner, frequency, status],
+    queryFn: () => getScheduleList({ page, size, title, owner, frequency, status }),
   });
 };
 
