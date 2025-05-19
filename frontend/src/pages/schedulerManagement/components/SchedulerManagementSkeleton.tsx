@@ -11,8 +11,8 @@ const SchedulerManagementSkeleton = () => {
         <Skeleton className='h-10 w-32' />
       </div>
 
-      <div className='card-gradient rounded-md border'>
-        <div className='flex items-center border-b p-4'>
+      <div className='card-gradient rounded-md'>
+        <div className='flex items-center p-4'>
           <Skeleton className='mr-4 h-6 w-6 flex-shrink-0' />
           <Skeleton className='h-6 w-1/4 flex-grow' />
           <Skeleton className='ml-4 h-6 w-1/6 flex-grow' />
@@ -23,7 +23,7 @@ const SchedulerManagementSkeleton = () => {
         </div>
 
         {[...Array(5)].map((_, index) => (
-          <div key={index} className='flex items-center border-b p-4'>
+          <div key={index} className='flex items-center p-4'>
             <Skeleton className='mr-4 h-8 w-6 flex-shrink-0' />
             <Skeleton className='h-8 w-1/4 flex-grow' />
             <Skeleton className='ml-4 h-8 w-1/6 flex-grow' />

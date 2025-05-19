@@ -2,6 +2,8 @@ import { useState } from 'react';
 
 import { ChevronDown, ChevronRight } from 'lucide-react';
 
+import { useGetJobListForScheduler } from '@/apis/job';
+import { Job } from '@/apis/jobManagement';
 import { Schedule } from '@/apis/schedulerManagement';
 import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from '@/components/ui/table';
@@ -19,17 +21,29 @@ interface ScheduleRowProps {
 const ScheduleRow = ({ schedule }: ScheduleRowProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const { locale, place } = useLocalDate();
+  const [jobList, setJobList] = useState<Job[]>([]);
+  const { mutateAsync: getJobListForScheduler, isPending } = useGetJobListForScheduler(
+    schedule.jobs.map(job => job.id),
+  );
 
-  const toggleExpansion = (e: React.MouseEvent) => {
+  const clearJobList = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsExpanded(!isExpanded);
+    setIsExpanded(false);
+    setJobList([]);
+  };
+
+  const openJobList = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsExpanded(true);
+    const jobList = await getJobListForScheduler();
+    setJobList(jobList.jobs);
   };
 
   return (
     <>
       <TableRow className='w-full cursor-pointer items-center' data-state={isExpanded ? 'open' : 'closed'}>
         <TableCell className='w-[50px] text-center'>
-          <Button variant='ghost' size='icon' onClick={toggleExpansion} className='h-7 w-7'>
+          <Button variant='ghost' size='icon' onClick={isExpanded ? clearJobList : openJobList} className='h-7 w-7'>
             {isExpanded ? <ChevronDown className='h-4 w-4' /> : <ChevronRight className='h-4 w-4' />}
           </Button>
         </TableCell>
@@ -67,8 +81,8 @@ const ScheduleRow = ({ schedule }: ScheduleRowProps) => {
         <TableRow className='hover:bg-transparent'>
           <TableCell colSpan={8}>
             <div className='flex flex-col gap-2'>
-              {schedule.jobs.length > 0 ? (
-                schedule.jobs.map(job => <JobDisplay key={job.id} title={job.title} job={job} />)
+              {isPending ? null : jobList.length > 0 ? (
+                jobList.map(job => <JobDisplay key={job.id} title={job.title} job={job} />)
               ) : (
                 <p className='px-2 py-1 text-sm text-gray-500'>This schedule has no jobs defined.</p>
               )}

@@ -5,6 +5,7 @@ import { DataFrame } from '@/types/dataframe';
 import { ErrorMessage } from '@/types/job';
 
 import { api } from './core';
+import { Job } from './jobManagement';
 
 interface DataframeResponse {
   codes: string[];
@@ -33,6 +34,10 @@ interface DataframeRequest {
   url: string;
   stream_id: string;
   original_code?: string;
+}
+
+interface JobListForSchedulerResponse {
+  jobs: Job[];
 }
 
 // ai agent 기반의 코드 생성
@@ -66,6 +71,33 @@ const getSourceData = async ({ command, stream_id }: SourceDataRequest) => {
   }
 
   return data;
+};
+
+export const getJobListForScheduler = async (jobIds: string[]) => {
+  const { data, error, success } = await api<JobListForSchedulerResponse>('/api/jobs/for-schedule/commands', {
+    method: 'POST',
+    body: JSON.stringify({
+      job_ids: jobIds,
+    }),
+  });
+
+  if (!success) {
+    throw new Error(error);
+  }
+
+  console.log(data);
+  return data;
+};
+
+export const useGetJobListForScheduler = (jobIds: string[]) => {
+  const { mutateAsync, isPending } = useMutation({
+    mutationFn: () => getJobListForScheduler(jobIds),
+    onError: () => {
+      toast.error('Failed to get job list for scheduler');
+    },
+  });
+
+  return { mutateAsync, isPending };
 };
 
 // ai agent 기반의 코드 생성 hook - tasntack/mutation
