@@ -132,7 +132,7 @@ def get_jobs_for_creating_schedule(request: JobForScheduleRequest, db: Session) 
     
     job_list = [JobForSchedule.create(job) for job in jobs]
 
-    response = JobForScheduleResponse(jobs=job_list)
+    response = JobForScheduleResponse(result=SUCCESS, data=JobList(jobs=job_list))
 
     return JSONResponse(content=response.dict())
 
@@ -144,6 +144,6 @@ def get_jobs_with_commands_for_creating_schedule(request: JobForScheduleRequest,
 
     job_list = [JobForScheduleWithCommands.create(job) for job in jobs]
 
-    response = JobForScheduleWithCommandsResponse(jobs=job_list)
+    response = JobForScheduleWithCommandsResponse(result=SUCCESS, data=JobListWithCommands(jobs=job_list))
 
     return JSONResponse(content=response.dict())
