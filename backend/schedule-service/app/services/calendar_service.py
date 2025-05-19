@@ -2,7 +2,8 @@ from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime, timezone
 from croniter import croniter
 
-from app.core.log_config import logger, settings
+from app.core.log_config import logger
+from app.core.config import settings
 from app.services.airflow_client import airflow_client
 from app.utils import date_utils, cron_utils
 from app.crud import schedule_crud
