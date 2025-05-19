@@ -179,7 +179,6 @@ async def get_schedule_executions_by_date(
         # 날짜 유효성 검사
         try:
             date_str = f"{year}-{month:02d}-{day:02d}"
-            date_obj = datetime.strptime(date_str, '%Y-%m-%d').replace(tzinfo=timezone.utc)
         except ValueError:
             return JSONResponse(status_code=400, content={
                 "result": "error",
@@ -187,11 +186,11 @@ async def get_schedule_executions_by_date(
             })
 
         dags = airflow_client.get_all_dags().get("dags", [])
-        executions = ScheduleService.get_dag_runs_by_date(dags, date_str)
+        response = ScheduleService.get_dag_runs_by_date(dags, date_str)
 
         return JSONResponse(content={
             "result": "success",
-            "data": executions
+            "data": response
         })
 
     except Exception as e:
@@ -393,24 +392,47 @@ async def update_schedule(
 
 @router.get("")
 async def get_all_schedules(
+        page: int = Query(1, description="페이지 번호", ge=1),
+        size: int = Query(20, description="페이지당 항목 수", ge=1, le=100),
+        title: str = Query("", description="제목으로 검색"),  # 기본값 빈 문자열
+        owner: str = Query("", description="소유자로 검색"),  # 기본값 빈 문자열
+        frequency: str = Query("", description="실행 주기로 검색 (daily, weekly, monthly 등)"),  # 기본값 빈 문자열
+        status: str = Query("active", description="스케줄 상태로 필터링 (active: 활성화됨, paused: 중지됨, all: 모두)"),
         user_id: int = Depends(check_admin_permission),
         db: Session = Depends(database.get_db)
 ) -> JSONResponse:
-    """모든 스케줄(DAG) 목록을 반환하는 API - 최적화 버전"""
+    """모든 스케줄(DAG) 목록을 반환하는 API - 필드별 검색 기능 포함 버전"""
     try:
         # 최적화된 서비스 함수 호출
-        result = ScheduleService.get_all_schedules_with_details(user_id=user_id, db=db)
+        result = ScheduleService.get_all_schedules_with_details(
+            user_id=user_id,
+            db=db,
+            page=page,
+            size=size,
+            title=title,
+            owner=owner,
+            frequency=frequency,
+            status=status
+        )
 
         schedules = result.get("schedules", [])
         total = result.get("total", 0)
+
+        total_pages = (total + size - 1) // size if total > 0 else 1
 
         return JSONResponse(content={
             "result": "success",
             "data": {
                 "schedules": schedules,
-                "total": total
+                "total": total,
+                "page": page,
+                "size": size,
+                "total_pages": total_pages,
+                "has_next": page < total_pages,
+                "has_prev": page > 1
             }
         })
+
     except Exception as e:
         logger.error(f"Error getting schedules: {str(e)}")
         return JSONResponse(status_code=500, content={

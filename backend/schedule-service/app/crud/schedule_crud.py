@@ -119,3 +119,28 @@ def get_schedule_jobs_by_schedule_ids(db: Session, schedule_ids: List[str]) -> L
     return db.query(ScheduleJob).filter(
         ScheduleJob.schedule_id.in_(schedule_ids)
     ).order_by(ScheduleJob.schedule_id, ScheduleJob.order).all()
+
+
+def get_schedules_by_ids(db: Session, schedule_ids: List[str]) -> List[Schedule]:
+    """특정 ID 목록에 해당하는 스케줄 조회"""
+    if not schedule_ids:
+        return []
+
+    return db.query(Schedule).filter(
+        Schedule.id.in_(schedule_ids)
+    ).all()
+
+
+def get_schedule_ids_by_filters(db: Session, title: str = "", owner: str = "", frequency: str = "") -> List[str]:
+    """제목, 소유자, 주기 필터 조건에 맞는 스케줄 ID 목록 조회"""
+    query = db.query(Schedule.id).order_by(desc(Schedule.id))
+
+    if title:
+        query = query.filter(Schedule.title.ilike(f"%{title}%"))
+    if owner:
+        query = query.filter(Schedule.owner.ilike(f"%{owner}%"))
+    if frequency:
+        query = query.filter(Schedule.frequency == frequency)
+
+    schedules = query.all()
+    return [schedule.id for schedule in schedules]
