@@ -86,8 +86,14 @@ def _generate_calendar_data(dags: List[Dict[str, Any]], year: int, month: int, d
                 "total": 0,
                 "success": 0,
                 "failed": 0,
-                "pending": 0
+                "pending": 0,
+                "running": 0
             })
+
+        # Airflow 상태 그룹화 정의
+        SUCCESS_STATES = ["success"]
+        RUNNING_STATES = ["running", "queued", "scheduled", "up_for_reschedule", "restarting"]
+        FAILED_STATES = ["failed", "upstream_failed", "shutdown", "removed", "up_for_retry"]
 
         # 날짜별 데이터 인덱스 구성 (빠른 조회용)
         date_index = {item["date"]: i for i, item in enumerate(all_days)}
@@ -103,22 +109,25 @@ def _generate_calendar_data(dags: List[Dict[str, Any]], year: int, month: int, d
 
         # DAG 별로 처리
         for dag in dags:
-            # DAG 활성 상태 확인 - 비활성 DAG는 건너뜁니다
-            is_paused = dag.get("is_paused", False)
-            if is_paused:
-                continue
-
             dag_id = dag["dag_id"]
 
-            # 스케줄 표현식 추출
-            cron_expr = cron_utils.normalize_cron_expression(dag.get("schedule_interval"))
+            # DB에서 스케줄 정보 가져오기
+            db_schedule = db_schedules.get(dag_id)
+
+            # 스케줄 표현식 추출 - DB에서 우선 가져오기
+            cron_expr = None
+            if db_schedule and hasattr(db_schedule, 'cron_expression'):
+                cron_expr = db_schedule.cron_expression
+
+            # DB에 없으면 Airflow에서 가져오기
+            if not cron_expr:
+                cron_expr = cron_utils.normalize_cron_expression(dag.get("schedule_interval"))
 
             if not cron_expr or not croniter.is_valid(cron_expr):
                 logger.debug(f"Invalid or empty cron: {cron_expr} for DAG {dag_id}")
                 continue
 
             # DAG의 시작일/종료일 추출
-            db_schedule = db_schedules.get(dag_id)
             dag_start_date, dag_end_date = _extract_dag_dates(dag, dag_id, now, db_schedule)
 
             # 범위 체크: 이 달의 날짜와 겹치는지 확인
@@ -136,7 +145,13 @@ def _generate_calendar_data(dags: List[Dict[str, Any]], year: int, month: int, d
             # 실행 이력 조회 (월 전체)
             start_date = date_utils.format_date_for_airflow(first_day)
             end_date = date_utils.format_date_for_airflow(last_day)
-            dag_runs = airflow_client.get_dag_runs(dag_id, start_date=start_date, end_date=end_date)
+            dag_runs = airflow_client.get_dag_runs(
+                dag_id,
+                limit=100,
+                start_date=start_date,
+                end_date=end_date,
+                fields=["start_date", "state", "dag_run_id"]
+            )
 
             # 날짜별 실행 이력 구성
             executed_runs_by_date = {}
@@ -165,12 +180,13 @@ def _generate_calendar_data(dags: List[Dict[str, Any]], year: int, month: int, d
                         # 오늘의 경우, 현재 시간까지의 실행 이력 처리
                         if day_start <= now <= day_end and day_runs:
                             # 오늘 이미 실행된 것이 있다면 처리
-                            success_count = sum(1 for run in day_runs if run.get("state", "").lower() == "success")
-                            failed_count = sum(
-                                1 for run in day_runs if run.get("state", "").lower() in ["failed", "error"])
-                            pending_count = len(day_runs) - success_count - failed_count
+                            success_count = sum(1 for run in day_runs if run.get("state", "").lower() in SUCCESS_STATES)
+                            running_count = sum(1 for run in day_runs if run.get("state", "").lower() in RUNNING_STATES)
+                            failed_count = sum(1 for run in day_runs if run.get("state", "").lower() in FAILED_STATES)
+                            pending_count = len(day_runs) - success_count - failed_count - running_count
 
                             all_days[idx]["success"] += success_count
+                            all_days[idx]["running"] += running_count
                             all_days[idx]["failed"] += failed_count
                             if pending_count > 0:
                                 all_days[idx]["pending"] += pending_count
@@ -194,16 +210,17 @@ def _generate_calendar_data(dags: List[Dict[str, Any]], year: int, month: int, d
                     else:
                         # 과거 날짜는 실제 실행 이력만 고려
                         if day_runs:
-                            success_count = sum(1 for run in day_runs if run.get("state", "").lower() == "success")
-                            failed_count = sum(
-                                1 for run in day_runs if run.get("state", "").lower() in ["failed", "error"])
+                            success_count = sum(1 for run in day_runs if run.get("state", "").lower() in SUCCESS_STATES)
+                            running_count = sum(1 for run in day_runs if run.get("state", "").lower() in RUNNING_STATES)
+                            failed_count = sum(1 for run in day_runs if run.get("state", "").lower() in FAILED_STATES)
 
                             all_days[idx]["success"] += success_count
+                            all_days[idx]["running"] += running_count
                             all_days[idx]["failed"] += failed_count
 
         # 모든 DAG 처리 후 각 날짜의 total 계산
         for idx, day_data in enumerate(all_days):
-            all_days[idx]["total"] = day_data["success"] + day_data["failed"] + day_data["pending"]
+            all_days[idx]["total"] = day_data["success"] + day_data["failed"] + day_data["pending"] + day_data["running"]
 
         return all_days
 
@@ -233,51 +250,7 @@ def _extract_dag_dates(dag: Dict[str, Any], dag_id: str, now: datetime, db_sched
             if dag_end_date.tzinfo is None:
                 dag_end_date = dag_end_date.replace(tzinfo=timezone.utc)
 
-    # DB에 시작일이 없는 경우 API에서 추출
-    if dag_start_date is None:
-        dag_start_date = _extract_dag_start_date_from_api(dag, dag_id)
-
-    # 그래도 없는 경우 생성일 또는 현재 시간 사용
-    if dag_start_date is None:
-        dag_start_date = _extract_created_date(dag, now)
-
-    # DB에 종료일이 없는 경우 API에서 추출
-    if dag_end_date is None:
-        end_date_str = dag.get("end_date")
-        if end_date_str:
-            try:
-                dag_end_date = datetime.fromisoformat(end_date_str.replace("Z", "+00:00"))
-            except (ValueError, TypeError):
-                pass
-
-    # 최종 확인: timezone이 없는 날짜가 있으면 추가
-    if dag_start_date and dag_start_date.tzinfo is None:
-        dag_start_date = dag_start_date.replace(tzinfo=timezone.utc)
-
-    if dag_end_date and dag_end_date.tzinfo is None:
-        dag_end_date = dag_end_date.replace(tzinfo=timezone.utc)
-
     return dag_start_date, dag_end_date
-
-def _extract_dag_start_date_from_api(dag: Dict[str, Any], dag_id: str) -> Optional[datetime]:
-    """API 응답에서 시작일 추출"""
-    start_date_str = dag.get("start_date")
-    if start_date_str:
-        try:
-            return datetime.fromisoformat(start_date_str.replace("Z", "+00:00"))
-        except (ValueError, TypeError):
-            pass
-    return None
-
-def _extract_created_date(dag: Dict[str, Any], now: datetime) -> datetime:
-    """생성일 또는 현재 날짜 사용"""
-    created_date_str = dag.get("created")
-    if created_date_str:
-        try:
-            return datetime.fromisoformat(created_date_str.replace("Z", "+00:00"))
-        except (ValueError, TypeError):
-            return now
-    return now
 
 def _is_dag_in_month_range(dag_id: str, dag_start_date: datetime, dag_end_date: Optional[datetime],
                            first_day: datetime, last_day: datetime) -> bool:
