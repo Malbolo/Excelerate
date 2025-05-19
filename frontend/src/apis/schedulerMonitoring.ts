@@ -1,4 +1,5 @@
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 import { Status } from '@/types/job';
 
@@ -10,9 +11,13 @@ interface MonthSchedule {
   pending: number;
   success: number;
   failed: number;
+  running: number;
 }
 
-type GetMonthScheduleResponse = MonthSchedule[];
+interface GetMonthScheduleResponse {
+  monthly: MonthSchedule[];
+  updated_at: string;
+}
 
 export interface DaySchedule {
   schedule_id: string;
@@ -58,6 +63,18 @@ export interface JobError {
   error_trace?: string;
 }
 
+const deleteMonthCache = async (year: string, month: string) => {
+  const { error, success } = await api(`/api/schedules/statistics/monthly/cache?year=${year}&month=${month}`, {
+    method: 'DELETE',
+  });
+
+  if (!success) {
+    throw new Error(error);
+  }
+
+  return true;
+};
+
 // runId 실행된 스케쥴 상세 조회
 const getRunDetail = async (scheduleId: string, runId: string) => {
   const { error, success, data } = await api<RunDetailResponse>(`/api/schedules/${scheduleId}/runs/${runId}`);
@@ -96,6 +113,23 @@ const getMonthSchedules = async (year: string, month: string) => {
   }
 
   return data;
+};
+
+export const useDeleteMonthCache = () => {
+  const queryClient = useQueryClient();
+
+  const { mutate } = useMutation({
+    mutationFn: ({ year, month }: { year: string; month: string }) => deleteMonthCache(year, month),
+    onSuccess: () => {
+      toast.success('Month cache deleted successfully');
+      queryClient.invalidateQueries({ queryKey: ['monthSchedules'] });
+    },
+    onError: error => {
+      toast.error(error.message);
+    },
+  });
+
+  return mutate;
 };
 
 // runId 실행된 스케쥴 상세 조회 hook - tasntack/query

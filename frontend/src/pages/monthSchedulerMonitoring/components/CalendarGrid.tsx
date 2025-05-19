@@ -13,7 +13,7 @@ const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const CalendarGrid = ({ year, month }: CalendarGridProps) => {
   const { data } = useGetMonthSchedules(year.toString(), month.toString());
 
-  const monthSchedules = data.map(({ date, pending, success, failed }) => ({
+  const monthSchedules = data.monthly.map(({ date, pending, success, failed }) => ({
     day: Number(date.split('-')[2]),
     pending,
     success,
