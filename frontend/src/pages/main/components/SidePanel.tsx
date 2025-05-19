@@ -7,6 +7,7 @@ import { DownloadIcon, Expand, TriangleAlert } from 'lucide-react';
 import AgentCallDetail from '@/components/AgentCall';
 import { BASE_URL } from '@/constant/baseURL';
 import { useStreamStore } from '@/store/useStreamStore';
+import { Log } from '@/types/agent';
 import { DataFrame, DataFrameRow } from '@/types/dataframe';
 import { ErrorMessage } from '@/types/job';
 
@@ -111,12 +112,13 @@ const CodePanel = ({ code, errorMsg }: CodePanelProps) => {
 const TracePanel = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { logs } = useStreamStore();
+  const [selectedLog, setSelectedLog] = useState<Log | null>(null);
 
   if (!logs || logs.length === 0) return <div className='flex h-full items-center justify-center'>No Log</div>;
 
   return (
     <div className='h-full'>
-      <AgentCallDetail logs={logs} />
+      <AgentCallDetail logs={logs} selectedLog={selectedLog} onLogSelect={setSelectedLog} />
       <div className='absolute bottom-2 left-1 z-10 cursor-pointer rounded-full border bg-white p-3'>
         <Expand
           color='#374151'
@@ -127,7 +129,7 @@ const TracePanel = () => {
         />
       </div>
       <ExpandModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-        <AgentCallDetail logs={logs} />
+        <AgentCallDetail logs={logs} selectedLog={selectedLog} onLogSelect={setSelectedLog} />
       </ExpandModal>
     </div>
   );
