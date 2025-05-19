@@ -107,23 +107,21 @@ def list_prompts():
 
 @router.get("/{name}", response_model=PromptSchema)
 def get_prompt(name: str):
-    msgs = store.load(name)
-    if msgs is None:
-        raise HTTPException(404, "Prompt not found")
-    return JSONResponse(status_code=200, content={"result" : "success", "data" : {"name": name, "messages": msgs}})
+    data = store.load(name)
+    return JSONResponse(status_code=200, content={"result" : "success", "data" : data})
 
 @router.post("/", status_code=201)
 def create_prompt(p: PromptSchema):
     if store.load(p.name):
         raise HTTPException(400, "이미 존재하는 이름입니다")
-    store.save(p.name, [m.dict() for m in p.messages])
+    store.save(p.name, [m.dict() for m in p.messages], p.variables)
     return JSONResponse(status_code=201, content={"result" : "success", "data" : f"{p.name} 템플릿이 등록되었습니다."})
 
 @router.put("/{name}")
 def update_prompt(name: str, p: PromptSchema):
     if name != p.name:
         raise HTTPException(400, "이름 변경은 지원하지 않음")
-    store.save(name, [m.dict() for m in p.messages])
+    store.save(name, [m.dict() for m in p.messages], p.variables)
     return JSONResponse(status_code=200, content={"result" : "success", "data" : f"{name} 템플릿이 업데이트 되었습니다."})
 
 @router.delete("/{name}", status_code=204)

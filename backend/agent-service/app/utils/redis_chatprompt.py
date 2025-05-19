@@ -6,18 +6,18 @@ class PromptStore:
     def __init__(self, client):
         self.redis = client
 
-    def save(self, name: str, messages: list[dict]):
+    def save(self, name: str, messages: list[dict], variables: dict):
         key = f"prompts:{name}"
-        payload = json.dumps({"messages": messages})
+        payload = json.dumps({"messages": messages, "variables": variables})
         # TTL 없이 영구 저장
         self.redis.set(key, payload)
 
-    def load(self, name: str) -> list[dict] | None:
+    def load(self, name: str) -> dict | None:
         key = f"prompts:{name}"
         data = self.redis.get(key)
         if not data:
             return None
-        return json.loads(data)["messages"]
+        return json.loads(data)
 
     def delete(self, name: str):
         self.redis.delete(f"prompts:{name}")
@@ -35,7 +35,7 @@ def load_chat_template(name: str) -> ChatPromptTemplate:
     role 은 반드시 'system', 'human', 'ai' 중 하나여야 합니다.
     """
     try:
-        messages_data = prompt_store.load(name)
+        messages_data = prompt_store.load(name)["messages"]
         if messages_data is None:
             raise ValueError(f"Prompt '{name}' not found in Redis")
 
@@ -60,4 +60,4 @@ def load_chat_template(name: str) -> ChatPromptTemplate:
 
         return ChatPromptTemplate.from_messages(prompt_messages)
     except:
-        return ChatPromptTemplate.from_messages([{"role": "system", "content": f"{name}프롬프트가 없습니다."}])
+        return ChatPromptTemplate.from_messages([{"role": "system", "content": f"{name} 프롬프트가 없습니다."}])

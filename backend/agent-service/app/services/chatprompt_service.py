@@ -29,7 +29,13 @@ def list_grouped_prompts() -> Dict[str, List[str]]:
 
 def get_prompt_json(agent: str, template_name: str) -> Dict[str, Any]:
     key = f"{agent}:{template_name}"
-    msgs = store.load(key)
+    data = store.load(key)
+    if data is None:
+        raise HTTPException(404, "Prompt not found")
+
+    msgs = data["messages"]
+    variables = data["variables"]
+
     if msgs is None:
         raise HTTPException(404, "Prompt not found")
     if len(msgs) < 2:
@@ -45,7 +51,7 @@ def get_prompt_json(agent: str, template_name: str) -> Dict[str, Any]:
         role_a = msgs[i+1]["role"].lower() if i+1 < len(msgs) else None
         if role_h == "human" and role_a == "ai":
             fewshot.append({"human": msgs[i]["text"], "ai": msgs[i+1]["text"]})
-    return {"template_name": template_name ,"system": system_text, "fewshot": fewshot, "human": human_text}
+    return {"template_name": template_name ,"system": system_text, "fewshot": fewshot, "human": human_text, "variables": variables}
 
 
 def invoke_with_messages(messages: List[Dict[str, str]], variables: Dict[str, Any]) -> str:
