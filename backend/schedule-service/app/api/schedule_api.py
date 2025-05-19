@@ -83,16 +83,19 @@ async def create_schedule(
 async def get_monthly_statistics(
         year: int = Query(...),
         month: int = Query(..., ge=1, le=12),
+        refresh: bool = Query(False, description="캐시를 무시하고 새로운 데이터 조회"),
         user_id: int = Depends(check_admin_permission)
 ) -> JSONResponse:
     try:
-        dags = airflow_client.get_all_dags()
-        calendar_data = calendar_service.build_monthly_dag_calendar(dags, year, month)
+        result = calendar_service.build_monthly_dag_calendar(year, month, refresh)
 
         return JSONResponse(content={
             "result": "success",
-            "data": calendar_data
+            "data": result.get("calendar_data", []),
+            "updated_at": result.get("updated_at", datetime.now().isoformat()),
+            "cached": result.get("cached", False)
         })
+
     except Exception as e:
         logger.error(f"Error generating calendar data: {e}")
         return JSONResponse(status_code=500, content={
@@ -378,6 +381,33 @@ async def get_all_schedules(
     try:
         # 서비스 함수 호출
         result = ScheduleService.get_all_schedules_with_details(user_id=user_id, db=db)
+
+        schedules = result.get("schedules", [])
+        total = result.get("total", 0)
+
+        return JSONResponse(content={
+            "result": "success",
+            "data": {
+                "schedules": schedules,
+                "total": total
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error getting schedules: {str(e)}")
+        return JSONResponse(status_code=500, content={
+            "result": "error",
+            "message": f"스케줄 목록 조회에 실패했습니다: {str(e)}"
+        })
+
+@router.get("/optimized")
+async def get_all_schedules_optimized(
+        user_id: int = Depends(check_admin_permission),
+        db: Session = Depends(database.get_db)
+) -> JSONResponse:
+    """모든 스케줄(DAG) 목록을 반환하는 API - 최적화 버전"""
+    try:
+        # 최적화된 서비스 함수 호출
+        result = ScheduleService.get_all_schedules_with_details_optimized(user_id=user_id, db=db)
 
         schedules = result.get("schedules", [])
         total = result.get("total", 0)

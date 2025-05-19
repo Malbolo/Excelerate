@@ -35,7 +35,7 @@ class ScheduleService:
                 title = dag_detail.get("dag_display_name", schedule_id)
 
             # DB에서 스케줄 정보 조회
-            db_schedule = schedule_crud.get_schedule_by_dag_id(db, schedule_id)
+            db_schedule = schedule_crud.get_schedule_by_id(db, schedule_id)
             if db_schedule:
                 # DB에 저장된 정보 사용
                 title = db_schedule.title
@@ -88,13 +88,13 @@ class ScheduleService:
             # 크론 표현식 처리
             schedule_interval = dag_detail.get("schedule_interval")
             if isinstance(schedule_interval, dict) and "__type" in schedule_interval:
-                frequency_cron = schedule_interval.get("__type", "")
+                cron_expression = schedule_interval.get("__type", "")
             else:
-                frequency_cron = str(schedule_interval) if schedule_interval else ""
+                cron_expression = str(schedule_interval) if schedule_interval else ""
 
             # 주기 문자열로 변환 (역변환)
-            frequency = cron_utils.convert_cron_to_frequency(frequency_cron)
-            frequency_display = cron_utils.parse_cron_to_friendly_format(frequency_cron)
+            frequency = cron_utils.convert_cron_to_frequency(cron_expression)
+            frequency_display = cron_utils.parse_cron_to_friendly_format(cron_expression)
 
             # execution_time이 DB에 없으면 cron에서 추출
             execution_time = None
@@ -102,7 +102,7 @@ class ScheduleService:
                 execution_time = db_schedule.execution_time
 
             if not execution_time:
-                execution_time = cron_utils.extract_execution_time_from_cron(frequency_cron)
+                execution_time = cron_utils.extract_execution_time_from_cron(cron_expression)
 
             # 응답 데이터 구성
             schedule_data = {
@@ -110,7 +110,7 @@ class ScheduleService:
                 "title": title,
                 "description": description,
                 "frequency": frequency,
-                "frequency_cron": frequency_cron,
+                "frequency_cron": cron_expression,
                 "frequency_display": frequency_display,
                 "is_paused": dag_detail.get("is_paused", False),
                 "created_at": dag_detail.get("last_parsed_time", ""),
@@ -222,7 +222,7 @@ class ScheduleService:
                 title = dag_detail.get("dag_display_name", schedule_id)
 
             # DB에서 title 확인
-            db_schedule = schedule_crud.get_schedule_by_dag_id(db, schedule_id)
+            db_schedule = schedule_crud.get_schedule_by_id(db, schedule_id)
             if db_schedule:
                 title = db_schedule.title
 
@@ -366,7 +366,7 @@ class ScheduleService:
                 # 모든 스케줄 정보를 한 번에 가져옴
                 all_db_schedules = schedule_crud.get_all_schedules(db)
                 for schedule in all_db_schedules:
-                    db_schedules[schedule.dag_id] = schedule
+                    db_schedules[schedule.id] = schedule
 
                 # 스케줄별 job_ids 가져오기 (N+1 쿼리 방지)
                 for schedule_job in db.query(ScheduleJob).all():
@@ -406,16 +406,16 @@ class ScheduleService:
                     schedule_data["success_emails"] = db_schedule.success_emails or []
                     schedule_data["failure_emails"] = db_schedule.failure_emails or []
 
-                    # 주요 추가: frequency, frequency_cron, execution_time은 DB에서 가져오기
+                    # 주요 추가: frequency, cron_expression, execution_time은 DB에서 가져오기
                     schedule_data["frequency"] = db_schedule.frequency
-                    schedule_data["frequency_cron"] = db_schedule.frequency_cron
+                    schedule_data["frequency_cron"] = db_schedule.cron_expression
                     schedule_data["execution_time"] = db_schedule.execution_time
 
-                    # frequency_display는 frequency_cron에서 계산
-                    if db_schedule.frequency_cron:
+                    # frequency_display는 cron_expression에서 계산
+                    if db_schedule.cron_expression:
                         try:
                             schedule_data["frequency_display"] = cron_utils.parse_cron_to_friendly_format(
-                                db_schedule.frequency_cron)
+                                db_schedule.cron_expression)
                         except Exception as e:
                             logger.error(f"Error parsing cron expression for {dag_id}: {str(e)}")
                             schedule_data["frequency_display"] = None
@@ -600,7 +600,7 @@ class ScheduleService:
                 owner = dag.get("owners", ["unknown"])[0] if dag.get("owners") else "unknown"
 
                 # DB에 정보가 있으면 사용
-                db_schedule = schedule_crud.get_schedule_by_dag_id(db, dag_id)
+                db_schedule = schedule_crud.get_schedule_by_id(db, dag_id)
                 if db_schedule:
                     title = db_schedule.title
                     description = db_schedule.description
@@ -722,62 +722,187 @@ class ScheduleService:
         return result
 
     @staticmethod
-    def _get_schedules_from_db(db=None) -> List[Dict[str, Any]]:
-        """DB에서 스케줄 기본 정보를 가져옵니다 (fallback용)"""
+    def get_all_schedules_with_details_optimized(user_id: int = None, db=None) -> Dict[str, Any]:
+        """모든 스케줄(DAG) 목록을 반환 - ULID 범위 쿼리와 최소한의 필드만 요청"""
         close_db = False
-        result = []  # 여기서 result를 초기화하여 함수 밖에서도 접근 가능하게 함
         try:
+            # DB 세션 생성
             if db is None:
                 db = SessionLocal()
                 close_db = True
 
-            # DB에서 스케줄 정보 가져오기
-            schedules = schedule_crud.get_all_schedules(db)
+            # 필요한 최소한의 필드만 명시
+            needed_fields = [
+                "dag_id",
+                "dag_display_name",
+                "description",
+                "is_paused",
+                "owners",
+                "schedule_interval",
+                "next_dagrun"  # 다음 실행 예정 시간만 필요
+            ]
 
-            # DB 객체를 딕셔너리로 변환
-            for schedule in schedules:
-                # Schedule 모델 객체를 딕셔너리로 변환
-                schedule_dict = {
-                    "schedule_id": schedule.dag_id,
-                    "title": schedule.title,
-                    "description": schedule.description,
-                    "frequency": schedule.frequency,
-                    "frequency_cron": schedule.frequency_cron,
-                    "execution_time": schedule.execution_time,
-                    "is_paused": schedule.is_paused,
-                    "start_date": schedule.start_date.isoformat() if schedule.start_date else None,
-                    "end_date": schedule.end_date.isoformat() if schedule.end_date else None,
-                    "success_emails": schedule.success_emails or [],
-                    "failure_emails": schedule.failure_emails or [],
-                    "owner": schedule.owner,
-                    "created_by": schedule.created_by,
-                    "created_at": schedule.created_at.isoformat() if schedule.created_at else None,
-                    "updated_at": schedule.updated_at.isoformat() if schedule.updated_at else None,
-                    "last_run": None,
-                    "next_run": None,
-                    "jobs": []
+            # ULID 역순으로 정렬하여 최신 생성 순으로 가져오기
+            limit = 1000  # 가져올 DAG 수 제한
+            dags_response = airflow_client._get("dags", {
+                "limit": limit,
+                "fields": needed_fields,
+                "order_by": "-dag_id"  # ULID 역순(최신순)
+            })
+
+            # API에서 제공하는 total_entries 사용
+            total_entries = dags_response.get("total_entries", 0)
+            dags = dags_response.get("dags", [])
+
+            # 결과가 비어있으면 빈 결과 반환
+            if not dags:
+                return {
+                    "schedules": [],
+                    "total": 0
                 }
 
-                # job_ids 가져오기
-                try:
-                    schedule_jobs = []
-                    if hasattr(schedule, 'jobs') and schedule.jobs:
-                        # 순서에 따라 정렬
-                        schedule_jobs = sorted(schedule.jobs, key=lambda x: x.order)
-                        schedule_dict["job_ids"] = [job.job_id for job in schedule_jobs]
-                    else:
-                        # DB에서 별도 쿼리로 가져오기
-                        schedule_jobs = db.query(ScheduleJob).filter(ScheduleJob.schedule_id == schedule.id).order_by(
-                            ScheduleJob.order).all()
-                        schedule_dict["job_ids"] = [job.job_id for job in schedule_jobs]
-                except Exception as e:
-                    logger.error(f"Error getting job_ids for schedule {schedule.dag_id}: {str(e)}")
-                    schedule_dict["job_ids"] = []
+            # 가져온 결과의 최소/최대 DAG ID 확인 (범위 쿼리용)
+            min_dag_id = dags[-1].get("dag_id")  # 마지막(가장 오래된) DAG ID
+            max_dag_id = dags[0].get("dag_id")  # 첫번째(가장 최근) DAG ID
 
-                result.append(schedule_dict)
+            # DB에서 해당 범위의 스케줄 정보 가져오기
+            db_schedules = {}
+            schedule_job_map = {}
+            try:
+                # 범위 쿼리로 효율적으로 스케줄 조회
+                filtered_db_schedules = schedule_crud.get_schedules_in_range(db, min_dag_id, max_dag_id)
+                for schedule in filtered_db_schedules:
+                    db_schedules[schedule.id] = schedule
+
+                # 스케줄에 해당하는 job 정보 조회
+                if filtered_db_schedules:
+                    schedule_ids = [schedule.id for schedule in filtered_db_schedules]
+                    schedule_jobs = schedule_crud.get_schedule_jobs_by_schedule_ids(db, schedule_ids)
+
+                    # 결과를 스케줄 ID별로 그룹화
+                    for schedule_job in schedule_jobs:
+                        if schedule_job.schedule_id not in schedule_job_map:
+                            schedule_job_map[schedule_job.schedule_id] = []
+                        schedule_job_map[schedule_job.schedule_id].append({
+                            "job_id": schedule_job.job_id,
+                            "order": schedule_job.order
+                        })
+            except Exception as e:
+                logger.error(f"Error getting DB data: {str(e)}")
+
+            # 응답 데이터 구성 - dags 순서 유지하면서 처리
+            schedule_list = []
+            for dag in dags:
+                dag_id = dag.get("dag_id")
+
+                # DB에 스케줄이 있는지 확인
+                db_schedule = db_schedules.get(dag_id)
+
+                # 기본 정보 구성 - 데이터 소스 우선순위: DB > Airflow API
+                schedule_data = {
+                    "schedule_id": dag_id,
+                    "title": (db_schedule.title if db_schedule and db_schedule.title else
+                              dag.get("dag_display_name", dag_id)),
+                    "description": (db_schedule.description if db_schedule and db_schedule.description else
+                                    dag.get("description", "")),
+                    "is_paused": dag.get("is_paused", False),
+                    "owner": dag.get("owners", ["unknown"])[0] if dag.get("owners") else "unknown",
+                    "jobs": [],  # 간소화된 job 정보만 포함
+                    "last_run": None,
+                    "next_run": None,
+                    "success_emails": (db_schedule.success_emails or []) if db_schedule else [],
+                    "failure_emails": (db_schedule.failure_emails or []) if db_schedule else []
+                }
+
+                # 크론 표현식 및 주기 정보 설정 (frequency_display 객체 형식 사용)
+                if db_schedule and db_schedule.cron_expression:
+                    # DB에서 가져온 정보 사용
+                    execution_time = db_schedule.execution_time
+                    frequency = db_schedule.frequency
+
+                    schedule_data["frequency_display"] = {
+                        "type": frequency,
+                        "time": execution_time
+                    }
+                else:
+                    # Airflow API에서 가져온 정보 사용
+                    schedule_interval = dag.get("schedule_interval")
+                    cron_expr = ""
+                    if isinstance(schedule_interval, dict) and "__type" in schedule_interval:
+                        cron_expr = schedule_interval.get("__type", "")
+                    else:
+                        cron_expr = str(schedule_interval) if schedule_interval else ""
+
+                    frequency = cron_utils.convert_cron_to_frequency(cron_expr)
+                    execution_time = cron_utils.extract_execution_time_from_cron(cron_expr)
+
+                    schedule_data["frequency_display"] = {
+                        "type": frequency,
+                        "time": execution_time
+                    }
+
+                # 날짜 정보 설정 - DB에서만 가져옴, API에는 해당 필드가 없는 것으로 확인됨
+                if db_schedule:
+                    # 시작일/종료일
+                    if hasattr(db_schedule, 'start_date') and db_schedule.start_date:
+                        schedule_data["start_date"] = db_schedule.start_date.isoformat()
+                    else:
+                        schedule_data["start_date"] = None
+
+                    if hasattr(db_schedule, 'end_date') and db_schedule.end_date:
+                        schedule_data["end_date"] = db_schedule.end_date.isoformat()
+                    else:
+                        schedule_data["end_date"] = None
+                else:
+                    # DB에 정보가 없는 경우 null로 설정
+                    schedule_data["start_date"] = None
+                    schedule_data["end_date"] = None
+
+                # 스케줄에 해당하는 job_ids와 order 가져오기 - 간소화된 형태
+                if db_schedule and db_schedule.id in schedule_job_map:
+                    job_infos = sorted(schedule_job_map[db_schedule.id], key=lambda x: x["order"])
+                    jobs = []
+                    for job_info in job_infos:
+                        jobs.append({
+                            "id": job_info["job_id"],
+                            "order": job_info["order"] + 1  # 0-based to 1-based
+                        })
+                    schedule_data["jobs"] = jobs
+
+                # 최근 실행 정보 조회 - 간소화된 형태
+                try:
+                    recent_runs = airflow_client.get_dag_runs(dag_id, limit=1)
+                    if recent_runs:
+                        recent_run = recent_runs[0]
+                        schedule_data["last_run"] = {
+                            "run_id": recent_run.get("dag_run_id"),
+                            "status": recent_run.get("state"),
+                            "end_time": recent_run.get("end_date")
+                        }
+                except Exception as e:
+                    logger.error(f"Error getting recent runs for {dag_id}: {str(e)}")
+
+                # 다음 실행 예정 조회 - next_dagrun 필드 활용
+                if dag.get("next_dagrun"):
+                    schedule_data["next_run"] = {
+                        "scheduled_time": dag.get("next_dagrun")
+                    }
+                else:
+                    schedule_data["next_run"] = None
+
+                schedule_list.append(schedule_data)
+
+            return {
+                "schedules": schedule_list,
+                "total": total_entries  # API에서 제공하는 총 개수 사용
+            }
+
+        except Exception as e:
+            logger.error(f"Error getting schedules from Airflow: {str(e)}")
+            return {
+                "schedules": [],
+                "total": 0
+            }
         finally:
             if close_db and db is not None:
                 db.close()
-
-        # finally 블록 바깥에서 return 문 사용
-        return result
