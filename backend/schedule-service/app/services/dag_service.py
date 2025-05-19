@@ -352,6 +352,10 @@ def notify_dag_status(**kwargs):
             '''
         )
 
+def fail_task(**kwargs):
+    '''이 함수는 항상 실패하도록 예외를 발생시킵니다'''
+    raise Exception("이전 태스크 중 실패한 태스크가 감지되었습니다.")
+
 # DAG 설정
 default_args = {{
     'depends_on_past': False,
@@ -506,7 +510,7 @@ task_{idx}_skip    >> task_{idx}_cleanup
 # 실패 감지 태스크 (하나라도 실패했을 때)
 failure_sensor_task = PythonOperator(
     task_id='failure_sensor',
-    python_callable=lambda **kwargs: False,  # 이 함수가 항상 False를 반환함으로써 DAG가 실패 상태로 표시됨
+    python_callable=fail_task,  
     trigger_rule=TriggerRule.ONE_FAILED,
     dag=dag,
 )
