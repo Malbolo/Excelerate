@@ -175,7 +175,7 @@ const LLMPlaygroundPage = () => {
 
     const result = await postCallPrompt(payload);
     const templateResult = await postTemplatePrompt({
-      template_name: templateName,
+      template_name: `${selectedCategory}:${templateName}`,
       variables: variables,
     });
     setModifiedOutput(result.output || 'No output received.');

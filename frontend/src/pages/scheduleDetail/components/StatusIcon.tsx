@@ -1,4 +1,4 @@
-import { CheckCircle, Clock, HelpCircle, XCircle } from 'lucide-react';
+import { CheckCircle, Clock, HelpCircle, Loader2, XCircle } from 'lucide-react';
 
 import { Status } from '@/types/job';
 
@@ -10,6 +10,8 @@ const StatusIcon = ({ status }: { status: Status }) => {
       return <XCircle className='text-destructive z-50 h-4 w-4' />;
     case 'pending':
       return <Clock className='z-50 h-4 w-4 text-yellow-500' />;
+    case 'running':
+      return <Loader2 className='z-50 h-4 w-4 animate-spin text-yellow-500' />;
     default:
       return <HelpCircle className='z-50 h-4 w-4 text-gray-400' />;
   }
