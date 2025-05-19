@@ -149,6 +149,8 @@ def _generate_calendar_data(dags: List[Dict[str, Any]], year: int, month: int, d
             effective_start = max(dag_start_date, first_day)
             effective_end = min(dag_end_date, last_day) if dag_end_date else last_day
 
+            logger.info(f"DAG {dag_id} effective date range: {effective_start} to {effective_end}")
+
             if effective_start > effective_end:
                 logger.debug(f"{dag_id} effective_start {effective_start} > effective_end {effective_end}")
                 continue
@@ -170,7 +172,14 @@ def _generate_calendar_data(dags: List[Dict[str, Any]], year: int, month: int, d
             # 날짜별 실행 이력 구성
             executed_runs_by_date = {}
             for run in dag_runs:
+                original_date = run.get("start_date", "")
                 run_date_str = run.get("start_date", "").split("T")[0]
+                state = run.get("state", "").lower()
+
+                if run_date_str == "2025-05-19":
+                    logger.info(
+                        f"TODAY RUN: DAG={dag_id}, ID={run.get('dag_run_id')}, State={state}, Time={original_date}")
+
                 if run_date_str:
                     if run_date_str not in executed_runs_by_date:
                         executed_runs_by_date[run_date_str] = []
@@ -194,11 +203,27 @@ def _generate_calendar_data(dags: List[Dict[str, Any]], year: int, month: int, d
                     if day_end > now:
                         # 오늘의 경우, 현재 시간까지의 실행 이력 처리
                         if day_start <= now <= day_end and day_runs:
+                            logger.info(f"Processing TODAY's runs for DAG {dag_id}: found {len(day_runs)} runs")
+                            # 각 실행의 상태 로깅
+                            for i, run in enumerate(day_runs):
+                                state = run.get("state", "").lower()
+                                logger.info(f"  Run {i + 1}: ID={run.get('dag_run_id')}, State={state}")
+                                if state in SUCCESS_STATES:
+                                    logger.info(f"    Counted as SUCCESS")
+                                elif state in RUNNING_STATES:
+                                    logger.info(f"    Counted as RUNNING")
+                                elif state in FAILED_STATES:
+                                    logger.info(f"    Counted as FAILED")
+                                else:
+                                    logger.info(f"    Counted as PENDING (unknown state)")
                             # 오늘 이미 실행된 것이 있다면 처리
                             success_count = sum(1 for run in day_runs if run.get("state", "").lower() in SUCCESS_STATES)
                             running_count = sum(1 for run in day_runs if run.get("state", "").lower() in RUNNING_STATES)
                             failed_count = sum(1 for run in day_runs if run.get("state", "").lower() in FAILED_STATES)
                             pending_count = len(day_runs) - success_count - failed_count - running_count
+
+                            logger.info(
+                                f"  Final counts: success={success_count}, running={running_count}, failed={failed_count}, pending={pending_count}")
 
                             all_days[idx]["success"] += success_count
                             all_days[idx]["running"] += running_count
@@ -235,8 +260,12 @@ def _generate_calendar_data(dags: List[Dict[str, Any]], year: int, month: int, d
 
         # 모든 DAG 처리 후 각 날짜의 total 계산
         for idx, day_data in enumerate(all_days):
+            date_str = day_data["date"]
             all_days[idx]["total"] = day_data["success"] + day_data["failed"] + day_data["pending"] + day_data["running"]
 
+            if date_str == "2025-05-19":
+                logger.info(f"TODAY'S FINAL DATA: {day_data}")
+        logger.info(f"All dates with runs: {list(executed_runs_by_date.keys())}")
         return all_days
 
     finally:
