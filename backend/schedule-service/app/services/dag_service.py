@@ -243,15 +243,16 @@ class DagService:
                 user_id=user_id
             )
 
-            if not response or "jobs" not in response:
-                raise Exception("Job 정보를 가져오지 못했습니다.")
+            if (not response or "result" not in response or
+                    response["result"] != "success" or "data" not in response or "jobs" not in response["data"]):
+                raise Exception("Job 정보를 가져오지 못했습니다. 응답 형식이 올바르지 않습니다.")
 
             # 응답에서 job 정보 추출하여 job_details 구성
             job_details = []
             job_details_map = {}
 
             # 배열을 딕셔너리로 변환
-            for job in response["jobs"]:
+            for job in response["data"]["jobs"]:
                 job_id = job.get("id")
                 if job_id:
                     job_details_map[job_id] = job
