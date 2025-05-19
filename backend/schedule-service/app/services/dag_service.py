@@ -503,16 +503,25 @@ task_{idx}_skip    >> task_{idx}_cleanup
         # 마지막에 최종 상태 알림 태스크 추가
         last_idx = len(job_details) - 1
         dag_code += f"""
-# 최종 DAG 상태 알림 태스크
-notify_task = PythonOperator(
-    task_id='notify_dag_status',
-    python_callable=notify_dag_status,  
-    trigger_rule=TriggerRule.ALL_DONE,
+# 실패 감지 태스크 (하나라도 실패했을 때)
+failure_sensor_task = PythonOperator(
+    task_id='failure_sensor',
+    python_callable=lambda **kwargs: False,  # 이 함수가 항상 False를 반환함으로써 DAG가 실패 상태로 표시됨
+    trigger_rule=TriggerRule.ONE_FAILED,
     dag=dag,
 )
 
-# 마지막 cleanup 태스크와 알림 태스크 연결
-task_{last_idx}_cleanup >> notify_task
+# 성공/실패 상관없이 실행되는 알림 태스크
+notification_task = PythonOperator(
+    task_id='send_notification',
+    python_callable=notify_dag_status,  # 기존 notify_dag_status 함수 사용 (상태에 따라 분기)
+    trigger_rule=TriggerRule.ALL_DONE,  # 모든 선행 태스크가 완료되면 실행
+    dag=dag,
+)
+
+# 마지막 cleanup 태스크와 연결
+task_{last_idx}_cleanup >> failure_sensor_task
+task_{last_idx}_cleanup >> notification_task
 """
 
         return dag_code
