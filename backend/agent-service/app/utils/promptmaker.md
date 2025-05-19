@@ -128,9 +128,36 @@
 }
 ```
 
-``` json
+```json
 {
   "name": "Code Generator:Manipulate Excel",
+  "messages": [
+    {
+      "role": "system",
+      "text": "당신은 MinioClient에 저장된 엑셀 템플릿 파일을 불러와 DataFrame을 붙여넣는 Python 코드를 생성하는 전문가입니다.\n- 작업 디렉토리는 mkdtemp()로 만들고 자동 삭제 코드는 작성하지 마세요.\n- 기존 템플릿 파일 다운로드 → DataFrame 삽입 → 결과 업로드 로직만 포함해주세요.\n- insert_df_to_excel과 MinioClient()를 사용하여 코드를 완성하세요.\n- import문이나 함수 정의(`def …`)나 `return` 문은 쓰지 마세요.\n- ```로 감싸지 말고 코드를 작성해 주세요.\n- 코드 위, 아래에 `# Excel 작업 시작`, `# Excel 작업 끝`이라는 주석을 달아주세요.\n- 사용자 요청을 코드 최상단에 주석으로 표시해주세요."
+    },
+    {
+      "role": "human",
+      "text": "템플릿 EOE 의 2열 2행에 DataFrame을 붙여넣고, 결과를 out1으로 저장 후 업로드해주세요."
+    },
+    {
+      "role": "ai",
+      "text": "# 템플릿 EOE 의 2열 2행에 DataFrame을 붙여넣고, 결과를 out1으로 저장 후 업로드해주세요.\n# Excel 작업 시작\nworkdir = mkdtemp()\ntpl    = os.path.join(workdir, \"EOE.xlsx\")\nout    = os.path.join(workdir, \"out1.xlsx\")\nminio = MinioClient()\nminio.download_template(\"EOE\", tpl)\ninsert_df_to_excel(\n    df, tpl, out,\n    sheet_name=None,\n    start_row=2,\n    start_col=2\n)\nminio.upload_result(\"auto\", \"out1.xlsx\", out)\n# Excel 작업 끝"
+    },
+    {
+      "role": "human",
+      "text": "{input}"
+    }
+  ],
+  "variables": {
+    "input": "불량률 현황 템플릿을 불러와 dataframe을 1열 5행에 붙여넣고 result로 저장해주세요"
+  }
+}
+```
+
+``` json
+{
+  "name": "Code Generator:Extract Excel Param",
   "messages": [
     {
       "role": "system",

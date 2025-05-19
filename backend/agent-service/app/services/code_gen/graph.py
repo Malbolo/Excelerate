@@ -21,7 +21,7 @@ from app.utils.minio_client import MinioClient
 
 from app.services.code_gen.graph_util import ( 
     extract_error_info, insert_df_to_excel, make_excel_code_snippet, 
-    make_excel_template, log_filter, extract_relevant_code_fuzzy
+    log_filter, extract_relevant_code_fuzzy
 )
 from app.services.code_gen.merge_utils import merge_code_snippets
 
@@ -419,7 +419,7 @@ class CodeGenerator:
         df = state["dataframe"][-1]
 
         self.q.put_nowait({"type": "notice", "content": f"엑셀작업을 수행합니다."})
-        prompt   = make_excel_template()
+        prompt   = load_chat_template("Code Generator:Manipulate Excel")
         schain   = prompt | self.sllm
         response = schain.invoke({"input": cmd})
         code_str = response.content
