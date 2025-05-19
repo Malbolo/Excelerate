@@ -90,9 +90,7 @@ async def get_monthly_statistics(
 
         return JSONResponse(content={
             "result": "success",
-            "data": result.get("calendar_data", []),
-            "updated_at": result.get("updated_at", datetime.now().isoformat()),
-            "cached": result.get("cached", False)
+            "data": result.get("data", {})
         })
 
     except Exception as e:
