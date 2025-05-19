@@ -14,6 +14,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/componen
 import useInternalRouter from '@/hooks/useInternalRouter';
 import { disabledDate } from '@/lib/disabledDate';
 import { cn } from '@/lib/utils';
+import { Log } from '@/types/agent';
 
 import AgentCallList from './components/AgentCallList';
 
@@ -21,6 +22,7 @@ const AgentMonitoringPage: React.FC = () => {
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [name, setName] = useState<string>('');
+  const [selectedLog, setSelectedLog] = useState<Log | null>(null);
 
   const { push } = useInternalRouter();
 
@@ -112,7 +114,7 @@ const AgentMonitoringPage: React.FC = () => {
             </div>
 
             {/* 로그 목록 조회 */}
-            <AgentCallList />
+            <AgentCallList onLogSelect={setSelectedLog} />
           </section>
         </ResizablePanel>
 
@@ -123,7 +125,7 @@ const AgentMonitoringPage: React.FC = () => {
         <ResizablePanel className='h-screen border-l' minSize={50} maxSize={70} defaultSize={60}>
           <section className='h-full'>
             {logs.length > 0 ? (
-              <AgentCallDetail logs={logs} />
+              <AgentCallDetail logs={logs} selectedLog={selectedLog} onLogSelect={setSelectedLog} />
             ) : (
               <div className='animate-scale flex h-full flex-col items-center justify-center gap-2'>
                 <MousePointerClick size={20} className='text-accent-foreground' />

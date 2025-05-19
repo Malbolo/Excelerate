@@ -4,6 +4,8 @@ import { Link } from 'lucide-react';
 
 import { Log, Position } from '@/types/agent';
 
+import { Badge } from '../ui/badge';
+
 interface NodeProps {
   log: Log;
   onLogClick?: (log: Log) => void;
@@ -44,6 +46,11 @@ const Node = ({ log, onLogClick }: NodeProps) => {
             <Link className='text-accent-foreground/90 h-4 w-4' />
           </div>
           <p className='text-xs text-gray-600'>{log.name}</p>
+          {log?.metadata?.llm_latency && typeof log.metadata.llm_latency === 'number' && (
+            <Badge variant='outline' className='text-xs'>
+              {log.metadata.llm_latency.toFixed(2)}s
+            </Badge>
+          )}
         </div>
         {log.subEvents && log.subEvents.length > 0 && (
           <>

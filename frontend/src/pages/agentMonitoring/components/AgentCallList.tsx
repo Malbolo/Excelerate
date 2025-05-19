@@ -8,8 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import useInternalRouter from '@/hooks/useInternalRouter';
 import { formatDateTime } from '@/lib/dateFormat';
 import { useLocalDate } from '@/store/useLocalDate';
+import { Log } from '@/types/agent';
 
-const AgentCallList = () => {
+interface AgentCallListProps {
+  onLogSelect: (log: Log | null) => void;
+}
+
+const AgentCallList = ({ onLogSelect }: AgentCallListProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { push } = useInternalRouter();
   const { locale, place } = useLocalDate();
@@ -29,6 +34,7 @@ const AgentCallList = () => {
       return prev;
     });
     push(`?${searchParams.toString()}`);
+    onLogSelect(null);
   };
 
   return (

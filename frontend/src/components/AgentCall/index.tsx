@@ -1,5 +1,3 @@
-import { useState } from 'react';
-
 import { MousePointerClick } from 'lucide-react';
 
 import LLMGraph from '@/components/Graph/LLMGraph';
@@ -10,12 +8,13 @@ import RunPanel from './RunPanel';
 
 interface AgentCallDetailProps {
   logs: Log[];
+  selectedLog?: Log | null;
+  onLogSelect?: (log: Log | null) => void;
 }
 
-const AgentCallDetail = ({ logs }: AgentCallDetailProps) => {
-  const [selectedLog, setSelectedLog] = useState<Log | null>(null);
+const AgentCallDetail = ({ logs, selectedLog, onLogSelect }: AgentCallDetailProps) => {
   const handleClickLog = (log: Log) => {
-    setSelectedLog(log);
+    onLogSelect?.(log);
   };
 
   return (
@@ -26,11 +25,11 @@ const AgentCallDetail = ({ logs }: AgentCallDetailProps) => {
           <section className='p-4'>
             {logs.length > 0 && <LLMGraph jobName='Current Job' logs={logs} onLogClick={handleClickLog} />}
           </section>
-          <section className='flex-1 overflow-x-clip overflow-y-auto border-t pt-4 @4xl/agent-call-detail:border-t-0 @4xl/agent-call-detail:border-l'>
+          <section className='flex-1 overflow-x-clip overflow-y-auto border-t pt-4 pb-10 @4xl/agent-call-detail:border-t-0 @4xl/agent-call-detail:border-l'>
             {selectedLog ? (
               <>
-                <RunPanel input={selectedLog ? selectedLog.input : []} output={selectedLog ? selectedLog.output : []} />
-                <MetadataPanel metadata={selectedLog ? selectedLog.metadata : {}} />
+                <RunPanel input={selectedLog.input} output={selectedLog.output} />
+                <MetadataPanel metadata={selectedLog.metadata} />
               </>
             ) : (
               <div className='flex h-full flex-col items-center justify-center gap-2'>
