@@ -1,4 +1,4 @@
-import { Briefcase, CalendarClock, GanttChartSquare, Home, MonitorPlay, Play } from 'lucide-react';
+import { Briefcase, CalendarClock, Home, MonitorPlay, Play, Workflow } from 'lucide-react';
 
 const ADMIN_NAV_ITEMS = [
   { label: 'Main', to: '/', icon: Home },
@@ -10,7 +10,7 @@ const ADMIN_NAV_ITEMS = [
     basePath: '/scheduler-monitoring',
     icon: MonitorPlay,
   },
-  { label: 'Agent Monitoring', to: '/agent-monitoring', icon: GanttChartSquare },
+  { label: 'Agent Monitoring', to: '/agent-monitoring', icon: Workflow },
   { label: 'Play Ground', to: '/playground', icon: Play },
 ];
 
