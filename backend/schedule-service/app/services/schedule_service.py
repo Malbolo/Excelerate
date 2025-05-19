@@ -547,12 +547,11 @@ class ScheduleService:
             ]
 
             # ULID 역순으로 정렬하여 최신 생성 순으로 가져오기
-            limit = 1000  # 가져올 DAG 수 제한
-            dags_response = airflow_client._get("dags", {
-                "limit": limit,
-                "fields": needed_fields,
-                "order_by": "-dag_id"  # ULID 역순(최신순)
-            })
+            dags_response = airflow_client.get_all_dags(
+                limit=1000, # 가져올 DAG 수 제한
+                fields=needed_fields,
+                order_by="-dag_id"
+            )
 
             # API에서 제공하는 total_entries 사용
             total_entries = dags_response.get("total_entries", 0)
