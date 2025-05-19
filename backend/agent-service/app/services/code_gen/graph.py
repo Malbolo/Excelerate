@@ -19,7 +19,10 @@ from app.core.config import settings
 from app.models.log import LogDetail
 from app.utils.minio_client import MinioClient
 
-from app.services.code_gen.graph_util import extract_error_info, insert_df_to_excel, make_excel_code_snippet, make_excel_template, log_filter
+from app.services.code_gen.graph_util import ( 
+    extract_error_info, insert_df_to_excel, make_excel_code_snippet, 
+    make_excel_template, log_filter, extract_relevant_code_fuzzy
+)
 from app.services.code_gen.merge_utils import merge_code_snippets
 
 from app.utils.memory_logger import MemoryLogger
