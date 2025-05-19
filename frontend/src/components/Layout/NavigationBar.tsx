@@ -4,7 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useGetUserInfoAPI } from '@/apis/auth';
 import logo from '@/assets/images/logo.png';
 import { Button } from '@/components/ui/button';
-import { ADMIN_NAV_ITEMS, USER_NAV_ITEMS } from '@/constant/navigation';
+import { ADMIN_NAV_ITEMS, GUEST_NAV_ITEMS, USER_NAV_ITEMS } from '@/constant/navigation';
 import { cn } from '@/lib/utils';
 
 import LocaleSelector from './LocaleSelector';
@@ -12,8 +12,8 @@ import LogoutButton from './LogoutButton';
 
 const NavigationBar = () => {
   const { data: userInfo } = useGetUserInfoAPI();
-  const { name, role } = userInfo || {};
-  const navMenu = role === 'ADMIN' ? ADMIN_NAV_ITEMS : USER_NAV_ITEMS;
+  const { name, role } = userInfo || { role: 'GUEST', name: '' };
+  const navMenu = role === 'ADMIN' ? ADMIN_NAV_ITEMS : role === 'GUEST' ? GUEST_NAV_ITEMS : USER_NAV_ITEMS;
   const location = useLocation();
 
   return (

@@ -27,7 +27,6 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
-import { disabledDate } from '@/lib/disabledDate';
 import { cn } from '@/lib/utils';
 import {
   CreateScheduleFormData,
@@ -401,7 +400,7 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
                               mode='single'
                               selected={field.value}
                               onSelect={field.onChange}
-                              disabled={date => disabledDate(date, field.value, form.getValues('start_date'))}
+                              disabled={date => new Date(date) < new Date()}
                               initialFocus
                               locale={enUS}
                             />
@@ -444,7 +443,11 @@ const ScheduleDialog = ({ isOpen, onOpenChange, selectedJobs, scheduleDetail }: 
                               mode='single'
                               selected={field.value}
                               onSelect={field.onChange}
-                              disabled={date => disabledDate(date, field.value, form.getValues('start_date'))}
+                              disabled={date => {
+                                const selectedDate = new Date(date);
+                                const startDate = new Date(form.getValues('start_date'));
+                                return selectedDate < startDate;
+                              }}
                               initialFocus
                               locale={enUS}
                             />

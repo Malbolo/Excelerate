@@ -21,4 +21,9 @@ const USER_NAV_ITEMS = [
   { label: 'Play Ground', to: '/playground' },
 ];
 
-export { ADMIN_NAV_ITEMS, USER_NAV_ITEMS };
+const GUEST_NAV_ITEMS = [
+  { label: 'Main', to: '/', basePath: '/' },
+  { label: 'Play Ground', to: '/playground', basePath: '/playground' },
+];
+
+export { ADMIN_NAV_ITEMS, GUEST_NAV_ITEMS, USER_NAV_ITEMS };
