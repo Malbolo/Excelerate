@@ -104,20 +104,25 @@ class DagService:
             user_id: int = None,
             db: Session = None
     ) -> bool:
-        """기존 DAG 업데이트 - 동일한 DAG ID를 유지하면서 내용만 교체"""
+        """
+        기존 DAG 업데이트 - Airflow에서는 삭제 후 재생성, DB에서는 업데이트
+        """
         close_db = False
         if db is None:
             db = next(database.get_db())
             close_db = True
 
         try:
-            # 기존 DAG 정보 조회
-            current_dag = airflow_client.get_dag_detail(dag_id)
-            dag_file_path = os.path.join(settings.AIRFLOW_DAGS_PATH, f"{dag_id}.py")
+            # 1. Airflow에서만 DAG 삭제 (DB는 유지)
+            try:
+                DagService.delete_dag(dag_id, db, delete_from_db=False)
+            except Exception as e:
+                logger.warning(f"Error during DAG cleanup: {str(e)}")
 
-            # Job 상세 정보 조회
+            # 2. Job 상세 정보 조회
             job_details = DagService._get_job_basic_info(job_ids, user_id)
 
+            # 3. 새 DAG 파일 생성 (기존 ID 유지)
             # 시작일과 종료일 문자열로 변환
             start_date_str = start_date.strftime("%Y-%m-%d")
             end_date_str = end_date.strftime("%Y-%m-%d") if end_date else "None"
@@ -135,21 +140,21 @@ class DagService:
             )
 
             # DAG 파일 저장
-            with open(dag_file_path, 'w') as f:
-                f.write(dag_code)
-                logger.info(f"Updated DAG file at {dag_file_path}")
+            DagService._save_dag_file(dag_id, dag_code)
 
+            # 4. DB에서 스케줄 정보 업데이트 (삭제하지 않음)
             frequency = cron_utils.convert_cron_to_frequency(cron_expression)
 
-            schedule_crud.update_schedule(
+            # CRUD 함수 사용하여 업데이트
+            updated = schedule_crud.update_schedule(
                 db,
                 id=dag_id,
                 data={
-                    "job_ids": [str(job["id"]) for job in job_details],
+                    "job_ids": job_ids,
                     "start_date": start_date,
                     "end_date": end_date,
-                    "success_emails": success_emails or [],
-                    "failure_emails": failure_emails or [],
+                    "success_emails": success_emails,
+                    "failure_emails": failure_emails,
                     "title": name,
                     "description": description,
                     "cron_expression": cron_expression,
@@ -159,16 +164,11 @@ class DagService:
                 }
             )
 
-            # 현재 DAG 상태 유지
-            try:
-                is_paused = current_dag.get("is_paused", False)
-                airflow_client.toggle_dag_pause(dag_id, is_paused)
-                logger.info(f"Maintained DAG pause state: is_paused={is_paused}")
-            except Exception as e:
-                logger.warning(f"Failed to update DAG state via API: {str(e)}")
+            if not updated:
+                logger.warning(f"Failed to update schedule in DB: {dag_id}")
+            else:
+                logger.info(f"Updated schedule in DB: {dag_id}")
 
-            # 성공 로그
-            logger.info(f"Successfully updated DAG: {dag_id}")
             return True
 
         except Exception as e:
@@ -176,12 +176,24 @@ class DagService:
             raise Exception(f"Failed to update DAG: {str(e)}")
 
         finally:
-            if close_db:
+            if close_db and db is not None:
                 db.close()
 
     @staticmethod
-    def delete_dag(dag_id: str) -> bool:
-        """DAG 삭제"""
+    def delete_dag(dag_id: str, db: Session = None, delete_from_db: bool = True) -> bool:
+        """
+        DAG 삭제
+
+        Args:
+            dag_id: 삭제할 DAG ID
+            db: 데이터베이스 세션
+            delete_from_db: DB에서도 삭제할지 여부
+        """
+        close_db = False
+        if db is None and delete_from_db:
+            db = next(database.get_db())
+            close_db = True
+
         try:
             # API로 DAG 삭제
             airflow_client.delete_dag(dag_id)
@@ -198,10 +210,21 @@ class DagService:
             except Exception as file_error:
                 logger.warning(f"Failed to delete DAG files: {str(file_error)}")
 
+            # DB에서 스케줄 삭제
+            if delete_from_db:
+                try:
+                    schedule_crud.delete_schedule(db, dag_id)
+                    logger.info(f"Deleted schedule from DB: {dag_id}")
+                except Exception as db_error:
+                    logger.warning(f"Failed to delete schedule from DB: {str(db_error)}")
+
             return True
         except Exception as e:
             logger.error(f"Failed to delete DAG: {str(e)}")
             return False
+        finally:
+            if close_db and db is not None:
+                db.close()
 
     @staticmethod
     def _get_job_basic_info(job_ids: List[str], user_id: int) -> List[Dict[str, Any]]:
