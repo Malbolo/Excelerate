@@ -15,14 +15,13 @@ calendar_cache = RedisCalendarCache(
     ttl_seconds=settings.REDIS_CALENDAR_CACHE_TTL
 )
 
-def build_monthly_dag_calendar(year: int, month: int, refresh: bool = False, db=None) -> Dict[str, Any]:
+def build_monthly_dag_calendar(year: int, month: int, db=None) -> Dict[str, Any]:
     """
     월별 DAG 실행 통계 생성 (캐싱 로직 포함)
 
     Args:
         year: 년도
         month: 월
-        refresh: 캐시 무시 여부 (True면 캐시를 무시하고 새로 생성)
         db: 데이터베이스 세션 (None이면 새로 생성)
 
     Returns:
@@ -31,15 +30,13 @@ def build_monthly_dag_calendar(year: int, month: int, refresh: bool = False, db=
         - updated_at: 업데이트 시간 (ISO 형식)
         - cached: 캐시에서 가져왔는지 여부
     """
-    # 캐시 확인 (refresh가 아닌 경우)
-    if not refresh:
-        cache_hit, cached_result = calendar_cache.get(year, month)
-        if cache_hit:
-            return {
-                "calendar_data": cached_result["calendar_data"],
-                "updated_at": cached_result["updated_at"],
-                "cached": True
-            }
+    cache_hit, cached_result = calendar_cache.get(year, month)
+    if cache_hit:
+        return {
+            "calendar_data": cached_result["calendar_data"],
+            "updated_at": cached_result["updated_at"],
+            "cached": True
+        }
 
     # 캐시 미스 또는 리프레시: 데이터 생성
     # Airflow에서 모든 DAG 목록 가져오기
@@ -60,6 +57,26 @@ def build_monthly_dag_calendar(year: int, month: int, refresh: bool = False, db=
         "updated_at": now,
         "cached": False
     }
+
+def clear_monthly_cache(year: int, month: int):
+    """
+    특정 년월의 DAG 실행 통계 캐시를 삭제합니다.
+
+    Args:
+        year: 년도
+        month: 월
+
+    Returns:
+        bool: 삭제 성공 여부
+    """
+    try:
+        # Redis 캐시에서 해당 년월의 캐시 삭제
+        calendar_cache.invalidate(year, month)
+        return True
+
+    except Exception as e:
+        logger.error(f"캐시 삭제 중 오류 발생: {str(e)}")
+        raise Exception(f"캐시 삭제에 실패했습니다: {str(e)}")
 
 def _generate_calendar_data(dags: List[Dict[str, Any]], year: int, month: int, db=None) -> List[Dict[str, Any]]:
     """
