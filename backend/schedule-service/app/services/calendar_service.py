@@ -33,11 +33,10 @@ def build_monthly_dag_calendar(year: int, month: int, db=None) -> Dict[str, Any]
     cache_hit, cached_result = calendar_cache.get(year, month)
     if cache_hit:
         calendar_data = cached_result.get("calendar_data", [])
-        monthly_data = _convert_calendar_data_to_monthly(calendar_data)
 
         return {
             "data": {
-                "monthly": monthly_data,
+                "monthly": calendar_data,
                 "updated_at": cached_result.get("updated_at", datetime.now().isoformat()),
                 "cached": True
             }
@@ -51,8 +50,6 @@ def build_monthly_dag_calendar(year: int, month: int, db=None) -> Dict[str, Any]
     # 달력 데이터 생성
     calendar_data = _generate_calendar_data(dags, year, month, db)
 
-    monthly_data = _convert_calendar_data_to_monthly(calendar_data)
-
     # 결과 캐싱
     calendar_cache.set(year, month, calendar_data)
 
@@ -61,7 +58,7 @@ def build_monthly_dag_calendar(year: int, month: int, db=None) -> Dict[str, Any]
 
     return {
         "data": {
-            "monthly": monthly_data,
+            "monthly": calendar_data,
             "updated_at": now,
             "cached": False
         }
@@ -333,26 +330,6 @@ def _generate_calendar_data(dags: List[Dict[str, Any]], year: int, month: int, d
         # 생성한 경우에만 세션 닫기
         if close_db and db is not None:
             db.close()
-
-def _convert_calendar_data_to_monthly(calendar_data: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
-    """
-    캘린더 데이터 배열을 월별 객체 형식으로 변환
-
-    Args:
-        calendar_data: 원본 캘린더 데이터 배열
-
-    Returns:
-        날짜를 키로 하는 월별 객체
-    """
-    monthly_data = {}
-
-    for day_data in calendar_data:
-        day_data_copy = day_data.copy()
-        date = day_data_copy.pop("date", "")
-        if date:
-            monthly_data[date] = day_data_copy
-
-    return monthly_data
 
 def _extract_dag_dates(dag: Dict[str, Any], dag_id: str, now: datetime, db_schedule=None) -> Tuple[
     datetime, Optional[datetime]]:
