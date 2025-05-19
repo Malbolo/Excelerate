@@ -101,14 +101,14 @@ def invoke_template(req: InvokeTemplateRequest = docs.invoke["template"]) -> JSO
     )
 
 # 개발자 관리용 API -------------------------------
-@router.get("/dev/fetch/list", response_model=list[str])
-def list_prompts():
-    return store.list_names()
+# @router.get("/dev/fetch/list", response_model=list[str])
+# def list_prompts():
+#     return store.list_names()
 
-@router.get("/{name}", response_model=PromptSchema)
-def get_prompt(name: str):
-    data = store.load(name)
-    return JSONResponse(status_code=200, content={"result" : "success", "data" : data})
+# @router.get("/{name}", response_model=PromptSchema)
+# def get_prompt(name: str):
+#     data = store.load(name)
+#     return JSONResponse(status_code=200, content={"result" : "success", "data" : data})
 
 @router.post("/", status_code=201)
 def create_prompt(p: PromptSchema):
