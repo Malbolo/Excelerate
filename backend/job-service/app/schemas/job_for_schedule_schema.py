@@ -25,8 +25,12 @@ class JobForSchedule(BaseModel):
             code=job.code,
         )
 
-class JobForScheduleResponse(BaseModel):
+class JobList(BaseModel):
     jobs: List[JobForSchedule]
+
+class JobForScheduleResponse(BaseModel):
+    result: str
+    data: JobList
 
 class Command(BaseModel):
     content: str
@@ -55,5 +59,9 @@ class JobForScheduleWithCommands(BaseModel):
             ]
         )
 
-class JobForScheduleWithCommandsResponse(BaseModel):
+class JobListWithCommands(BaseModel):
     jobs: List[JobForScheduleWithCommands]
+
+class JobForScheduleWithCommandsResponse(BaseModel):
+    result: str
+    data: JobListWithCommands
