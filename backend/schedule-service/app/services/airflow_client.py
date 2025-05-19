@@ -86,7 +86,8 @@ class AirflowClient:
             dag_id: str,
             limit: int = 100,
             start_date: Optional[str] = None,
-            end_date: Optional[str] = None
+            end_date: Optional[str] = None,
+            fields: List[str] = None
     ) -> List[Dict[str, Any]]:
         """특정 DAG의 실행 이력 조회"""
         params = {"limit": limit}
@@ -94,6 +95,8 @@ class AirflowClient:
             params["start_date_gte"] = start_date
         if end_date:
             params["start_date_lte"] = end_date
+        if fields:
+            params["fields"] = fields
 
         response = self._get(f"dags/{dag_id}/dagRuns", params)
         return response.get("dag_runs", [])
