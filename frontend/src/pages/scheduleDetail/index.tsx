@@ -2,15 +2,15 @@ import { ArrowLeftIcon, Calendar, Hash, XCircle } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 
 import { useGetRunDetail } from '@/apis/schedulerMonitoring';
+import JobDisplay from '@/components/JobDisplay';
 import SchedulerMonitoringLayout from '@/components/Layout/SchedulerMonitoringLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import useInternalRouter from '@/hooks/useInternalRouter';
 import { Status } from '@/types/job';
 
+import StatusIcon from '../../components/StatusIcon';
 import DebugMode from './components/DebugMode';
-import JobDisplay from './components/JobDisplay';
-import StatusIcon from './components/StatusIcon';
 
 const ScheduleDetail = () => {
   const { runId, scheduleId, dayId } = useParams() as {

@@ -5,10 +5,10 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useGetJobListForScheduler } from '@/apis/job';
 import { Job } from '@/apis/jobManagement';
 import { Schedule } from '@/apis/schedulerManagement';
+import JobDisplay from '@/components/JobDisplay';
+import StatusIcon from '@/components/StatusIcon';
 import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from '@/components/ui/table';
-import JobDisplay from '@/pages/scheduleDetail/components/JobDisplay';
-import StatusIcon from '@/pages/scheduleDetail/components/StatusIcon';
 import { useLocalDate } from '@/store/useLocalDate';
 
 import { formatDate, formatDateTime, formatInterval } from '../../../lib/dateFormat';

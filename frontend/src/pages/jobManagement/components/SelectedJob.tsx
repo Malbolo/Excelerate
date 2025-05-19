@@ -15,7 +15,7 @@ import {
 import { Button } from '@/components/ui/button';
 import useInternalRouter from '@/hooks/useInternalRouter';
 
-const CommandList = ({ selectedJobId }: { selectedJobId: string }) => {
+const SelectedJob = ({ selectedJobId }: { selectedJobId: string }) => {
   const deleteJobMutation = useDeleteJob();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const { data: selectedJob } = useGetJobDetail(selectedJobId);
@@ -148,4 +148,4 @@ const CommandList = ({ selectedJobId }: { selectedJobId: string }) => {
   );
 };
 
-export default CommandList;
+export default SelectedJob;

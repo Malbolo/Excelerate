@@ -7,7 +7,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/componen
 
 import JobList from '../createScheduler/components/JobList';
 import JobSearchInput from '../createScheduler/components/JobSearchInput';
-import CommandList from './components/CommandList';
+import SelectedJob from './components/SelectedJob';
 
 const JobManagementPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -62,7 +62,7 @@ const JobManagementPage = () => {
         <ResizablePanel minSize={40} maxSize={70} defaultSize={50}>
           <div className='h-screen w-full border-l bg-[#FAFCFF]'>
             {selectedJobId ? (
-              <CommandList selectedJobId={selectedJobId} />
+              <SelectedJob selectedJobId={selectedJobId} />
             ) : (
               <div className='animate-scale flex h-full w-full flex-col items-center justify-center gap-2'>
                 <MousePointerClick size={20} className='text-accent-foreground' />

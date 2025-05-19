@@ -5,13 +5,13 @@ import { useSearchParams } from 'react-router-dom';
 import { JobManagement, useGetJobList } from '@/apis/jobManagement';
 import SchedulerMonitoringLayout from '@/components/Layout/SchedulerMonitoringLayout';
 import CustomPagination from '@/components/Pagination';
+import ScheduleDialog from '@/components/ScheduleDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 
 import JobList from './components/JobList';
 import JobSearchInput from './components/JobSearchInput';
-import ScheduleDialog from './components/ScheduleDialog';
 import SelectedJobList from './components/SelectedJobList';
 
 const CreateSchedulerPage = () => {

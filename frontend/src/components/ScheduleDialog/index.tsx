@@ -28,10 +28,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import {
-  CreateScheduleFormData,
-  createScheduleSchema,
-} from '@/pages/createScheduler/components/ScheduleDialog/scheduleSchema';
+
+import { CreateScheduleFormData, createScheduleSchema } from './scheduleSchema';
 
 interface ScheduleDialogProps {
   isOpen: boolean;

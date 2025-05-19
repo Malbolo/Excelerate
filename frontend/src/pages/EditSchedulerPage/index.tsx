@@ -6,13 +6,13 @@ import { JobManagement, useGetJobList } from '@/apis/jobManagement';
 import { useGetScheduleDetail } from '@/apis/schedulerManagement';
 import SchedulerMonitoringLayout from '@/components/Layout/SchedulerMonitoringLayout';
 import CustomPagination from '@/components/Pagination';
+import ScheduleDialog from '@/components/ScheduleDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 
 import JobList from '../createScheduler/components/JobList';
 import JobSearchInput from '../createScheduler/components/JobSearchInput';
-import ScheduleDialog from '../createScheduler/components/ScheduleDialog';
 import SelectedJobList from '../createScheduler/components/SelectedJobList';
 
 const CreateSchedulerPage = () => {

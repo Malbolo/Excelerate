@@ -9,8 +9,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { cn } from '@/lib/utils';
 import { Status } from '@/types/job';
 
+import StatusIcon from '../StatusIcon';
 import CommandItem from './CommandItem';
-import StatusIcon from './StatusIcon';
 
 interface JobDisplayProps {
   status?: Status;

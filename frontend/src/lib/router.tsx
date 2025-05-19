@@ -11,8 +11,8 @@ import LoginPage from '@/pages/auth';
 import CreateSchedulerPage from '@/pages/createScheduler';
 import DaySchedulePage from '@/pages/daySchedulerMonitoring';
 import JobManagementPage from '@/pages/jobManagement';
-import JobEditPage from '@/pages/jobManagement/edit';
 import MainPage from '@/pages/main';
+import MainJobEditPage from '@/pages/mainJobEdit';
 import MonthSchedulePage from '@/pages/monthSchedulerMonitoring';
 import PlayGroundPage from '@/pages/playGround';
 import ScheduleDetail from '@/pages/scheduleDetail';
@@ -89,7 +89,7 @@ const routes = [
     element: (
       <Layout>
         <Suspense fallback={<Loading />}>
-          <JobEditPage />
+          <MainJobEditPage />
         </Suspense>
       </Layout>
     ),
