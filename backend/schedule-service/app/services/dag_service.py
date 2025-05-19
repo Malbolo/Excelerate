@@ -78,7 +78,7 @@ class DagService:
 
             schedule_crud.create_schedule(db, id=dag_id, data=schedule_data, user_id=user_id)
 
-            return dag_id
+            return str(dag_id)
 
         except Exception as e:
             logger.error(f"Error creating DAG: {str(e)}")
