@@ -27,9 +27,9 @@ const ScheduleList = ({ items }: ScheduleListProps) => {
   }
 
   return (
-    <div className='flow-root'>
+    <div className='flow-root divide-y'>
       {items.map((item, index) => (
-        <div key={`${item.run_id}-${index}`} className='group relative border-b py-3'>
+        <div key={`${item.run_id}-${index}`} className='group relative py-3'>
           <div className='flex items-start justify-between gap-4'>
             <div className='min-w-0 flex-1'>
               <h3 className='text-foreground mb-1 truncate text-sm'>{item.title}</h3>
