@@ -389,7 +389,7 @@ dag = DAG(
             # data_load_code 체크
             if job.get("data_load_code"):
                 data_load_code = job['data_load_code'].rstrip()
-                indented_data_code = "\n".join("    " + line for line in data_load_code.split("\n"))
+                indented_data_code = "\n".join("        " + line for line in data_load_code.split("\n"))
                 has_code = True
             else:
                 indented_data_code = ""
