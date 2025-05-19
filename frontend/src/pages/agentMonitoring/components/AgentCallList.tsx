@@ -38,9 +38,9 @@ const AgentCallList = () => {
           <Card
             key={`${log.log_id}-${log.created_at}`}
             onClick={() => handleLogClick(log.log_id)}
-            className='group w-full flex-1 cursor-pointer transition-all'
+            className='group flex w-full flex-1 cursor-pointer justify-between transition-all'
           >
-            <CardHeader className=''>
+            <CardHeader>
               <div className='flex items-center justify-between'>
                 <CardTitle className='text-md font-bold text-slate-800'>{log.agent_name}</CardTitle>
                 <Badge variant='outline'>{formatDateTime(log.created_at, locale, place)}</Badge>

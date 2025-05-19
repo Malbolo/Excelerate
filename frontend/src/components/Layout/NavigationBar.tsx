@@ -31,7 +31,7 @@ const NavigationBar = () => {
       <Button
         variant='ghost'
         size='icon'
-        className='absolute top-3 right-3 z-10 rounded-md p-1 hover:bg-slate-200'
+        className='absolute top-3 right-3 z-10 rounded-md p-1'
         onClick={toggleCollapse}
         title={isCollapsed ? 'Expand' : 'Collapse'}
       >
