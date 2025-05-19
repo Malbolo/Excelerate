@@ -13,7 +13,7 @@ from app.models import models
 from app.schemas.job_create_schema import JobCreateRequest, JobCreateResponseData, JobCreateResponse
 from app.schemas.job_detail_schema import JobDetailSchema, JobDetailResponse, JobDetailRequest
 from app.schemas.job_for_schedule_schema import JobForScheduleRequest, JobForSchedule, JobForScheduleResponse, \
-    JobForScheduleWithCommands, JobForScheduleWithCommandsResponse
+    JobForScheduleWithCommands, JobForScheduleWithCommandsResponse, JobList, JobListWithCommands
 from app.schemas.job_list_schema import JobListResponse
 from app.schemas.job_update_schema import JobUpdateRequest, JobUpdateResponseData, JobUpdateResponse
 from fastapi import HTTPException
