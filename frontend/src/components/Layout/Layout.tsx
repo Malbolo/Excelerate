@@ -1,3 +1,5 @@
+import { useLocation } from 'react-router-dom';
+
 import NavigationBar from './NavigationBar';
 
 interface LayoutProps {
@@ -5,10 +7,14 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps) {
+  const location = useLocation();
+
   return (
     <div className='flex h-screen min-h-screen w-screen max-w-screen overflow-x-hidden bg-gray-50'>
       <NavigationBar />
-      <main className='grow overflow-y-auto'>{children}</main>
+      <main className='grow overflow-y-auto' key={location.key}>
+        {children}
+      </main>
     </div>
   );
 }

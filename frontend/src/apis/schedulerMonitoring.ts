@@ -101,7 +101,7 @@ const getMonthSchedules = async (year: string, month: string) => {
 // runId 실행된 스케쥴 상세 조회 hook - tasntack/query
 export const useGetRunDetail = (scheduleId: string, runId: string) => {
   return useSuspenseQuery({
-    queryKey: ['scheduleDetail', scheduleId, runId],
+    queryKey: ['runDetail', scheduleId, runId],
     queryFn: () => getRunDetail(scheduleId, runId),
   });
 };
