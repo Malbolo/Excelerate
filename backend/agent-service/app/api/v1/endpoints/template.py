@@ -3,11 +3,12 @@ import shutil
 import urllib.parse
 import tempfile
 import base64
-from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, BackgroundTasks, Query
 from fastapi.responses import JSONResponse, FileResponse
 from app.utils.depend import get_minio_client
 from app.utils.minio_client import MinioClient
 from app.services.template import TemplateService
+from typing import Optional
 
 router = APIRouter()
 
@@ -48,16 +49,17 @@ async def delete_template(
         raise HTTPException(status_code=500, detail=f"템플릿 삭제 실패: {e}")
     return JSONResponse(status_code=200, content={"result" : "success", "data" : {"message": f"'{template_name}' 삭제 완료."}})
 
-@router.get("/{template_name}/preview", summary="템플릿 첫 시트 미리보기 이미지")
+@router.get("/{template_name}/preview", summary="템플릿 시트 미리보기 이미지")
 async def preview_template(
     template_name: str,
     background_tasks: BackgroundTasks,
+    sheet_index: Optional[int] = Query(0, description="확인하고 싶은 시트 번호(0 시작)"),
     minio: MinioClient = Depends(get_minio_client),
 ):
     svc = TemplateService(minio)
     tmpdir = tempfile.mkdtemp()
     try:
-        png_path = await svc.generate_preview(template_name, tmpdir)
+        png_path, sheet_names = await svc.generate_preview(template_name, tmpdir, sheet_index)
     except HTTPException:
         shutil.rmtree(tmpdir, ignore_errors=True)
         raise
@@ -71,17 +73,7 @@ async def preview_template(
 
     data_uri = f"data:image/png;base64,{encoded_str}"
 
-    return JSONResponse(status_code=200, content={"result" : "success", "data" : data_uri})
-
-    # response = FileResponse(png_path, media_type="image/png")
-
-    # # RFC5987 포맷으로 한글 이름을 UTF-8 URL 인코딩
-    # filename = os.path.basename(png_path)  # e.g. "테스트.png"
-    # quoted_fname = urllib.parse.quote(filename, safe="")  
-
-    # # 다운로드가 아닌 인라인 뷰로
-    # response.headers["Content-Disposition"] = f"inline; filename*=UTF-8''{quoted_fname}"
-    # return response
+    return JSONResponse(status_code=200, content={"result" : "success", "data" : data_uri, "names": sheet_names})
 
 @router.get("/{template_name}/download", summary="템플릿 다운로드")
 async def download_template(

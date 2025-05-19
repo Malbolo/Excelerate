@@ -1,4 +1,5 @@
 import os
+from typing import List, Tuple
 import uuid
 import tempfile
 import shutil
@@ -19,7 +20,7 @@ class TemplateService:
     def __init__(self, minio: MinioClient):
         self.minio = minio
 
-    def upload_template(self, template_name: str, file_bytes: bytes, filename: str, content_type: str)-> str:
+    def upload_template(self, template_name: str, file_bytes: bytes, filename: str, content_type: str)-> Tuple[str,List[str]]:
         # 0) 파일 확장자/콘텐츠 타입 검사
         ext = os.path.splitext(filename or "")[1].lower()
         if ext != ".xlsx":
@@ -51,7 +52,7 @@ class TemplateService:
 
         return template_name
 
-    async def generate_preview(self, template_name: str, tmpdir: str) -> str:
+    async def generate_preview(self, template_name: str, tmpdir: str, sheet_index: int = 0) -> str:
         xlsx_path = os.path.join(tmpdir, f"{template_name}.xlsx")
         png_path = os.path.join(tmpdir, f"{template_name}.png")
 
@@ -63,7 +64,23 @@ class TemplateService:
 
         # 2) 셀 범위 계산
         wb = load_workbook(xlsx_path, data_only=True)
-        ws = wb.active
+
+        # 1) 남기고 싶은 시트의 인덱스 지정 (0부터 시작)
+        keep_index = sheet_index  # 예: 세 번째 시트
+
+        # 2) 유효성 검사
+        sheet_names = wb.sheetnames
+        sheet_count = len(sheet_names)
+        if keep_index < 0 or keep_index >= sheet_count:
+            raise HTTPException(400, detail=f"유효하지 않은 시트 인덱스: {keep_index}")
+
+        # 3) 해당 시트를 꺼내고 나머지 삭제
+        keep_name = sheet_names[keep_index]
+        ws = wb[keep_name]
+        for name in list(sheet_names):
+            if name != keep_name:
+                del wb[name]
+
         max_row = min(ws.max_row or 1, 40)
         max_col = min(ws.max_column or 1, 20)
         end_col = get_column_letter(max_col)
@@ -147,4 +164,4 @@ class TemplateService:
             # 크롭 실패해도 그냥 원본 내보내도록 무시
             print("자동 크롭 실패:", e)
 
-        return png_path
+        return png_path, sheet_names 
