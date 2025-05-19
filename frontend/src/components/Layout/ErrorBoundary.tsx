@@ -3,33 +3,39 @@ import { useRouteError } from 'react-router-dom';
 
 import useInternalRouter from '@/hooks/useInternalRouter';
 
+import { Button } from '../ui/button';
+
 const ErrorBoundary = () => {
   const error = useRouteError();
   const { replace } = useInternalRouter();
 
   return (
-    <div className='flex min-h-screen w-full flex-col items-center justify-center bg-gray-50 p-4'>
-      <div className='w-full max-w-md rounded-lg bg-white p-8 shadow-lg'>
-        <div className='flex flex-col items-center gap-4'>
-          <div className='rounded-full bg-red-100 p-3'>
-            <AlertCircle className='h-8 w-8 text-red-600' />
+    <div className='bg-gradient flex min-h-screen w-full flex-col items-center justify-center p-4'>
+      <div className='bg-card w-full max-w-md rounded-xl border p-8 shadow-sm'>
+        <div className='flex flex-col items-center gap-6'>
+          <div className='bg-destructive/10 rounded-full p-4'>
+            <AlertCircle className='text-destructive h-8 w-8' />
           </div>
 
-          <h2 className='text-2xl font-bold text-gray-900'>An Error Occurred</h2>
+          <div className='text-center'>
+            <h2 className='text-foreground text-xl font-bold'>An Error Occurred</h2>
+            <p className='text-muted-foreground mt-1 text-sm'>
+              We apologize for the inconvenience.
+              <br />
+              Please try again later.
+            </p>
+          </div>
 
-          <div className='w-full rounded-md bg-gray-50 p-4 text-center'>
-            <p className='text-gray-600'>
+          <div className='bg-muted w-full rounded-lg p-4'>
+            <p className='text-muted-foreground text-center text-sm'>
               {error instanceof Error ? error.message : 'An unexpected error has occurred.'}
             </p>
           </div>
 
-          <button
-            onClick={() => replace('/')}
-            className='mt-2 flex items-center gap-2 rounded-md bg-blue-500 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none'
-          >
+          <Button onClick={() => replace('/')}>
             <Home className='h-4 w-4' />
             Go to Main Page
-          </button>
+          </Button>
         </div>
       </div>
     </div>
