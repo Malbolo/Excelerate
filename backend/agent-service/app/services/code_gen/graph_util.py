@@ -14,45 +14,58 @@ def extract_relevant_code_fuzzy(
     original_code: str,
     commands: List[str],
     similarity_threshold: float = 0.6
-) -> Tuple[Optional[str], Optional[str]]:
+) -> Optional[str]:
     """
-    1) 주석 라인(# …) 전체를 순회하며, commands와의 유사도 계산
-    2) 최고 유사도 주석 라인의 인덱스(best_idx)와 매칭된 command(best_cand) 확보
-    3) best_idx+1부터 다음 주석이나 빈 줄 전까지 스니펫 추출
+    original_code 에서 commands 각각에 대해
+    1) ‘# …’ 주석 라인을 찾아서,
+    2) 주석 텍스트와 커맨드를 양쪽 모두 구두점·공백 제거 후 비교하여
+       ratio >= similarity_threshold 인 블록을
+    3) # 주석 바로 다음 줄부터 다음 주석/빈 줄 전까지 스니펫으로 추출,
+    4) 여러 커맨드에 해당하는 스니펫이 있으면 \n\n 으로 합쳐서 리턴합니다.
     """
     lines = original_code.splitlines()
-    best_ratio = 0.0
-    best_idx: Optional[int] = None
-    best_cand: Optional[str] = None
+    snippets: List[str] = []
 
-    # 1) 주석 라인 중 최고 매칭 라인 찾기
-    for idx, line in enumerate(lines):
-        stripped = line.strip()
-        if not stripped.startswith("#"):
-            continue
-        # '# foo bar.' -> 'foo bar'
-        comment = stripped.lstrip("#").strip().rstrip(".\"'")  
-        for cand in commands:
-            ratio = SequenceMatcher(None, comment, cand).ratio()
+    def clean_text(s: str) -> str:
+        # "#" 빼고, 마침표/따옴표/백틱 등 제거, 양쪽 공백 strip
+        return re.sub(r"[\.\"'`]", "", s).lstrip("#").strip()
+
+    # 주석 라인만 모아뒀다가, comment_map[idx] = clean_comment
+    comment_map = {
+        idx: clean_text(line)
+        for idx, line in enumerate(lines)
+        if line.strip().startswith("#")
+    }
+
+    for cmd in commands:
+        cmd_clean = re.sub(r"[\.\"'`]", "", cmd).strip()
+        # 1) 이 커맨드와 주석 중 best match 찾기
+        best_idx = None
+        best_ratio = 0.0
+        for idx, comment in comment_map.items():
+            ratio = SequenceMatcher(None, comment, cmd_clean).ratio()
             if ratio > best_ratio:
                 best_ratio = ratio
-                best_idx   = idx
-                best_cand  = cand
+                best_idx = idx
 
-    # 2) threshold 미달 시 None 리턴
-    if best_ratio < similarity_threshold or best_idx is None:
-        return None, None
+        # 2) 임계치 미달 무시
+        if best_idx is None or best_ratio < similarity_threshold:
+            continue
 
-    # 3) snippet 추출: best_idx+1 부터 다음 주석/빈 줄 전까지
-    snippet_lines: List[str] = []
-    for line in lines[best_idx + 1 :]:
-        # 주석 시작이거나 완전 빈 줄이면 종료
-        if line.strip().startswith("#") or line.strip() == "":
-            break
-        snippet_lines.append(line)
+        # 3) best_idx + 1 부터 다음 주석/빈 줄 전까지 스니펫 추출
+        snippet_lines = [lines[best_idx]]
+        for body in lines[best_idx + 1:]:
+            if body.strip().startswith("#") or body.strip() == "":
+                break
+            snippet_lines.append(body)
+        if snippet_lines:
+            snippets.append("\n".join(snippet_lines))
 
-    snippet = "\n".join(snippet_lines).rstrip() or None
-    return snippet, best_cand
+    if not snippets:
+        return None
+
+    # 4) 여러 개면 빈 줄 두 개로 구분해서 합침
+    return "\n\n".join(snippets)
 
 ## 추 후 다양한 기능을(단순 불러오기, dataframe 치환, 다중 저장 등) 수행시키고 싶다면 해당 템플릿을 사용해 엑셀 코드를 생성하도록 수정해야 할 것
 def make_excel_template() -> ChatPromptTemplate:
