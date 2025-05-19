@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import useInternalRouter from '@/hooks/useInternalRouter';
 
 import { api } from './core';
+import { Job } from './jobManagement';
 
 export interface FrequencyDisplay {
   type: string;
@@ -28,10 +29,12 @@ export interface Schedule {
   execution_time: string;
   success_emails: string[];
   failure_emails: string[];
-  jobs: {
-    id: string;
-    order: number;
-  }[];
+  jobs:
+    | {
+        id: string;
+        order: number;
+      }[]
+    | Job[];
   last_run: null | {
     end_time: string;
     status: 'success' | 'failed';
