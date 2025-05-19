@@ -543,7 +543,7 @@ class ScheduleService:
                 "is_paused",
                 "owners",
                 "schedule_interval",
-                "next_dagrun"  # 다음 실행 예정 시간만 필요
+                "next_dagrun_data_interval_end"  # 다음 실행 예정 시간만 필요
             ]
 
             # ULID 역순으로 정렬하여 최신 생성 순으로 가져오기
@@ -678,9 +678,9 @@ class ScheduleService:
                     logger.error(f"Error getting recent runs for {dag_id}: {str(e)}")
 
                 # 다음 실행 예정 조회 - next_dagrun 필드 활용
-                if dag.get("next_dagrun"):
+                if dag.get("next_dagrun_data_interval_end"):
                     schedule_data["next_run"] = {
-                        "scheduled_time": dag.get("next_dagrun")
+                        "scheduled_time": dag.get("next_dagrun_data_interval_end")
                     }
                 else:
                     schedule_data["next_run"] = None
