@@ -167,7 +167,7 @@ async def get_schedule_executions_by_date(
                 "message": "유효하지 않은 날짜입니다. 올바른 날짜를 입력해주세요."
             })
 
-        dags = airflow_client.get_all_dags()
+        dags = airflow_client.get_all_dags().get("dags", [])
         executions = ScheduleService.get_dag_runs_by_date(dags, date_str)
 
         return JSONResponse(content={

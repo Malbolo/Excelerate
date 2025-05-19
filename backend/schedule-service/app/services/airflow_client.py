@@ -61,7 +61,7 @@ class AirflowClient:
 
     # DAG 관련 메서드
 
-    def get_all_dags(self, limit: int = 200, fields: List[str] = None, order_by: str = None) -> List[Dict[str, Any]]:
+    def get_all_dags(self, limit: int = 200, fields: List[str] = None, order_by: str = None) -> dict[str, Any]:
         """모든 DAG 목록 조회 (옵션: 필드 제한, 정렬)"""
         params = {"limit": limit}
         if fields:
@@ -69,8 +69,7 @@ class AirflowClient:
         if order_by:
             params["order_by"] = order_by
 
-        response = self._get("dags", params)
-        return response.get("dags", [])
+        return self._get("dags", params)
 
     def get_dags_by_owner(self, owner: str, limit: int = 100) -> List[Dict[str, Any]]:
         """특정 소유자(owner)의 DAG 목록 조회"""

@@ -43,7 +43,7 @@ def build_monthly_dag_calendar(year: int, month: int, refresh: bool = False, db=
 
     # 캐시 미스 또는 리프레시: 데이터 생성
     # Airflow에서 모든 DAG 목록 가져오기
-    dags = airflow_client.get_all_dags()
+    dags = airflow_client.get_all_dags().get("dags", [])
     logger.info(f"Retrieved {len(dags)} DAGs from Airflow")
 
     # 달력 데이터 생성
@@ -194,13 +194,29 @@ def _generate_calendar_data(dags: List[Dict[str, Any]], year: int, month: int, d
                 day_start = date_dt.replace(hour=0, minute=0, second=0)
                 day_end = date_dt.replace(hour=23, minute=59, second=59)
 
+                # 특별히 오늘 날짜 조건 로깅
+                if date_str == "2025-05-19":
+                    is_today = (day_start <= now <= day_end)
+                    in_effective_range = (effective_start <= date_dt <= effective_end)
+                    logger.info(
+                        f"Processing TODAY {dag_id}: is_today={is_today}, in_effective_range={in_effective_range}")
+                    logger.info(f"  now={now}, day_start={day_start}, day_end={day_end}")
+                    logger.info(
+                        f"  effective_start={effective_start}, date_dt={date_dt}, effective_end={effective_end}")
+
                 # 해당 날짜가 effective_start와 effective_end 사이에 있는지 확인
                 if effective_start <= date_dt <= effective_end:
                     # 실행 이력 확인
                     day_runs = executed_runs_by_date.get(date_str, [])
 
+                    if date_str == "2025-05-19":
+                        logger.info(f"TODAY: Found {len(day_runs)} runs for DAG {dag_id}")
+
                     # 날짜가 오늘이고 아직 실행 시간이 오지 않았거나, 미래 날짜인 경우 크론 표현식 평가
                     if day_end > now:
+                        if date_str == "2025-05-19":
+                            logger.info(f"TODAY: day_end > now condition met")
+
                         # 오늘의 경우, 현재 시간까지의 실행 이력 처리
                         if day_start <= now <= day_end and day_runs:
                             logger.info(f"Processing TODAY's runs for DAG {dag_id}: found {len(day_runs)} runs")
@@ -222,6 +238,9 @@ def _generate_calendar_data(dags: List[Dict[str, Any]], year: int, month: int, d
                             failed_count = sum(1 for run in day_runs if run.get("state", "").lower() in FAILED_STATES)
                             pending_count = len(day_runs) - success_count - failed_count - running_count
 
+                            if date_str == "2025-05-19":
+                                logger.info(
+                                    f"TODAY DAG {dag_id}: success={success_count}, running={running_count}, failed={failed_count}, pending={pending_count}")
                             logger.info(
                                 f"  Final counts: success={success_count}, running={running_count}, failed={failed_count}, pending={pending_count}")
 
@@ -230,7 +249,9 @@ def _generate_calendar_data(dags: List[Dict[str, Any]], year: int, month: int, d
                             all_days[idx]["failed"] += failed_count
                             if pending_count > 0:
                                 all_days[idx]["pending"] += pending_count
-
+                            if date_str == "2025-05-19":
+                                curr_values = all_days[idx].copy()
+                                logger.info(f"TODAY after adding {dag_id}: {curr_values}")
                         # 현재 시간 이후 또는 미래 날짜의 크론 표현식 평가
                         try:
                             # 시작 시간 설정 (오늘의 경우 현재 시간, 미래의 경우 해당 날짜의 시작)
