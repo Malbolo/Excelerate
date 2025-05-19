@@ -1,6 +1,9 @@
 
 import re
 import traceback
+import json
+from datetime import datetime
+from pydantic import BaseModel
 from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate, AIMessagePromptTemplate
 from difflib import SequenceMatcher
 from typing import Optional, List, Tuple
@@ -54,84 +57,83 @@ def extract_relevant_code_fuzzy(
 ## 추 후 다양한 기능을(단순 불러오기, dataframe 치환, 다중 저장 등) 수행시키고 싶다면 해당 템플릿을 사용해 엑셀 코드를 생성하도록 수정해야 할 것
 def make_excel_template() -> ChatPromptTemplate:
     """
-    openpyxl을 활용해 기존 .xlsx 파일에 DataFrame을 지정된 위치에 삽입
-    - 항상 keep_vba=False
+    Airflow DAG Task에서 실행할 수 있는 엑셀 코드 스니펫을 생성하는 Prompt
+    - 작업 디렉토리는 mkdtemp()로 생성
+    - 자동 삭제 로직은 포함하지 않음 (downstream Task에서 처리)
+    - 다운로드, DataFrame 삽입, 업로드만 수행
     - few-shot 예시 2개 포함
-    insert_df_to_excel에 해당 코드 포함되어 있음
-    불러와 바로 실행 가능한 코드로 생성성
     """
     return ChatPromptTemplate.from_messages([
-        # 시스템 메시지: 역할 명세
+        # 시스템 메시지: 역할 정의
         SystemMessagePromptTemplate.from_template(
-            "당신은 openpyxl을 사용해 기존 .xlsx 파일을 load → "
-            "DataFrame을 지정된 셀 위치에 삽입 → 보존된 서식으로 저장하는 코드 전문가입니다. "
-        ),
-
-        # 1번째 페어: 기본 B2 삽입 예시
-        HumanMessagePromptTemplate.from_template(
-            "템플릿 EOE 의 B2 위치부터 dataframe을 삽입 후 out1으로 저장:\n"
-            "{'Name':['Alice','Bob'], 'Score':[85,92]}"
-        ),
-        AIMessagePromptTemplate.from_template(
             """
-from tempfile import TemporaryDirectory
-import os
-import pandas as pd
-from app.services.code_gen.graph_util import insert_df_to_excel
-from app.utils.minio_client import MinioClient
-
-# 테스트 템플릿에 처리된 dataframe 붙여넣기
-minio = MinioClient()
-with TemporaryDirectory() as workdir:
-    tpl = os.path.join(workdir, "report.xlsx")
-    out = os.path.join(workdir, "report_result.xlsx")
-    # 다운로드
-    minio.download_template("EOE", tpl)
-    # 삽입
-    insert_df_to_excel(df, tpl, out,
-                    sheet_name=None,
-                    start_row=2,
-                    start_col=2)
-    # 업로드
-    minio.upload_result("auto", "out1", out)
+당신은 MinioClient에 저장된 엑셀 템플릿 파일을 불러와 Dataframe을 붙여넣는 Python 코드를 생성하는 전문가입니다.
+- 작업 디렉토리는 mkdtemp()로 만들고 자동 삭제 코드는 작성하지 마세요.
+- 기존 템플릿 파일 다운로드 → DataFrame 삽입 → 결과 업로드 로직만 포함해주세요.
+- insert_df_to_excel과 minio = MinioClient()를 사용하여 코드를 완성하세요.
+- import문이나 함수 정의(`def …`)나 `return` 문은 쓰지 마세요.
+- ```로 감싸지 말고 코드를 작성해 주세요.
+- 코드 위, 아래에 `# Excel 작업시작`, `# Excel 작업 끝`이라는 주석을 달아주세요.
+- 사용자 요청을 코드 최상단에 주석으로 표시해주세요.
 """
         ),
 
-        # 2번째 페어: C5 삽입 예시
+        # 첫 번째 페어: 기본 예시
         HumanMessagePromptTemplate.from_template(
-            "템플릿 report.xlsx 의 C5 위치에 dataFrame을 삽입 후 동일 파일에 덮어쓰기:\n"
-            "{'Item':['X','Y','Z'], 'Value':[10,20,30]}"
+            """
+템플릿 EOE 의 2열 2행에 DataFrame을 붙여넣고, 결과를 out1으로 저장 후 업로드해주세요.
+"""
         ),
         AIMessagePromptTemplate.from_template(
             """
-from tempfile import TemporaryDirectory
-import os
-import pandas as pd
-from app.services.code_gen.graph_util import insert_df_to_excel
-from app.utils.minio_client import MinioClient
-
-# 테스트 템플릿에 처리된 dataframe 붙여넣기
+# 템플릿 EOE 의 2열 2행에 DataFrame을 붙여넣고, 결과를 out1으로 저장 후 업로드해주세요.
+# Excel 작업 시작
+workdir = mkdtemp()
+tpl    = os.path.join(workdir, "EOE.xlsx")
+out    = os.path.join(workdir, "out1.xlsx")
 minio = MinioClient()
-with TemporaryDirectory() as workdir:
-    tpl = os.path.join(workdir, "report.xlsx")
-    out = os.path.join(workdir, "report_result.xlsx")
-    # 다운로드
-    minio.download_template("report.xlsx", tpl)
-    # 삽입
-    insert_df_to_excel(df, tpl, out,
-                    sheet_name=None,
-                    start_row=5,
-                    start_col=3)
-    # 업로드
-    minio.upload_result("auto", "report.xlsx", out)
+minio.download_template("EOE", tpl)
+insert_df_to_excel(
+    df, tpl, out,
+    sheet_name=None,
+    start_row=2,
+    start_col=2,
+)
+minio.upload_result("auto", "out1.xlsx", out)
+# Excel 작업 끝
 """
         ),
+
+#         # 두 번째 페어: C5 예시
+#         HumanMessagePromptTemplate.from_template(
+#             """
+# report 템플릿의 C5 위치에 DataFrame을 삽입 후 동일 이름으로 업로드해주세요.
+# """
+#         ),
+#         AIMessagePromptTemplate.from_template(
+#             """
+# # report 템플릿의 C5 위치에 DataFrame을 삽입 후 동일 이름으로 업로드해주세요.
+# # Excel 작업 시작
+# workdir = mkdtemp()
+# tpl    = os.path.join(workdir, "report.xlsx")
+# out    = os.path.join(workdir, "report.xlsx")
+# minio = MinioClient()
+# minio.download_template("report.xlsx", tpl)
+# insert_df_to_excel(
+#     df, tpl, out,
+#     sheet_name=None,
+#     start_row=5,
+#     start_col=3,
+# )
+# minio.upload_result("auto", "report.xlsx", out)
+# # Excel 작업 끝
+# """
+#         ),
 
         # 실제 사용자 요청
         HumanMessagePromptTemplate.from_template(
-            "{input}",
-            "{df}"
-            )
+            "{input}"
+        ),
     ])
 
 def extract_error_info(exc: Exception, code_body: str, stage: str, commands: list[str], similarity_threshold: float = 0.5) -> dict:
@@ -201,12 +203,34 @@ def extract_error_info(exc: Exception, code_body: str, stage: str, commands: lis
         }
     }
 
+def log_filter(entry: BaseModel) -> str:
+    # Pydantic 객체 → dict
+    entry_dict = entry.model_dump()
+    msgs = entry_dict.get("input", [])
+
+    # 첫 번째 system 메시지
+    first_sys = next((m for m in msgs if m.get("role") == "system"), None)
+    # 마지막 human 메시지
+    last_hum  = next((m for m in reversed(msgs) if m.get("role") == "human"), None)
+
+    # input 필드에 두 메시지만 남기기
+    entry_dict["input"] = [m for m in (first_sys, last_hum) if m]
+
+    # datetime 직렬화 처리용 default 함수
+    def _json_default(o):
+        if isinstance(o, datetime):
+            return o.isoformat()
+        raise TypeError(f"{o!r} is not JSON serializable")
+
+    # JSON 문자열로 반환 (한글 깨짐 방지, datetime → ISO 포맷)
+    return json.dumps(entry_dict, ensure_ascii=False, default=_json_default)
+
 def insert_df_to_excel(df: pd.DataFrame,
                        input_path: str,
                        output_path: str = None,
                        sheet_name: str = None,
-                       start_row: int = 6,
-                       start_col: int = 2):
+                       start_row: int = 5,
+                       start_col: int = 1):
     """
     기존 Excel 파일에 df를 특정 위치에 삽입하고 저장합니다.
     
@@ -215,8 +239,8 @@ def insert_df_to_excel(df: pd.DataFrame,
     - input_path: 원본 엑셀 파일 경로(.xlsx, .xlsm)
     - output_path: 저장할 경로. None이면 input_path에 덮어쓰기
     - sheet_name: None이면 active sheet
-    - start_row: 1부터 시작하는 삽입 시작 행 (기본 6)
-    - start_col: 1부터 시작하는 삽입 시작 열 (기본 2 → B열)
+    - start_row: 1부터 시작하는 삽입 시작 행 (기본 5)
+    - start_col: 1부터 시작하는 삽입 시작 열 (기본 1 → A열)
     """
     # 1) 워크북 로드 (매크로 보존이 필요하면 keep_vba=True)
     wb = load_workbook(filename=input_path, keep_vba=False)

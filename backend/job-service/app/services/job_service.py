@@ -36,7 +36,7 @@ def create_job(request: JobCreateRequest, user_id: int, db: Session) -> JSONResp
         return JSONResponse(content=response.dict())
 
     except Exception as e:
-        logger.info(f"Job Creation Failed: {e}")
+        logger.debug(f"Job Creation Failed: {e}")
         response = JobCreateResponse(result=FAIL, data=None)
         return JSONResponse(content=response.dict())
 

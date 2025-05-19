@@ -1,5 +1,6 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query, HTTPException
+from sqlalchemy.orm import Session
 from starlette.responses import JSONResponse
 from datetime import datetime, timezone
 
@@ -11,10 +12,11 @@ from app.schemas.schedule_schema import (
 from app.services.airflow_client import airflow_client
 from app.services.dag_service import DagService
 from app.services.schedule_service import ScheduleService
-from app.services.calendar_service import build_monthly_dag_calendar
+from app.services import calendar_service
 from app.utils import cron_utils
 from app.core import auth
 from app.core.log_config import logger
+from app.db import database
 
 router = APIRouter(
     prefix="/api/schedules",
@@ -32,7 +34,8 @@ def check_admin_permission(user_id: int = Depends(auth.get_user_id_from_header))
 @router.post("")
 async def create_schedule(
         schedule_request: ScheduleCreateRequest,
-        user_id: int = Depends(check_admin_permission)
+        user_id: int = Depends(check_admin_permission),
+        db: Session = Depends(database.get_db)
 ) -> JSONResponse:
     try:
         # frequency를 cron 표현식으로 변환
@@ -57,7 +60,9 @@ async def create_schedule(
             end_date=schedule_request.end_date,
             success_emails=schedule_request.success_emails,
             failure_emails=schedule_request.failure_emails,
-            user_id=user_id
+            execution_time=schedule_request.execution_time,
+            user_id=user_id,
+            db=db
         )
 
         return JSONResponse(status_code=200, content={
@@ -78,16 +83,19 @@ async def create_schedule(
 async def get_monthly_statistics(
         year: int = Query(...),
         month: int = Query(..., ge=1, le=12),
+        refresh: bool = Query(False, description="캐시를 무시하고 새로운 데이터 조회"),
         user_id: int = Depends(check_admin_permission)
 ) -> JSONResponse:
     try:
-        dags = airflow_client.get_all_dags()
-        calendar_data = build_monthly_dag_calendar(dags, year, month)
+        result = calendar_service.build_monthly_dag_calendar(year, month, refresh)
 
         return JSONResponse(content={
             "result": "success",
-            "data": calendar_data
+            "data": result.get("calendar_data", []),
+            "updated_at": result.get("updated_at", datetime.now().isoformat()),
+            "cached": result.get("cached", False)
         })
+
     except Exception as e:
         logger.error(f"Error generating calendar data: {e}")
         return JSONResponse(status_code=500, content={
@@ -317,36 +325,36 @@ async def toggle_schedule(
 async def update_schedule(
         schedule_id: str,
         schedule_request: ScheduleUpdateRequest,
-        user_id: int = Depends(check_admin_permission)
+        user_id: int = Depends(check_admin_permission),
+        db: Session = Depends(database.get_db)
 ) -> JSONResponse:
     try:
-        # cron 표현식 변환 (frequency가 제공된 경우)
-        cron_expression = None
-        if schedule_request.frequency and schedule_request.execution_time:
-            cron_expression = cron_utils.convert_frequency_to_cron(
-                schedule_request.frequency,
-                schedule_request.execution_time
-            )
+        # frequency를 cron 표현식으로 변환
+        cron_expression = cron_utils.convert_frequency_to_cron(
+            schedule_request.frequency,
+            schedule_request.execution_time,
+            schedule_request.start_date
+        )
 
-        # job_ids 정렬 (jobs가 제공된 경우)
-        job_ids = None
-        if schedule_request.jobs:
-            sorted_jobs = sorted(schedule_request.jobs, key=lambda job: job.order)
-            job_ids = [job.id for job in sorted_jobs]
+        # 작업 목록 정렬
+        sorted_jobs = sorted(schedule_request.jobs, key=lambda job: job.order)
+        job_ids = [job.id for job in sorted_jobs]
 
-        # DAG 업데이트 - description 제외
+        # DAG 업데이트
         result = DagService.update_dag(
             dag_id=schedule_id,
             name=schedule_request.title,
-            # description 필드 제외 (Airflow API에서 읽기 전용)
-            # description=schedule_request.description,
+            description=schedule_request.description,
             cron_expression=cron_expression,
             job_ids=job_ids,
+            owner=auth.get_user_info(user_id).get('name'),
             start_date=schedule_request.start_date,
             end_date=schedule_request.end_date,
             success_emails=schedule_request.success_emails,
             failure_emails=schedule_request.failure_emails,
-            user_id=user_id
+            execution_time=schedule_request.execution_time,
+            user_id=user_id,
+            db=db
         )
 
         return JSONResponse(content={
@@ -366,20 +374,49 @@ async def update_schedule(
 
 @router.get("")
 async def get_all_schedules(
-        user_id: int = Depends(check_admin_permission)
+        user_id: int = Depends(check_admin_permission),
+        db: Session = Depends(database.get_db)
 ) -> JSONResponse:
     """모든 스케줄(DAG) 목록을 반환하는 API"""
     try:
         # 서비스 함수 호출
-        schedules = ScheduleService.get_all_schedules_with_details(
-            user_id=user_id
-        )
+        result = ScheduleService.get_all_schedules_with_details(user_id=user_id, db=db)
+
+        schedules = result.get("schedules", [])
+        total = result.get("total", 0)
 
         return JSONResponse(content={
             "result": "success",
             "data": {
                 "schedules": schedules,
-                "total": len(schedules)
+                "total": total
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error getting schedules: {str(e)}")
+        return JSONResponse(status_code=500, content={
+            "result": "error",
+            "message": f"스케줄 목록 조회에 실패했습니다: {str(e)}"
+        })
+
+@router.get("/optimized")
+async def get_all_schedules_optimized(
+        user_id: int = Depends(check_admin_permission),
+        db: Session = Depends(database.get_db)
+) -> JSONResponse:
+    """모든 스케줄(DAG) 목록을 반환하는 API - 최적화 버전"""
+    try:
+        # 최적화된 서비스 함수 호출
+        result = ScheduleService.get_all_schedules_with_details_optimized(user_id=user_id, db=db)
+
+        schedules = result.get("schedules", [])
+        total = result.get("total", 0)
+
+        return JSONResponse(content={
+            "result": "success",
+            "data": {
+                "schedules": schedules,
+                "total": total
             }
         })
     except Exception as e:
