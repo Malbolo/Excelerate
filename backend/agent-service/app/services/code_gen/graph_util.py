@@ -4,9 +4,8 @@ import traceback
 import json
 from datetime import datetime
 from pydantic import BaseModel
-from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate, AIMessagePromptTemplate
 from difflib import SequenceMatcher
-from typing import Optional, List, Tuple
+from typing import Optional, List
 import pandas as pd
 from openpyxl import load_workbook
 
@@ -66,88 +65,6 @@ def extract_relevant_code_fuzzy(
 
     # 4) 여러 개면 빈 줄 두 개로 구분해서 합침
     return "\n\n".join(snippets)
-
-## 추 후 다양한 기능을(단순 불러오기, dataframe 치환, 다중 저장 등) 수행시키고 싶다면 해당 템플릿을 사용해 엑셀 코드를 생성하도록 수정해야 할 것
-def make_excel_template() -> ChatPromptTemplate:
-    """
-    Airflow DAG Task에서 실행할 수 있는 엑셀 코드 스니펫을 생성하는 Prompt
-    - 작업 디렉토리는 mkdtemp()로 생성
-    - 자동 삭제 로직은 포함하지 않음 (downstream Task에서 처리)
-    - 다운로드, DataFrame 삽입, 업로드만 수행
-    - few-shot 예시 2개 포함
-    """
-    return ChatPromptTemplate.from_messages([
-        # 시스템 메시지: 역할 정의
-        SystemMessagePromptTemplate.from_template(
-            """
-당신은 MinioClient에 저장된 엑셀 템플릿 파일을 불러와 Dataframe을 붙여넣는 Python 코드를 생성하는 전문가입니다.
-- 작업 디렉토리는 mkdtemp()로 만들고 자동 삭제 코드는 작성하지 마세요.
-- 기존 템플릿 파일 다운로드 → DataFrame 삽입 → 결과 업로드 로직만 포함해주세요.
-- insert_df_to_excel과 minio = MinioClient()를 사용하여 코드를 완성하세요.
-- import문이나 함수 정의(`def …`)나 `return` 문은 쓰지 마세요.
-- ```로 감싸지 말고 코드를 작성해 주세요.
-- 코드 위, 아래에 `# Excel 작업시작`, `# Excel 작업 끝`이라는 주석을 달아주세요.
-- 사용자 요청을 코드 최상단에 주석으로 표시해주세요.
-"""
-        ),
-
-        # 첫 번째 페어: 기본 예시
-        HumanMessagePromptTemplate.from_template(
-            """
-템플릿 EOE 의 2열 2행에 DataFrame을 붙여넣고, 결과를 out1으로 저장 후 업로드해주세요.
-"""
-        ),
-        AIMessagePromptTemplate.from_template(
-            """
-# 템플릿 EOE 의 2열 2행에 DataFrame을 붙여넣고, 결과를 out1으로 저장 후 업로드해주세요.
-# Excel 작업 시작
-workdir = mkdtemp()
-tpl    = os.path.join(workdir, "EOE.xlsx")
-out    = os.path.join(workdir, "out1.xlsx")
-minio = MinioClient()
-minio.download_template("EOE", tpl)
-insert_df_to_excel(
-    df, tpl, out,
-    sheet_name=None,
-    start_row=2,
-    start_col=2,
-)
-minio.upload_result("auto", "out1.xlsx", out)
-# Excel 작업 끝
-"""
-        ),
-
-#         # 두 번째 페어: C5 예시
-#         HumanMessagePromptTemplate.from_template(
-#             """
-# report 템플릿의 C5 위치에 DataFrame을 삽입 후 동일 이름으로 업로드해주세요.
-# """
-#         ),
-#         AIMessagePromptTemplate.from_template(
-#             """
-# # report 템플릿의 C5 위치에 DataFrame을 삽입 후 동일 이름으로 업로드해주세요.
-# # Excel 작업 시작
-# workdir = mkdtemp()
-# tpl    = os.path.join(workdir, "report.xlsx")
-# out    = os.path.join(workdir, "report.xlsx")
-# minio = MinioClient()
-# minio.download_template("report.xlsx", tpl)
-# insert_df_to_excel(
-#     df, tpl, out,
-#     sheet_name=None,
-#     start_row=5,
-#     start_col=3,
-# )
-# minio.upload_result("auto", "report.xlsx", out)
-# # Excel 작업 끝
-# """
-#         ),
-
-        # 실제 사용자 요청
-        HumanMessagePromptTemplate.from_template(
-            "{input}"
-        ),
-    ])
 
 def extract_error_info(exc: Exception, code_body: str, stage: str, commands: list[str], similarity_threshold: float = 0.5) -> dict:
     """

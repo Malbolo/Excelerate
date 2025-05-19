@@ -33,7 +33,7 @@ class FileAPIClient:
             host: str = settings.MILVUS_HOST,
             port: int = settings.MILVUS_PORT,
             collection_name: str = "factory_catalog",
-            k: int = 3,
+            k: int = 2,
             model_name: str = "gpt-4.1-mini",
             base_url: str = settings.FILESYSTEM_URL,
     ):
