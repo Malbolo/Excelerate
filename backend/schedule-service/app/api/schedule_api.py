@@ -83,17 +83,14 @@ async def create_schedule(
 async def get_monthly_statistics(
         year: int = Query(...),
         month: int = Query(..., ge=1, le=12),
-        refresh: bool = Query(False, description="캐시를 무시하고 새로운 데이터 조회"),
         user_id: int = Depends(check_admin_permission)
 ) -> JSONResponse:
     try:
-        result = calendar_service.build_monthly_dag_calendar(year, month, refresh)
+        result = calendar_service.build_monthly_dag_calendar(year, month)
 
         return JSONResponse(content={
             "result": "success",
-            "data": result.get("calendar_data", []),
-            "updated_at": result.get("updated_at", datetime.now().isoformat()),
-            "cached": result.get("cached", False)
+            "data": result.get("data", {})
         })
 
     except Exception as e:
@@ -101,6 +98,28 @@ async def get_monthly_statistics(
         return JSONResponse(status_code=500, content={
             "result": "error",
             "message": f"달력 데이터 생성에 실패했습니다: {str(e)}"
+        })
+
+@router.delete("/statistics/monthly/cache")
+async def clear_monthly_statistics_cache(
+        year: int = Query(...),
+        month: int = Query(..., ge=1, le=12),
+        user_id: int = Depends(check_admin_permission)
+) -> JSONResponse:
+    try:
+        # 특정 년월의 캐시만 삭제하는 서비스 메서드 호출
+        calendar_service.clear_monthly_cache(year, month)
+
+        return JSONResponse(content={
+            "result": "success",
+            "message": f"{year}년 {month}월 통계 캐시가 성공적으로 삭제되었습니다.",
+        })
+
+    except Exception as e:
+        logger.error(f"Error clearing calendar cache: {e}")
+        return JSONResponse(status_code=500, content={
+            "result": "error",
+            "message": f"달력 캐시 삭제에 실패했습니다: {str(e)}"
         })
 
 @router.get("/{schedule_id}")
