@@ -527,8 +527,17 @@ class ScheduleService:
         return result
 
     @staticmethod
-    def get_all_schedules_with_details(user_id: int = None, db=None) -> Dict[str, Any]:
-        """모든 스케줄(DAG) 목록을 반환 - ULID 범위 쿼리와 최소한의 필드만 요청"""
+    def get_all_schedules_with_details(
+            user_id: int = None,
+            db=None,
+            page: int = 1,
+            size: int = 20,
+            title: str = "",
+            owner: str = "",
+            frequency: str = "",
+            status: str = "active"
+    ) -> Dict[str, Any]:
+        """모든 스케줄(DAG) 목록을 반환 - 최적화된 구현"""
         close_db = False
         try:
             # DB 세션 생성
@@ -536,7 +545,7 @@ class ScheduleService:
                 db = SessionLocal()
                 close_db = True
 
-            # 필요한 최소한의 필드만 명시
+            # Airflow API에서 필요한 필드
             needed_fields = [
                 "dag_id",
                 "dag_display_name",
@@ -544,87 +553,140 @@ class ScheduleService:
                 "is_paused",
                 "owners",
                 "schedule_interval",
-                "next_dagrun_data_interval_end"  # 다음 실행 예정 시간만 필요
+                "next_dagrun_data_interval_end"
             ]
 
-            # ULID 역순으로 정렬하여 최신 생성 순으로 가져오기
-            dags_response = airflow_client.get_all_dags(
-                limit=1000, # 가져올 DAG 수 제한
-                fields=needed_fields,
-                order_by="-dag_id"
-            )
+            # 페이지네이션 계산
+            offset = (page - 1) * size
 
-            # API에서 제공하는 total_entries 사용
-            total_entries = dags_response.get("total_entries", 0)
-            dags = dags_response.get("dags", [])
+            # 상태 필터링 설정
+            paused_param = None
+            if status == "active":
+                paused_param = False
+            elif status == "paused":
+                paused_param = True
+            # status가 "all"인 경우 paused_param은 None 유지
 
-            # 결과가 비어있으면 빈 결과 반환
-            if not dags:
-                return {
-                    "schedules": [],
-                    "total": 0
+            # DB 필터링 조건이 있는 경우
+            db_filtered_ids = []
+            if title or owner or frequency:
+                db_filtered_ids = schedule_crud.get_schedule_ids_by_filters(db, title, owner, frequency)
+
+                # DB에서 필터링된 ID가 없으면 빈 결과 반환 (최적화)
+                if not db_filtered_ids:
+                    return {
+                        "schedules": [],
+                        "total": 0
+                    }
+
+            # Airflow API 호출 시 사용할 파라미터
+            if db_filtered_ids:
+                # DB 필터링 결과가 있는 경우 - 해당 ID만 가져오도록 처리
+                api_params = {
+                    "limit": min(len(db_filtered_ids) + 50, 1000),  # 여유있게 설정
+                    "fields": needed_fields,
+                    "order_by": "-dag_id",  # ULID 역순 (최신순)
+                    "only_active": True
                 }
 
-            # 가져온 결과의 최소/최대 DAG ID 확인 (범위 쿼리용)
-            min_dag_id = dags[-1].get("dag_id")  # 마지막(가장 오래된) DAG ID
-            max_dag_id = dags[0].get("dag_id")  # 첫번째(가장 최근) DAG ID
+                # 상태 필터링이 있는 경우에만 paused 매개변수 추가
+                if paused_param is not None:
+                    api_params["paused"] = paused_param
 
-            # DB에서 해당 범위의 스케줄 정보 가져오기
+                # Airflow API 호출
+                dags_response = airflow_client.get_all_dags(**api_params)
+
+                # API에서 제공하는 결과
+                all_dags = dags_response.get("dags", [])
+
+                # DB 필터링 결과와 일치하는 DAG만 선택
+                filtered_dags = [dag for dag in all_dags if dag.get("dag_id") in db_filtered_ids]
+
+                # 페이지네이션 적용
+                total_entries = len(db_filtered_ids)
+                start_idx = (page - 1) * size
+                end_idx = min(start_idx + size, len(filtered_dags))
+                paginated_dags = filtered_dags[start_idx:end_idx] if start_idx < len(filtered_dags) else []
+            else:
+                # DB 필터링 결과가 없는 경우 - API 페이지네이션 직접 활용
+                api_params = {
+                    "limit": size,
+                    "offset": offset,
+                    "fields": needed_fields,
+                    "order_by": "-dag_id",  # ULID 역순 (최신순)
+                    "only_active": True
+                }
+
+                # 상태 필터링이 있는 경우에만 paused 매개변수 추가
+                if paused_param is not None:
+                    api_params["paused"] = paused_param
+
+                # Airflow API 호출
+                dags_response = airflow_client.get_all_dags(**api_params)
+
+                # API에서 제공하는 결과
+                paginated_dags = dags_response.get("dags", [])
+                total_entries = dags_response.get("total_entries", 0)
+
+            # 결과가 비어있으면 빈 결과 반환
+            if not paginated_dags:
+                return {
+                    "schedules": [],
+                    "total": total_entries
+                }
+
+            # 가져온 DAG ID 목록
+            dag_ids = [dag.get("dag_id") for dag in paginated_dags]
+
+            # DB에서 스케줄 정보 및 스케줄 jobs 정보 가져오기
             db_schedules = {}
             schedule_job_map = {}
-            try:
-                # 범위 쿼리로 효율적으로 스케줄 조회
-                filtered_db_schedules = schedule_crud.get_schedules_in_range(db, min_dag_id, max_dag_id)
-                for schedule in filtered_db_schedules:
-                    db_schedules[schedule.id] = schedule
 
-                # 스케줄에 해당하는 job 정보 조회
-                if filtered_db_schedules:
-                    schedule_ids = [schedule.id for schedule in filtered_db_schedules]
-                    schedule_jobs = schedule_crud.get_schedule_jobs_by_schedule_ids(db, schedule_ids)
+            # 1. 스케줄 정보 가져오기 (schedule_crud 활용)
+            filtered_db_schedules = schedule_crud.get_schedules_by_ids(db, dag_ids)
+            for schedule in filtered_db_schedules:
+                db_schedules[schedule.id] = schedule
 
-                    # 결과를 스케줄 ID별로 그룹화
-                    for schedule_job in schedule_jobs:
-                        if schedule_job.schedule_id not in schedule_job_map:
-                            schedule_job_map[schedule_job.schedule_id] = []
-                        schedule_job_map[schedule_job.schedule_id].append({
-                            "job_id": schedule_job.job_id,
-                            "order": schedule_job.order
-                        })
-            except Exception as e:
-                logger.error(f"Error getting DB data: {str(e)}")
+            # 2. 스케줄에 해당하는 job 정보 가져오기
+            if filtered_db_schedules:
+                schedule_ids = [schedule.id for schedule in filtered_db_schedules]
+                schedule_jobs = schedule_crud.get_schedule_jobs_by_schedule_ids(db, schedule_ids)
 
-            # 응답 데이터 구성 - dags 순서 유지하면서 처리
+                # 결과를 스케줄 ID별로 그룹화
+                for schedule_job in schedule_jobs:
+                    if schedule_job.schedule_id not in schedule_job_map:
+                        schedule_job_map[schedule_job.schedule_id] = []
+                    schedule_job_map[schedule_job.schedule_id].append({
+                        "job_id": schedule_job.job_id,
+                        "order": schedule_job.order
+                    })
+
+            # 응답 데이터 구성
             schedule_list = []
-            for dag in dags:
+            for dag in paginated_dags:
                 dag_id = dag.get("dag_id")
-
-                # DB에 스케줄이 있는지 확인
                 db_schedule = db_schedules.get(dag_id)
 
                 # 기본 정보 구성 - 데이터 소스 우선순위: DB > Airflow API
                 schedule_data = {
                     "schedule_id": dag_id,
-                    "title": (db_schedule.title if db_schedule and db_schedule.title else
-                              dag.get("dag_display_name", dag_id)),
-                    "description": (db_schedule.description if db_schedule and db_schedule.description else
-                                    dag.get("description", "")),
+                    "title": db_schedule.title if db_schedule else dag.get("dag_display_name", dag_id),
+                    "description": db_schedule.description if db_schedule else dag.get("description", ""),
                     "is_paused": dag.get("is_paused", False),
-                    "owner": dag.get("owners", ["unknown"])[0] if dag.get("owners") else "unknown",
-                    "jobs": [],  # 간소화된 job 정보만 포함
+                    "owner": db_schedule.owner if db_schedule else (
+                        dag.get("owners", ["unknown"])[0] if dag.get("owners") else "unknown"
+                    ),
+                    "jobs": [],
                     "last_run": None,
                     "next_run": None
                 }
 
-                # 크론 표현식 및 주기 정보 설정 (frequency_display 객체 형식 사용)
+                # 크론 및 주기 정보 설정
                 if db_schedule and db_schedule.cron_expression:
                     # DB에서 가져온 정보 사용
-                    execution_time = db_schedule.execution_time
-                    frequency = db_schedule.frequency
-
                     schedule_data["frequency_display"] = {
-                        "type": frequency,
-                        "time": execution_time
+                        "type": db_schedule.frequency,
+                        "time": db_schedule.execution_time
                     }
                 else:
                     # Airflow API에서 가져온 정보 사용
@@ -643,18 +705,12 @@ class ScheduleService:
                         "time": execution_time
                     }
 
-                # 날짜 정보 설정 - DB에서만 가져옴, API에는 해당 필드가 없는 것으로 확인됨
+                # 날짜 정보 설정
                 if db_schedule:
-                    # 종료일
-                    if hasattr(db_schedule, 'end_date') and db_schedule.end_date:
-                        schedule_data["end_date"] = db_schedule.end_date.isoformat()
-                    else:
-                        schedule_data["end_date"] = None
-                else:
-                    # DB에 정보가 없는 경우 null로 설정
-                    schedule_data["end_date"] = None
+                    if db_schedule.start_date:
+                        schedule_data["start_date"] = db_schedule.start_date.isoformat()
 
-                # 스케줄에 해당하는 job_ids와 order 가져오기 - 간소화된 형태
+                # 스케줄에 해당하는 job 정보 설정
                 if db_schedule and db_schedule.id in schedule_job_map:
                     job_infos = sorted(schedule_job_map[db_schedule.id], key=lambda x: x["order"])
                     jobs = []
@@ -665,7 +721,7 @@ class ScheduleService:
                         })
                     schedule_data["jobs"] = jobs
 
-                # 최근 실행 정보 조회 - 간소화된 형태
+                # 최근 실행 정보 조회
                 try:
                     recent_runs = airflow_client.get_dag_runs(dag_id, limit=1)
                     if recent_runs:
@@ -678,7 +734,7 @@ class ScheduleService:
                 except Exception as e:
                     logger.error(f"Error getting recent runs for {dag_id}: {str(e)}")
 
-                # 다음 실행 예정 조회 - next_dagrun 필드 활용
+                # 다음 실행 예정 조회
                 if dag.get("next_dagrun_data_interval_end"):
                     schedule_data["next_run"] = {
                         "scheduled_time": dag.get("next_dagrun_data_interval_end")
@@ -690,7 +746,7 @@ class ScheduleService:
 
             return {
                 "schedules": schedule_list,
-                "total": total_entries  # API에서 제공하는 총 개수 사용
+                "total": total_entries
             }
 
         except Exception as e:
