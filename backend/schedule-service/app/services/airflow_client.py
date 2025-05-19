@@ -61,13 +61,26 @@ class AirflowClient:
 
     # DAG 관련 메서드
 
-    def get_all_dags(self, limit: int = 200, fields: List[str] = None, order_by: str = None) -> dict[str, Any]:
-        """모든 DAG 목록 조회 (옵션: 필드 제한, 정렬)"""
-        params = {"limit": limit}
+    def get_all_dags(
+            self,
+            limit: int = 200,
+            offset: int = 0,  # 오프셋 파라미터 추가
+            fields: List[str] = None,
+            order_by: str = None,
+            paused: Optional[bool] = None,
+            only_active: bool = True
+    ) -> dict[str, Any]:
+        """모든 DAG 목록 조회 (옵션: 필드 제한, 정렬, 필터링, 페이지네이션)"""
+        params = {"limit": limit, "offset": offset}  # offset 파라미터 추가
+
         if fields:
             params["fields"] = fields
         if order_by:
             params["order_by"] = order_by
+        if paused is not None:  # paused 값이 명시적으로 제공된 경우만 포함
+            params["paused"] = paused
+        if not only_active:  # only_active의 기본값은 True
+            params["only_active"] = only_active
 
         return self._get("dags", params)
 
