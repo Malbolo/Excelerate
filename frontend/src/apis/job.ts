@@ -85,7 +85,6 @@ export const getJobListForScheduler = async (jobIds: string[]) => {
     throw new Error(error);
   }
 
-  console.log(data);
   return data;
 };
 

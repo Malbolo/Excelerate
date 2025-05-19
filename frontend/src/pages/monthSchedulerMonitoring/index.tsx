@@ -10,7 +10,7 @@ const SchedulerMonitoringPage = () => {
   const { monthId } = useParams() as { monthId: string };
   const [year, month] = monthId.split('-').map(Number);
 
-  const { dataUpdatedAt } = useGetMonthSchedules(year.toString(), month.toString());
+  const { data } = useGetMonthSchedules(year.toString(), month.toString());
 
   const deleteMonthCache = useDeleteMonthCache();
 
@@ -24,7 +24,7 @@ const SchedulerMonitoringPage = () => {
       description='Track your schedules with date-based and status-based views.'
       backPath='/'
       onReload={handleReload}
-      updatedAt={dataUpdatedAt}
+      updatedAt={data.updated_at}
     >
       <div className='flex h-full flex-col gap-2'>
         <DateNavigator />

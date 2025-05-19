@@ -2,6 +2,8 @@ import { ChevronLeft, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
+import { formatDateTime } from '@/lib/dateFormat';
+import { useLocalDate } from '@/store/useLocalDate';
 
 interface SchedulerMonitoringLayoutProps {
   title: string;
@@ -9,7 +11,7 @@ interface SchedulerMonitoringLayoutProps {
   backPath: string;
   children: React.ReactNode;
   onReload?: () => void;
-  updatedAt?: number | null;
+  updatedAt?: string | null;
 }
 
 const SchedulerMonitoringLayout = ({
@@ -20,11 +22,7 @@ const SchedulerMonitoringLayout = ({
   onReload,
   updatedAt,
 }: SchedulerMonitoringLayoutProps) => {
-  const formatUpdatedAt = (timestamp: number | null | undefined) => {
-    if (!timestamp) return null;
-    return new Date(timestamp).toLocaleString();
-  };
-
+  const { locale, place } = useLocalDate();
   return (
     <div className='flex h-full w-full flex-col p-6 md:p-8'>
       <div className='mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between'>
@@ -40,7 +38,9 @@ const SchedulerMonitoringLayout = ({
           </div>
         </div>
         <div className='flex items-center gap-2'>
-          {updatedAt && <p className='text-muted-foreground text-xs'>Updated at: {formatUpdatedAt(updatedAt)}</p>}
+          {updatedAt && (
+            <p className='text-muted-foreground text-xs'>Updated at: {formatDateTime(updatedAt, locale, place)}</p>
+          )}
           {onReload && (
             <Button variant='outline' size='icon' onClick={onReload} className='h-8 w-8 shrink-0'>
               <RefreshCw className='h-4 w-4' />

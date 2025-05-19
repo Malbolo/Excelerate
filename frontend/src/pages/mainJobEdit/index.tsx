@@ -92,19 +92,15 @@ const JobEditPage = () => {
 
       if (jobDetail.commands && jobDetail.data_load_url) {
         const command_list = jobDetail.commands.map(({ content }) => content);
-        try {
-          const response = await commandMutation({
-            command_list,
-            url: jobDetail.data_load_url,
-            stream_id: currentStreamId,
-          });
+        const response = await commandMutation({
+          command_list,
+          url: jobDetail.data_load_url,
+          stream_id: currentStreamId,
+        });
 
-          setColumns(response.dataframe[0] ? createSortableColumns(response.dataframe[0]) : []);
-          setData(response.dataframe);
-        } catch (error) {
-          toast.error('Failed to execute initial commands.');
-          console.error('Error during initial command execution:', error);
-        }
+        setColumns(response.dataframe[0] ? createSortableColumns(response.dataframe[0]) : []);
+        setData(response.dataframe);
+        toast.error('Failed to execute initial commands.');
       }
     };
 
