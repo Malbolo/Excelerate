@@ -3,9 +3,53 @@ import re
 import traceback
 from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate, AIMessagePromptTemplate
 from difflib import SequenceMatcher
-from typing import Optional
+from typing import Optional, List, Tuple
 import pandas as pd
 from openpyxl import load_workbook
+
+def extract_relevant_code_fuzzy(
+    original_code: str,
+    commands: List[str],
+    similarity_threshold: float = 0.6
+) -> Tuple[Optional[str], Optional[str]]:
+    """
+    1) 주석 라인(# …) 전체를 순회하며, commands와의 유사도 계산
+    2) 최고 유사도 주석 라인의 인덱스(best_idx)와 매칭된 command(best_cand) 확보
+    3) best_idx+1부터 다음 주석이나 빈 줄 전까지 스니펫 추출
+    """
+    lines = original_code.splitlines()
+    best_ratio = 0.0
+    best_idx: Optional[int] = None
+    best_cand: Optional[str] = None
+
+    # 1) 주석 라인 중 최고 매칭 라인 찾기
+    for idx, line in enumerate(lines):
+        stripped = line.strip()
+        if not stripped.startswith("#"):
+            continue
+        # '# foo bar.' -> 'foo bar'
+        comment = stripped.lstrip("#").strip().rstrip(".\"'")  
+        for cand in commands:
+            ratio = SequenceMatcher(None, comment, cand).ratio()
+            if ratio > best_ratio:
+                best_ratio = ratio
+                best_idx   = idx
+                best_cand  = cand
+
+    # 2) threshold 미달 시 None 리턴
+    if best_ratio < similarity_threshold or best_idx is None:
+        return None, None
+
+    # 3) snippet 추출: best_idx+1 부터 다음 주석/빈 줄 전까지
+    snippet_lines: List[str] = []
+    for line in lines[best_idx + 1 :]:
+        # 주석 시작이거나 완전 빈 줄이면 종료
+        if line.strip().startswith("#") or line.strip() == "":
+            break
+        snippet_lines.append(line)
+
+    snippet = "\n".join(snippet_lines).rstrip() or None
+    return snippet, best_cand
 
 ## 추 후 다양한 기능을(단순 불러오기, dataframe 치환, 다중 저장 등) 수행시키고 싶다면 해당 템플릿을 사용해 엑셀 코드를 생성하도록 수정해야 할 것
 def make_excel_template() -> ChatPromptTemplate:
