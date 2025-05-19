@@ -166,9 +166,10 @@ class ScheduleService:
                     job_details[job_id] = None
 
                 # 응답 형식에 맞게 처리
-                if response and "jobs" in response:
+                if (response and "result" in response and
+                        response["result"] == "success" and "data" in response and "jobs" in response["data"]):
                     # 배열을 딕셔너리로 변환
-                    for job in response["jobs"]:
+                    for job in response["data"]["jobs"]:
                         job_id = job.get("id")
                         if job_id:
                             if "commands" not in job or not isinstance(job["commands"], list):
