@@ -410,9 +410,9 @@ def {function_name}(**kwargs):
 {indented_data_code}
         # 기존 URL의 start_date=, end_date=값 교체
         if startdate:
-            url = re.sub(r"(start_date=)[^&]+", "\\\\1" + startdate, url)
+            url = re.sub(r'(?<=start_date=)[^&]+', startdate, url)
         if enddate:
-            url = re.sub(r"(end_date=)[^&]+", "\\\\1" + enddate, url)
+            url = re.sub(r'(?<=end_date=)[^&]+',   enddate,   url)
 
     # 1) 데이터 로드
     resp = requests.get(url)
