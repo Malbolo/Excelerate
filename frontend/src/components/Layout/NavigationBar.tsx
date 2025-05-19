@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { ChevronsLeft, ChevronsRight, Workflow } from 'lucide-react';
+import { ChevronsLeft, ChevronsRight, SquareChartGantt } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 import { useGetUserInfoAPI } from '@/apis/auth';
@@ -39,16 +39,10 @@ const NavigationBar = () => {
       </Button>
 
       <div className='mt-10 mb-9 flex flex-col items-center justify-center gap-3 px-4'>
-        <img
-          src={logo}
-          alt='Samsung Logo'
-          width={isCollapsed ? 40 : 150}
-          height={isCollapsed ? 6 : 23}
-          className='transition-all duration-300 ease-in-out'
-        />
+        <img src={logo} alt='Samsung Logo' width={isCollapsed ? 40 : 150} height={isCollapsed ? 6 : 23} />
         {!isCollapsed && (
           <div className='flex items-center gap-1'>
-            <Workflow className='h-3 w-3' />
+            <SquareChartGantt className='h-3 w-3' />
             <p className='text-center text-xs'>GenAI Report Automation</p>
           </div>
         )}
@@ -67,9 +61,9 @@ const NavigationBar = () => {
             <Link key={to} to={to} title={isCollapsed ? label : undefined}>
               <li
                 className={cn(
-                  'hover:text-accent-foreground flex items-center rounded-lg px-3 py-3 font-bold transition-all hover:bg-[#F0F7FF]',
+                  'hover:text-accent-foreground flex items-center rounded-lg px-3 py-4 font-bold transition-all hover:bg-[#F0F7FF]',
                   isActive && 'box-shadow border-primary/70 text-accent-foreground border bg-[#F0F7FF]',
-                  isCollapsed ? 'justify-center' : 'justify-start gap-3',
+                  isCollapsed ? 'justify-center py-3' : 'justify-start gap-3',
                 )}
               >
                 {Icon && <Icon className={cn('h-5 w-5', isCollapsed ? 'mx-auto' : '')} />}
