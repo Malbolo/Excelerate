@@ -44,6 +44,7 @@ def build_monthly_dag_calendar(year: int, month: int, refresh: bool = False, db=
     # 캐시 미스 또는 리프레시: 데이터 생성
     # Airflow에서 모든 DAG 목록 가져오기
     dags = airflow_client.get_all_dags()
+    logger.info(f"Retrieved {len(dags)} DAGs from Airflow")
 
     # 달력 데이터 생성
     calendar_data = _generate_calendar_data(dags, year, month, db)
@@ -73,9 +74,15 @@ def _generate_calendar_data(dags: List[Dict[str, Any]], year: int, month: int, d
 
         # 타임존을 명시적으로 설정 (UTC 사용)
         first_day, last_day = date_utils.get_month_date_range(year, month)
+        logger.info(f"Date range: {first_day} to {last_day}")
 
         # 현재 날짜와 시간
         now = date_utils.get_now_utc()
+        logger.info(f"Current UTC time: {now}")
+
+        # 오늘 날짜 로깅 (UTC 기준)
+        today_str = now.strftime("%Y-%m-%d")
+        logger.info(f"Today (UTC): {today_str}")
 
         # 월의 모든 날짜를 미리 딕셔너리로 초기화
         all_days = []
@@ -95,6 +102,8 @@ def _generate_calendar_data(dags: List[Dict[str, Any]], year: int, month: int, d
         RUNNING_STATES = ["running", "queued", "scheduled", "up_for_reschedule", "restarting"]
         FAILED_STATES = ["failed", "upstream_failed", "shutdown", "removed", "up_for_retry"]
 
+        logger.info(f"State groups defined: SUCCESS={SUCCESS_STATES}, RUNNING={RUNNING_STATES}, FAILED={FAILED_STATES}")
+
         # 날짜별 데이터 인덱스 구성 (빠른 조회용)
         date_index = {item["date"]: i for i, item in enumerate(all_days)}
 
@@ -104,6 +113,8 @@ def _generate_calendar_data(dags: List[Dict[str, Any]], year: int, month: int, d
             all_db_schedules = schedule_crud.get_all_schedules(db)
             for schedule in all_db_schedules:
                 db_schedules[schedule.id] = schedule
+            logger.info(f"Retrieved {len(db_schedules)} schedules from DB")
+
         except Exception as e:
             logger.error(f"Error getting DB data: {str(e)}")
 
@@ -145,6 +156,8 @@ def _generate_calendar_data(dags: List[Dict[str, Any]], year: int, month: int, d
             # 실행 이력 조회 (월 전체)
             start_date = date_utils.format_date_for_airflow(first_day)
             end_date = date_utils.format_date_for_airflow(last_day)
+            logger.info(f"Querying runs for {dag_id} from {start_date} to {end_date}")
+
             dag_runs = airflow_client.get_dag_runs(
                 dag_id,
                 limit=100,
@@ -152,6 +165,7 @@ def _generate_calendar_data(dags: List[Dict[str, Any]], year: int, month: int, d
                 end_date=end_date,
                 fields=["start_date", "state", "dag_run_id"]
             )
+            logger.info(f"Retrieved {len(dag_runs)} runs for DAG {dag_id}")
 
             # 날짜별 실행 이력 구성
             executed_runs_by_date = {}
@@ -161,6 +175,7 @@ def _generate_calendar_data(dags: List[Dict[str, Any]], year: int, month: int, d
                     if run_date_str not in executed_runs_by_date:
                         executed_runs_by_date[run_date_str] = []
                     executed_runs_by_date[run_date_str].append(run)
+            logger.info(f"Processed runs by date: {list(executed_runs_by_date.keys())}")
 
             # 해당 월의 각 날짜에 대해 데이터 처리
             for date_str, idx in date_index.items():
