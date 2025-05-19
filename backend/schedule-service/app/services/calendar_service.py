@@ -146,8 +146,19 @@ def _generate_calendar_data(dags: List[Dict[str, Any]], year: int, month: int, d
                 continue
 
             # 유효한 시작일과 종료일 설정
-            effective_start = max(dag_start_date, first_day)
-            effective_end = min(dag_end_date, last_day) if dag_end_date else last_day
+            if dag_start_date:
+                # 시작일의 경우 해당 날짜의 시작(00:00:00)으로 설정
+                dag_start_day = dag_start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+                effective_start = max(dag_start_day, first_day)
+            else:
+                effective_start = first_day
+
+            if dag_end_date:
+                # 종료일의 경우 해당 날짜의 끝(23:59:59)으로 설정
+                dag_end_day = dag_end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+                effective_end = min(dag_end_day, last_day)
+            else:
+                effective_end = last_day
 
             logger.info(f"DAG {dag_id} effective date range: {effective_start} to {effective_end}")
 
@@ -194,6 +205,9 @@ def _generate_calendar_data(dags: List[Dict[str, Any]], year: int, month: int, d
                 day_start = date_dt.replace(hour=0, minute=0, second=0)
                 day_end = date_dt.replace(hour=23, minute=59, second=59)
 
+                # 날짜 비교를 위해 시간을 제거한 날짜 객체 사용
+                date_dt_day = date_dt.replace(hour=0, minute=0, second=0, microsecond=0)
+
                 # 특별히 오늘 날짜 조건 로깅
                 if date_str == "2025-05-19":
                     is_today = (day_start <= now <= day_end)
@@ -205,7 +219,7 @@ def _generate_calendar_data(dags: List[Dict[str, Any]], year: int, month: int, d
                         f"  effective_start={effective_start}, date_dt={date_dt}, effective_end={effective_end}")
 
                 # 해당 날짜가 effective_start와 effective_end 사이에 있는지 확인
-                if effective_start <= date_dt <= effective_end:
+                if effective_start <= date_dt_day <= effective_end:
                     # 실행 이력 확인
                     day_runs = executed_runs_by_date.get(date_str, [])
 
