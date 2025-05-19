@@ -6,9 +6,66 @@ from datetime import datetime
 from pydantic import BaseModel
 from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate, AIMessagePromptTemplate
 from difflib import SequenceMatcher
-from typing import Optional
+from typing import Optional, List, Tuple
 import pandas as pd
 from openpyxl import load_workbook
+
+def extract_relevant_code_fuzzy(
+    original_code: str,
+    commands: List[str],
+    similarity_threshold: float = 0.6
+) -> Optional[str]:
+    """
+    original_code 에서 commands 각각에 대해
+    1) ‘# …’ 주석 라인을 찾아서,
+    2) 주석 텍스트와 커맨드를 양쪽 모두 구두점·공백 제거 후 비교하여
+       ratio >= similarity_threshold 인 블록을
+    3) # 주석 바로 다음 줄부터 다음 주석/빈 줄 전까지 스니펫으로 추출,
+    4) 여러 커맨드에 해당하는 스니펫이 있으면 \n\n 으로 합쳐서 리턴합니다.
+    """
+    lines = original_code.splitlines()
+    snippets: List[str] = []
+
+    def clean_text(s: str) -> str:
+        # "#" 빼고, 마침표/따옴표/백틱 등 제거, 양쪽 공백 strip
+        return re.sub(r"[\.\"'`]", "", s).lstrip("#").strip()
+
+    # 주석 라인만 모아뒀다가, comment_map[idx] = clean_comment
+    comment_map = {
+        idx: clean_text(line)
+        for idx, line in enumerate(lines)
+        if line.strip().startswith("#")
+    }
+
+    for cmd in commands:
+        cmd_clean = re.sub(r"[\.\"'`]", "", cmd).strip()
+        # 1) 이 커맨드와 주석 중 best match 찾기
+        best_idx = None
+        best_ratio = 0.0
+        for idx, comment in comment_map.items():
+            ratio = SequenceMatcher(None, comment, cmd_clean).ratio()
+            if ratio > best_ratio:
+                best_ratio = ratio
+                best_idx = idx
+
+        # 2) 임계치 미달 무시
+        if best_idx is None or best_ratio < similarity_threshold:
+            continue
+
+        # 3) best_idx + 1 부터 다음 주석/빈 줄 전까지 스니펫 추출
+        snippet_lines = [lines[best_idx]]
+        for body in lines[best_idx + 1:]:
+            if body.strip().startswith("#") or body.strip() == "":
+                break
+            snippet_lines.append(body)
+        if snippet_lines:
+            snippets.append("\n".join(snippet_lines))
+
+    if not snippets:
+        return None
+
+    # 4) 여러 개면 빈 줄 두 개로 구분해서 합침
+    return "\n\n".join(snippets)
 
 ## 추 후 다양한 기능을(단순 불러오기, dataframe 치환, 다중 저장 등) 수행시키고 싶다면 해당 템플릿을 사용해 엑셀 코드를 생성하도록 수정해야 할 것
 def make_excel_template() -> ChatPromptTemplate:

@@ -19,7 +19,10 @@ from app.core.config import settings
 from app.models.log import LogDetail
 from app.utils.minio_client import MinioClient
 
-from app.services.code_gen.graph_util import extract_error_info, insert_df_to_excel, make_excel_code_snippet, make_excel_template, log_filter
+from app.services.code_gen.graph_util import ( 
+    extract_error_info, insert_df_to_excel, make_excel_code_snippet, 
+    make_excel_template, log_filter, extract_relevant_code_fuzzy
+)
 from app.services.code_gen.merge_utils import merge_code_snippets
 
 from app.utils.memory_logger import MemoryLogger
@@ -199,6 +202,20 @@ class CodeGenerator:
         input = state["current_unit"]["cmd"]
         self.q.put_nowait({"type": "notice", "content": f"{input}에 대한 코드를 생성 중입니다."})
 
+        # input str → 리스트로 만들기
+        if isinstance(input, str):
+            try:
+                cmds_list = json.loads(input)
+                # 만약 단일 문자열이라면 리스트로 감싸기
+                if not isinstance(cmds_list, list):
+                    cmds_list = [cmds_list]
+            except json.JSONDecodeError:
+                cmds_list = [input]
+        elif isinstance(input, list):
+            cmds_list = input
+        else:
+            cmds_list = [str(input)]
+
         # LLM과 도구를 사용하여 메시지에 대한 응답을 생성합니다.
         # 1) LLM 호출 전 input 준비
         df_preview = df.head(5).to_string(
@@ -208,9 +225,15 @@ class CodeGenerator:
 
         if state['original_code']:
             self.q.put_nowait({"type": "notice", "content": f"{input}에 대한 코드를 기존 코드와 함께 생성 중입니다."})
+            relevant_snippet = extract_relevant_code_fuzzy(
+                state['original_code'],
+                cmds_list,
+                similarity_threshold=0.7
+            ) # cmds_list와 70% 이상 유사한 블럭만 참고로 넣음
+            original_for_prompt = relevant_snippet
             code_gen_prompt = load_chat_template("Code Generator:Generate Code Extension")
             schain = code_gen_prompt | self.sllm
-            llm_input = {"original_code":state['original_code'], "dftypes": df.dtypes.to_string(), "df": df_preview, "input": input}
+            llm_input = {"original_code":original_for_prompt, "dftypes": df.dtypes.to_string(), "df": df_preview, "input": input}
         else:
             code_gen_prompt = load_chat_template("Code Generator:Generate Code")
             schain = code_gen_prompt | self.sllm
