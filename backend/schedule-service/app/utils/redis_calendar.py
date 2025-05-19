@@ -2,6 +2,7 @@ import json
 import redis
 from typing import Dict, Any, List, Tuple, Optional
 from datetime import datetime
+from app.utils import date_utils
 
 class RedisCalendarCache:
     def __init__(self, redis_url: str, ttl_seconds: int = 86400):
@@ -29,7 +30,7 @@ class RedisCalendarCache:
         key = self._get_key(year, month)
 
         # 현재 시간을 ISO 형식으로 포함
-        now = datetime.now().isoformat()
+        now = date_utils.get_now_utc().isoformat()
 
         # 데이터와 메타데이터를 함께 저장
         cache_data = {

@@ -37,7 +37,7 @@ def build_monthly_dag_calendar(year: int, month: int, db=None) -> Dict[str, Any]
         return {
             "data": {
                 "monthly": calendar_data,
-                "updated_at": cached_result.get("updated_at", datetime.now().isoformat()),
+                "updated_at": cached_result.get("updated_at"),
                 "cached": True
             }
         }
@@ -54,7 +54,7 @@ def build_monthly_dag_calendar(year: int, month: int, db=None) -> Dict[str, Any]
     calendar_cache.set(year, month, calendar_data)
 
     # 현재 시간 (방금 업데이트됨)
-    now = datetime.now().isoformat()
+    now = date_utils.get_now_utc().isoformat()
 
     return {
         "data": {
