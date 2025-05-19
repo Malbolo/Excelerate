@@ -53,5 +53,5 @@ def get_jobs_for_creating_schedule(request: JobForScheduleRequest, db: Session =
     return job_service.get_jobs_for_creating_schedule(request, db)
 
 @router.post("/for-schedule/commands")
-def get_jobs__with_commands_for_creating_schedule(request: JobForScheduleRequest, db: Session = Depends(get_db)) -> JSONResponse:
+def get_jobs_with_commands_for_creating_schedule(request: JobForScheduleRequest, db: Session = Depends(get_db)) -> JSONResponse:
     return job_service.get_jobs_with_commands_for_creating_schedule(request, db)
