@@ -628,8 +628,8 @@ class ScheduleService:
                 }
 
                 # 날짜 정보 설정
-                if "start_date" in parsed_tags:
-                    schedule_data["start_date"] = parsed_tags["start_date"]
+                if "end_date" in parsed_tags:
+                    schedule_data["end_date"] = parsed_tags["end_date"]
 
                 # job 정보 설정
                 jobs_json = parsed_tags.get("jobs")
