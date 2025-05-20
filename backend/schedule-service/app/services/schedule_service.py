@@ -625,16 +625,23 @@ class ScheduleService:
 
                 # job 정보 설정
                 jobs_json = parsed_tags.get("jobs")
+                logger.info(f"DAG {dag_id} - Tags: {dag.get('tags', [])}")
+                logger.info(f"DAG {dag_id} - Parsed tags: {parsed_tags}")
                 if jobs_json:
+                    logger.info(f"DAG {dag_id} - Jobs JSON from tags: {jobs_json}")
                     try:
                         jobs_data = json.loads(jobs_json)
+                        logger.info(f"DAG {dag_id} - Parsed jobs data: {jobs_data}")
                         jobs = []
                         for idx, job_info in enumerate(sorted(jobs_data, key=lambda x: x["order"])):
+                            logger.info(f"DAG {dag_id} - Processing job info: {job_info}")
                             jobs.append({
                                 "id": job_info["job_id"],
                                 "order": idx + 1  # 0-based to 1-based
                             })
                         schedule_data["jobs"] = jobs
+                        logger.info(f"DAG {dag_id} - Final jobs list: {jobs}")
+
                     except:
                         logger.error(f"Error parsing jobs JSON from tags: {jobs_json}")
 
