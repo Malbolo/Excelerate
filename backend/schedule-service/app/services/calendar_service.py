@@ -6,8 +6,9 @@ from app.core.log_config import logger
 from app.core.config import settings
 from app.services.airflow_client import airflow_client
 from app.utils import date_utils, cron_utils
-from app.crud import schedule_crud
-from app.db.database import SessionLocal
+# DB 관련 import 제거
+# from app.crud import schedule_crud
+# from app.db.database import SessionLocal
 from app.utils.redis_calendar import RedisCalendarCache
 
 calendar_cache = RedisCalendarCache(
@@ -15,14 +16,14 @@ calendar_cache = RedisCalendarCache(
     ttl_seconds=settings.REDIS_CALENDAR_CACHE_TTL
 )
 
-def build_monthly_dag_calendar(year: int, month: int, db=None) -> Dict[str, Any]:
+
+def build_monthly_dag_calendar(year: int, month: int) -> Dict[str, Any]:
     """
     월별 DAG 실행 통계 생성 (캐싱 로직 포함)
 
     Args:
         year: 년도
         month: 월
-        db: 데이터베이스 세션 (None이면 새로 생성)
 
     Returns:
         Dictionary containing:
@@ -48,7 +49,7 @@ def build_monthly_dag_calendar(year: int, month: int, db=None) -> Dict[str, Any]
     logger.info(f"Retrieved {len(dags)} DAGs from Airflow")
 
     # 달력 데이터 생성
-    calendar_data = _generate_calendar_data(dags, year, month, db)
+    calendar_data = _generate_calendar_data(dags, year, month)
 
     # 결과 캐싱
     calendar_cache.set(year, month, calendar_data)
@@ -63,6 +64,7 @@ def build_monthly_dag_calendar(year: int, month: int, db=None) -> Dict[str, Any]
             "cached": False
         }
     }
+
 
 def clear_monthly_cache(year: int, month: int):
     """
@@ -84,17 +86,12 @@ def clear_monthly_cache(year: int, month: int):
         logger.error(f"캐시 삭제 중 오류 발생: {str(e)}")
         raise Exception(f"캐시 삭제에 실패했습니다: {str(e)}")
 
-def _generate_calendar_data(dags: List[Dict[str, Any]], year: int, month: int, db=None) -> List[Dict[str, Any]]:
+
+def _generate_calendar_data(dags: List[Dict[str, Any]], year: int, month: int) -> List[Dict[str, Any]]:
     """
     월별 DAG 실행 통계 생성 (현재까지는 실제 실행 이력, 미래는 예측 실행 기반)
     """
-    close_db = False
     try:
-        # DB 세션 생성 (제공되지 않은 경우)
-        if db is None:
-            db = SessionLocal()
-            close_db = True
-
         # 타임존을 명시적으로 설정 (UTC 사용)
         first_day, last_day = date_utils.get_month_date_range(year, month)
         logger.info(f"Date range: {first_day} to {last_day}")
@@ -130,30 +127,17 @@ def _generate_calendar_data(dags: List[Dict[str, Any]], year: int, month: int, d
         # 날짜별 데이터 인덱스 구성 (빠른 조회용)
         date_index = {item["date"]: i for i, item in enumerate(all_days)}
 
-        # DB에서 모든 스케줄 정보 가져오기
-        db_schedules = {}
-        try:
-            all_db_schedules = schedule_crud.get_all_schedules(db)
-            for schedule in all_db_schedules:
-                db_schedules[schedule.id] = schedule
-            logger.info(f"Retrieved {len(db_schedules)} schedules from DB")
-
-        except Exception as e:
-            logger.error(f"Error getting DB data: {str(e)}")
-
         # DAG 별로 처리
         for dag in dags:
             dag_id = dag["dag_id"]
 
-            # DB에서 스케줄 정보 가져오기
-            db_schedule = db_schedules.get(dag_id)
+            # 태그에서 메타데이터 추출
+            parsed_tags = _parse_dag_tags(dag)
 
-            # 스케줄 표현식 추출 - DB에서 우선 가져오기
-            cron_expr = None
-            if db_schedule and hasattr(db_schedule, 'cron_expression'):
-                cron_expr = db_schedule.cron_expression
+            # 스케줄 표현식 추출 - 태그에서 가져오기
+            cron_expr = parsed_tags.get("cron_expression")
 
-            # DB에 없으면 Airflow에서 가져오기
+            # 태그에 없으면 Airflow에서 가져오기
             if not cron_expr:
                 cron_expr = cron_utils.normalize_cron_expression(dag.get("schedule_interval"))
 
@@ -161,8 +145,8 @@ def _generate_calendar_data(dags: List[Dict[str, Any]], year: int, month: int, d
                 logger.debug(f"Invalid or empty cron: {cron_expr} for DAG {dag_id}")
                 continue
 
-            # DAG의 시작일/종료일 추출
-            dag_start_date, dag_end_date = _extract_dag_dates(dag, dag_id, now, db_schedule)
+            # DAG의 시작일/종료일 추출 (태그 기반)
+            dag_start_date, dag_end_date = _extract_dag_dates_from_tags(parsed_tags, dag_id, now)
 
             # 범위 체크: 이 달의 날짜와 겹치는지 확인
             if not _is_dag_in_month_range(dag_id, dag_start_date, dag_end_date, first_day, last_day):
@@ -319,46 +303,76 @@ def _generate_calendar_data(dags: List[Dict[str, Any]], year: int, month: int, d
         # 모든 DAG 처리 후 각 날짜의 total 계산
         for idx, day_data in enumerate(all_days):
             date_str = day_data["date"]
-            all_days[idx]["total"] = day_data["success"] + day_data["failed"] + day_data["pending"] + day_data["running"]
+            all_days[idx]["total"] = day_data["success"] + day_data["failed"] + day_data["pending"] + day_data[
+                "running"]
 
             if date_str == "2025-05-19":
                 logger.info(f"TODAY'S FINAL DATA: {day_data}")
         logger.info(f"All dates with runs: {list(executed_runs_by_date.keys())}")
         return all_days
 
-    finally:
-        # 생성한 경우에만 세션 닫기
-        if close_db and db is not None:
-            db.close()
+    except Exception as e:
+        logger.error(f"Error generating calendar data: {str(e)}")
+        raise
 
-def _extract_dag_dates(dag: Dict[str, Any], dag_id: str, now: datetime, db_schedule=None) -> Tuple[
-    datetime, Optional[datetime]]:
-    """DAG의 시작일과 종료일을 추출"""
-    # DB에서 시작일 정보 가져오기 (우선)
+
+def _parse_dag_tags(dag: Dict[str, Any]) -> Dict[str, str]:
+    """DAG 태그에서 메타데이터 추출 - 문자열 태그만 가정"""
+    parsed_tags = {}
+    tags = dag.get("tags", [])
+
+    # 모든 태그를 문자열로 가정
+    for tag in tags:
+        # 키:값 형식 파싱
+        if isinstance(tag, str) and ":" in tag:
+            key, value = tag.split(":", 1)
+            parsed_tags[key] = value
+
+    return parsed_tags
+
+
+def _extract_dag_dates_from_tags(parsed_tags: Dict[str, str], dag_id: str, now: datetime) -> Tuple[
+    Optional[datetime], Optional[datetime]]:
+    """태그에서 DAG의 시작일과 종료일을 추출"""
     dag_start_date = None
     dag_end_date = None
 
-    if db_schedule:
-        # DB에 정보가 있으면 사용
-        if hasattr(db_schedule, 'start_date') and db_schedule.start_date:
-            # timezone 확인 및 추가
-            dag_start_date = db_schedule.start_date
-            if dag_start_date.tzinfo is None:
-                dag_start_date = dag_start_date.replace(tzinfo=timezone.utc)
+    # 태그에서 시작일/종료일 추출
+    start_date_str = parsed_tags.get('start_date')
+    end_date_str = parsed_tags.get('end_date')
 
-        if hasattr(db_schedule, 'end_date') and db_schedule.end_date:
-            # timezone 확인 및 추가
-            dag_end_date = db_schedule.end_date
-            if dag_end_date.tzinfo is None:
-                dag_end_date = dag_end_date.replace(tzinfo=timezone.utc)
+    # 시작일 파싱
+    if start_date_str:
+        try:
+            # YYYY-MM-DD 형식 파싱
+            if '-' in start_date_str:
+                year, month, day = map(int, start_date_str.split('-'))
+                dag_start_date = datetime(year, month, day, tzinfo=timezone.utc)
+            else:
+                logger.debug(f"Could not parse start_date format for DAG {dag_id}: {start_date_str}")
+        except Exception as e:
+            logger.debug(f"Error parsing start_date for DAG {dag_id}: {str(e)}")
+
+    # 종료일 파싱
+    if end_date_str and end_date_str.lower() != 'none':
+        try:
+            # YYYY-MM-DD 형식 파싱
+            if '-' in end_date_str:
+                year, month, day = map(int, end_date_str.split('-'))
+                dag_end_date = datetime(year, month, day, tzinfo=timezone.utc)
+            else:
+                logger.debug(f"Could not parse end_date format for DAG {dag_id}: {end_date_str}")
+        except Exception as e:
+            logger.debug(f"Error parsing end_date for DAG {dag_id}: {str(e)}")
 
     return dag_start_date, dag_end_date
 
-def _is_dag_in_month_range(dag_id: str, dag_start_date: datetime, dag_end_date: Optional[datetime],
+
+def _is_dag_in_month_range(dag_id: str, dag_start_date: Optional[datetime], dag_end_date: Optional[datetime],
                            first_day: datetime, last_day: datetime) -> bool:
     """DAG가 해당 월의 범위 내에 있는지 확인"""
     # 1. DAG 시작일이 이 달의 마지막 날보다 나중이면 스킵
-    if dag_start_date > last_day:
+    if dag_start_date and dag_start_date > last_day:
         logger.debug(f"{dag_id} start_date {dag_start_date} is after this month's last day {last_day}")
         return False
 
