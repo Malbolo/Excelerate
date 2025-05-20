@@ -17,6 +17,18 @@ def extract_error_message(logs: str) -> str:
     if not logs:
         return "로그가 비어 있습니다."
 
+    # 혹시 바이트 타입이면 UTF-8로 디코딩
+    if isinstance(logs, bytes):
+        logs = logs.decode('utf-8')
+
+    # 인코딩 이슈가 있을 수 있는 문자열을 처리
+    # 이미 utf-8로 인코딩된 문자열이 다시 디코딩되는 경우 방지
+    try:
+        if not isinstance(logs, str):
+            logs = str(logs)
+    except Exception as e:
+        return f"로그 처리 중 오류 발생: {str(e)}"
+
     for pattern in ERROR_PATTERNS:
         matches = pattern.findall(logs)
         if matches:
@@ -29,6 +41,17 @@ def extract_error_trace(logs: str) -> str:
     """로그에서 스택 트레이스를 추출"""
     if not logs:
         return ""
+
+    # 혹시 바이트 타입이면 UTF-8로 디코딩
+    if isinstance(logs, bytes):
+        logs = logs.decode('utf-8')
+
+    # 인코딩 이슈가 있을 수 있는 문자열을 처리
+    try:
+        if not isinstance(logs, str):
+            logs = str(logs)
+    except Exception as e:
+        return f"로그 처리 중 오류 발생: {str(e)}"
 
     # 파이썬 스택 트레이스 패턴
     match = TRACE_PATTERN.search(logs)

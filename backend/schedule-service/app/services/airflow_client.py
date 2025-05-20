@@ -144,8 +144,15 @@ class AirflowClient:
                 # 응답이 JSON인지 확인
                 content_type = response.headers.get("Content-Type", "")
                 if "application/json" in content_type:
-                    return response.json().get("content", "")
-                return response.text
+                    # JSON 응답의 content 필드에서 로그 내용 추출, 인코딩 처리
+                    content = response.json().get("content", "")
+                    # JSON으로 파싱된 경우 인코딩 이슈가 적을 수 있으나, 확인 필요
+                    return content
+
+                # 일반 텍스트 응답일 경우 UTF-8로 명시적 디코딩
+                response.encoding = 'utf-8'  # 명시적으로 인코딩 설정
+                return response.text  # requests는 자동으로 인코딩을 감지하여 text로 변환
+
             logger.warning(f"로그 조회 실패: {response.status_code}")
             return ""
         except Exception as e:
