@@ -1,3 +1,4 @@
+from typing import List
 import requests
 import pandas as pd
 import logging
@@ -20,6 +21,7 @@ from app.services.data_load.data_util import is_iso_date
 from app.utils.memory_logger import MemoryLogger
 from app.utils.api_utils import get_log_queue
 from app.utils.redis_chatprompt import load_chat_template
+from app.services.code_gen.graph_util import log_filter
 
 # 로깅 설정
 logger = logging.getLogger(__name__)
@@ -52,6 +54,7 @@ class FileAPIClient:
             self.retriever = None
         
         self.base_url = base_url
+        self.logs : List[LogDetail] = []
 
     def _initialize_milvus(self, host, port, collection_name):
         """Milvus 연결을 초기화하는 메서드, 실패 시 None 반환"""
@@ -171,8 +174,12 @@ class FileAPIClient:
         setattr(q, "start_date", namespace["startdate"])
         setattr(q, "end_date", namespace["enddate"])
 
+        llm_entry = self.mlogger.get_logs()[-1] if self.mlogger.get_logs() else None
+        self.logs.append(llm_entry)
+        log = log_filter(llm_entry)
+
         queue.put_nowait({"type":"code","content": code_snippet})
-        queue.put_nowait({"type":"log","content":self.mlogger.get_logs()[-1].model_dump_json()})
+        queue.put_nowait({"type":"log","content": log})
         return code_snippet
 
     def _assemble_url(self, q: FileAPIDetail) -> str:
@@ -208,9 +215,11 @@ class FileAPIClient:
             result = extract_chain.invoke({"context": "", "input": user_input})
             entities: FileAPIDetail = result
 
-        entity_logs: list[LogDetail] = self.mlogger.get_logs()
+        llm_entry = self.mlogger.get_logs()[-1] if self.mlogger.get_logs() else None
+        self.logs.append(llm_entry)
+        log = log_filter(llm_entry)
         # 로그 스트리밍
-        q.put_nowait({"type": "log", "content": entity_logs[-1].model_dump_json()})
+        q.put_nowait({"type": "log", "content": log})
 
         if entities.start_date is None:
             raise HTTPException(status_code=400, detail=f"Start date is required")
@@ -238,4 +247,4 @@ class FileAPIClient:
         q.put_nowait({"type": "notice", "content": "data를 불러왔습니다."})
 
         # 5) DataFrame 반환
-        return url, pd.DataFrame(raw["data"]), entity_logs, python_code, entities
+        return url, pd.DataFrame(raw["data"]), self.logs, python_code, entities
