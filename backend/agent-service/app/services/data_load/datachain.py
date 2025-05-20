@@ -198,6 +198,7 @@ class FileAPIClient:
     def run(self, user_input: str, stream_id: str) -> tuple[str, pd.DataFrame, list[LogDetail], FileAPIDetail]:
         self.mlogger.set_name("LLM Call: Extract DataCall Params")
         self.mlogger.reset()
+        self.logs = []
 
         q = get_log_queue(stream_id)
         q.put_nowait({"type": "notice", "content": "요청으로부터 파라미터를 추출중입니다."})
