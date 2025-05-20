@@ -115,14 +115,16 @@ class ScheduleService:
             raise Exception(f"스케줄 상세 정보 조회에 실패했습니다: {str(e)}")
 
     @staticmethod
-    def _parse_dag_tags(tags: List[str]) -> Dict[str, str]:
-        """DAG 태그에서 메타데이터 추출 - 문자열 태그만 가정"""
+    def _parse_dag_tags(tags: List[Dict[str, str]]) -> Dict[str, str]:
+        """DAG 태그에서 메타데이터 추출 - 객체 형식의 태그만 처리"""
         parsed_tags = {}
         for tag in tags:
-            # 문자열이고 키:값 형식인 경우에만 처리
-            if isinstance(tag, str) and ":" in tag:
-                key, value = tag.split(":", 1)
-                parsed_tags[key] = value
+            # 객체 형식의 태그 처리 ({"name": "key:value"})
+            if isinstance(tag, dict) and "name" in tag:
+                tag_value = tag["name"]
+                if isinstance(tag_value, str) and ":" in tag_value:
+                    key, value = tag_value.split(":", 1)
+                    parsed_tags[key] = value
 
         return parsed_tags
 
@@ -542,8 +544,10 @@ class ScheduleService:
                 filtered_dags = [
                     dag for dag in filtered_dags
                     if (title.lower() in dag.get("dag_display_name", "").lower()) or
-                       any(isinstance(tag, str) and tag.startswith("title:") and
-                           title.lower() in tag[6:].lower() for tag in dag.get("tags", []))
+                       any(isinstance(tag, dict) and "name" in tag and
+                           tag["name"].startswith("title:") and
+                           title.lower() in tag["name"][6:].lower()
+                           for tag in dag.get("tags", []))
                 ]
 
             # 소유자 필터링
@@ -551,16 +555,20 @@ class ScheduleService:
                 filtered_dags = [
                     dag for dag in filtered_dags
                     if (owner.lower() in (dag.get("owners", [""])[0] or "").lower()) or
-                       any(isinstance(tag, str) and tag.startswith("owner:") and
-                           owner.lower() in tag[6:].lower() for tag in dag.get("tags", []))
+                       any(isinstance(tag, dict) and "name" in tag and
+                           tag["name"].startswith("owner:") and
+                           owner.lower() in tag["name"][6:].lower()
+                           for tag in dag.get("tags", []))
                 ]
 
             # 주기 필터링
             if frequency:
                 filtered_dags = [
                     dag for dag in filtered_dags
-                    if any(isinstance(tag, str) and tag.startswith("frequency:") and
-                           frequency.lower() in tag[10:].lower() for tag in dag.get("tags", []))
+                    if any(isinstance(tag, dict) and "name" in tag and
+                           tag["name"].startswith("frequency:") and
+                           frequency.lower() in tag["name"][10:].lower()
+                           for tag in dag.get("tags", []))
                 ]
 
             # 총 결과 수

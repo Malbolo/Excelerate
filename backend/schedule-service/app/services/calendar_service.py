@@ -317,19 +317,20 @@ def _generate_calendar_data(dags: List[Dict[str, Any]], year: int, month: int) -
 
 
 def _parse_dag_tags(dag: Dict[str, Any]) -> Dict[str, str]:
-    """DAG 태그에서 메타데이터 추출 - 문자열 태그만 가정"""
+    """DAG 태그에서 메타데이터 추출 - 객체 형식 태그 처리"""
     parsed_tags = {}
     tags = dag.get("tags", [])
 
-    # 모든 태그를 문자열로 가정
+    # 객체 형식 태그 처리
     for tag in tags:
-        # 키:값 형식 파싱
-        if isinstance(tag, str) and ":" in tag:
-            key, value = tag.split(":", 1)
-            parsed_tags[key] = value
+        # 객체 형식의 태그 처리 ({"name": "key:value"})
+        if isinstance(tag, dict) and "name" in tag:
+            tag_value = tag["name"]
+            if isinstance(tag_value, str) and ":" in tag_value:
+                key, value = tag_value.split(":", 1)
+                parsed_tags[key] = value
 
     return parsed_tags
-
 
 def _extract_dag_dates_from_tags(parsed_tags: Dict[str, str], dag_id: str, now: datetime) -> Tuple[
     Optional[datetime], Optional[datetime]]:
