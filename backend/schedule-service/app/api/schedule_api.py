@@ -1,6 +1,5 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query, HTTPException
-from sqlalchemy.orm import Session
 from starlette.responses import JSONResponse
 from datetime import datetime, timezone
 
@@ -16,7 +15,9 @@ from app.services import calendar_service
 from app.utils import cron_utils
 from app.core import auth
 from app.core.log_config import logger
-from app.db import database
+
+# DB 관련 import 제거
+# from app.db import database
 
 router = APIRouter(
     prefix="/api/schedules",
@@ -35,7 +36,7 @@ def check_admin_permission(user_id: int = Depends(auth.get_user_id_from_header))
 async def create_schedule(
         schedule_request: ScheduleCreateRequest,
         user_id: int = Depends(check_admin_permission),
-        db: Session = Depends(database.get_db)
+        # DB 의존성 제거
 ) -> JSONResponse:
     try:
         # frequency를 cron 표현식으로 변환
@@ -49,7 +50,7 @@ async def create_schedule(
         sorted_jobs = sorted(schedule_request.jobs, key=lambda job: job.order)
         job_ids = [job.id for job in sorted_jobs]
 
-        # Airflow DAG 생성
+        # Airflow DAG 생성 (DB 매개변수 제거)
         dag_id = DagService.create_dag(
             name=schedule_request.title,
             description=schedule_request.description,
@@ -62,7 +63,7 @@ async def create_schedule(
             failure_emails=schedule_request.failure_emails,
             execution_time=schedule_request.execution_time,
             user_id=user_id,
-            db=db
+            # db 매개변수 제거
         )
 
         return JSONResponse(status_code=200, content={
@@ -148,7 +149,7 @@ async def delete_schedule(
         user_id: int = Depends(check_admin_permission)
 ) -> JSONResponse:
     try:
-        # DAG 삭제
+        # DAG 삭제 (매개변수 변경)
         result = DagService.delete_dag(schedule_id)
 
         if result:
@@ -344,7 +345,7 @@ async def update_schedule(
         schedule_id: str,
         schedule_request: ScheduleUpdateRequest,
         user_id: int = Depends(check_admin_permission),
-        db: Session = Depends(database.get_db)
+        # DB 의존성 제거
 ) -> JSONResponse:
     try:
         # frequency를 cron 표현식으로 변환
@@ -358,7 +359,7 @@ async def update_schedule(
         sorted_jobs = sorted(schedule_request.jobs, key=lambda job: job.order)
         job_ids = [job.id for job in sorted_jobs]
 
-        # DAG 업데이트
+        # DAG 업데이트 (DB 매개변수 제거)
         result = DagService.update_dag(
             dag_id=schedule_id,
             name=schedule_request.title,
@@ -372,7 +373,7 @@ async def update_schedule(
             failure_emails=schedule_request.failure_emails,
             execution_time=schedule_request.execution_time,
             user_id=user_id,
-            db=db
+            # db 매개변수 제거
         )
 
         return JSONResponse(content={
@@ -399,14 +400,14 @@ async def get_all_schedules(
         frequency: str = Query("", description="실행 주기로 검색 (daily, weekly, monthly 등)"),  # 기본값 빈 문자열
         status: str = Query("active", description="스케줄 상태로 필터링 (active: 활성화됨, paused: 중지됨, all: 모두)"),
         user_id: int = Depends(check_admin_permission),
-        db: Session = Depends(database.get_db)
+        # DB 의존성 제거
 ) -> JSONResponse:
     """모든 스케줄(DAG) 목록을 반환하는 API - 필드별 검색 기능 포함 버전"""
     try:
-        # 최적화된 서비스 함수 호출
+        # 최적화된 서비스 함수 호출 (DB 매개변수 제거)
         result = ScheduleService.get_all_schedules_with_details(
             user_id=user_id,
-            db=db,
+            # db=db 제거,
             page=page,
             size=size,
             title=title,
