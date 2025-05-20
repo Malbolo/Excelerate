@@ -1,4 +1,4 @@
-from typing import Dict, Any, Type, Optional
+from typing import Dict, Any
 from fastapi import HTTPException, status
 from app.core.log_config import logger
 

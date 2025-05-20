@@ -84,14 +84,13 @@ class AirflowClient:
 
         return self._get("dags", params)
 
-    def get_dags_by_owner(self, owner: str, limit: int = 100) -> List[Dict[str, Any]]:
-        """특정 소유자(owner)의 DAG 목록 조회"""
-        response = self._get("dags", {"tags": owner, "limit": limit})
-        return response.get("dags", [])
-
-    def get_dag_detail(self, dag_id: str) -> Dict[str, Any]:
+    def get_dag_detail(self, dag_id: str, fields: List[str] = None) -> Dict[str, Any]:
         """특정 DAG의 상세 정보 조회"""
-        return self._get(f"dags/{dag_id}")
+        params = {}
+        if fields:
+            params["fields"] = fields
+
+        return self._get(f"dags/{dag_id}", params)
 
     def get_dag_runs(
             self,
@@ -113,13 +112,21 @@ class AirflowClient:
         response = self._get(f"dags/{dag_id}/dagRuns", params)
         return response.get("dag_runs", [])
 
-    def get_dag_run_detail(self, dag_id: str, run_id: str) -> Dict[str, Any]:
+    def get_dag_run_detail(self, dag_id: str, run_id: str, fields: List[str] = None) -> Dict[str, Any]:
         """특정 DAG 실행의 상세 정보 조회"""
-        return self._get(f"dags/{dag_id}/dagRuns/{run_id}")
+        params = {}
+        if fields:
+            params["fields"] = fields
 
-    def get_task_instances(self, dag_id: str, run_id: str) -> List[Dict[str, Any]]:
+        return self._get(f"dags/{dag_id}/dagRuns/{run_id}", params)
+
+    def get_task_instances(self, dag_id: str, run_id: str, fields: List[str] = None) -> List[Dict[str, Any]]:
         """특정 DAG 실행의 태스크 인스턴스 목록 조회"""
-        response = self._get(f"dags/{dag_id}/dagRuns/{run_id}/taskInstances")
+        params = {}
+        if fields:
+            params["fields"] = fields
+
+        response = self._get(f"dags/{dag_id}/dagRuns/{run_id}/taskInstances", params)
         return response.get("task_instances", [])
 
     def get_task_logs(self, schedule_id: str, run_id: str, task_id: str, try_number: Optional[int] = None) -> str:
@@ -171,31 +178,6 @@ class AirflowClient:
     def delete_dag(self, dag_id: str) -> bool:
         """DAG 삭제"""
         return self._delete(f"dags/{dag_id}")
-
-    def get_next_dag_run(self, dag_id: str) -> Optional[Dict[str, Any]]:
-        """특정 DAG의 다음 실행 예정 정보를 조회"""
-        try:
-            # DAG 상세 정보 조회
-            dag_detail = self.get_dag_detail(dag_id)
-
-            # DAG가 비활성화된 경우 다음 실행이 없음
-            if dag_detail.get("is_paused", True):
-                return None
-
-            # 다음 실행 날짜 확인
-            next_dagrun = dag_detail.get("next_dagrun")
-
-            if next_dagrun:
-                return {
-                    "execution_date": next_dagrun,
-                    "scheduled_time": dag_detail.get("next_dagrun_data_interval_start", next_dagrun),
-                    "data_interval_end": dag_detail.get("next_dagrun_data_interval_end")
-                }
-
-            return None
-        except Exception as e:
-            logger.error(f"다음 DAG 실행 정보 조회 중 오류 발생: {str(e)}")
-            return None
 
 # 클라이언트 인스턴스 생성
 airflow_client = AirflowClient()

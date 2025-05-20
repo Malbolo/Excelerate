@@ -6,9 +6,6 @@ from app.core.log_config import logger
 from app.core.config import settings
 from app.services.airflow_client import airflow_client
 from app.utils import date_utils, cron_utils
-# DB 관련 import 제거
-# from app.crud import schedule_crud
-# from app.db.database import SessionLocal
 from app.utils.redis_calendar import RedisCalendarCache
 
 calendar_cache = RedisCalendarCache(
@@ -45,7 +42,9 @@ def build_monthly_dag_calendar(year: int, month: int) -> Dict[str, Any]:
 
     # 캐시 미스 또는 리프레시: 데이터 생성
     # Airflow에서 모든 DAG 목록 가져오기
-    dags = airflow_client.get_all_dags().get("dags", [])
+    dags = airflow_client.get_all_dags(
+        fields=["dag_id", "schedule_interval", "tags", "is_paused"]
+    ).get("dags", [])
     logger.info(f"Retrieved {len(dags)} DAGs from Airflow")
 
     # 달력 데이터 생성
@@ -308,7 +307,7 @@ def _generate_calendar_data(dags: List[Dict[str, Any]], year: int, month: int) -
 
             if date_str == "2025-05-19":
                 logger.info(f"TODAY'S FINAL DATA: {day_data}")
-        logger.info(f"All dates with runs: {list(executed_runs_by_date.keys())}")
+
         return all_days
 
     except Exception as e:

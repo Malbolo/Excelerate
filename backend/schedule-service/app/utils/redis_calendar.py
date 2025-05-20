@@ -1,7 +1,6 @@
 import json
 import redis
 from typing import Dict, Any, List, Tuple, Optional
-from datetime import datetime
 from app.utils import date_utils
 
 class RedisCalendarCache:

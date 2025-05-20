@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional
 from fastapi import APIRouter, Depends, Query, HTTPException
 from starlette.responses import JSONResponse
 from datetime import datetime, timezone
@@ -7,7 +7,6 @@ from app.schemas.schedule_schema import (
     ScheduleCreateRequest,
     ScheduleUpdateRequest
 )
-# 모듈 단위 import로 변경
 from app.services.airflow_client import airflow_client
 from app.services.dag_service import DagService
 from app.services.schedule_service import ScheduleService
@@ -16,8 +15,6 @@ from app.utils import cron_utils
 from app.core import auth
 from app.core.log_config import logger
 
-# DB 관련 import 제거
-# from app.db import database
 
 router = APIRouter(
     prefix="/api/schedules",
@@ -186,8 +183,7 @@ async def get_schedule_executions_by_date(
                 "message": "유효하지 않은 날짜입니다. 올바른 날짜를 입력해주세요."
             })
 
-        dags = airflow_client.get_all_dags().get("dags", [])
-        response = ScheduleService.get_dag_runs_by_date(dags, date_str)
+        response = ScheduleService.get_dag_runs_by_date(date_str)
 
         return JSONResponse(content={
             "result": "success",
@@ -216,12 +212,15 @@ async def get_schedule_runs(
             schedule_id,
             limit=page * size,
             start_date=start_date,
-            end_date=end_date
+            end_date=end_date,
+            fields=["dag_run_id", "state", "start_date", "end_date"]
         )
 
         # DAG 상세 정보 조회
-        dag_detail = airflow_client.get_dag_detail(schedule_id)
-
+        dag_detail = airflow_client.get_dag_detail(
+            schedule_id,
+            fields=["dag_id", "name", "dag_display_name"]
+        )
         # 페이징 처리
         total = len(dag_runs)
         start_idx = (page - 1) * size
@@ -314,7 +313,10 @@ async def toggle_schedule(
 ) -> JSONResponse:
     try:
         # DAG 상세 정보 조회
-        dag_detail = airflow_client.get_dag_detail(schedule_id)
+        dag_detail = airflow_client.get_dag_detail(
+            schedule_id,
+            fields=["is_paused"]
+        )
 
         # 현재 상태 확인 및 토글
         current_state = dag_detail.get("is_paused", False)

@@ -1,6 +1,5 @@
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone
-import os
 from croniter import croniter
 import json
 
@@ -25,7 +24,11 @@ class ScheduleService:
         """스케줄(DAG) 상세 정보 조회와 관련 job 정보를 함께 반환"""
         try:
             # DAG 상세 정보 조회
-            dag_detail = airflow_client.get_dag_detail(schedule_id)
+            dag_detail = airflow_client.get_dag_detail(
+                schedule_id,
+                fields=["dag_id", "dag_display_name", "description", "is_paused", "owners",
+                        "schedule_interval", "next_dagrun_data_interval_end", "tags"]
+            )
 
             # 태그 파싱
             parsed_tags = ScheduleService._parse_dag_tags(dag_detail.get("tags", []))
@@ -203,7 +206,10 @@ class ScheduleService:
         """스케줄 실행 상세 정보와 작업별 에러 로그를 함께 조회"""
         try:
             # DAG 상세 정보 조회
-            dag_detail = airflow_client.get_dag_detail(schedule_id)
+            dag_detail = airflow_client.get_dag_detail(
+                schedule_id,
+                fields=["dag_id", "dag_display_name", "description", "tags"]
+            )
 
             # 태그에서 메타데이터 추출
             parsed_tags = ScheduleService._parse_dag_tags(dag_detail.get("tags", []))
@@ -213,10 +219,18 @@ class ScheduleService:
             description = parsed_tags.get("description") or dag_detail.get("description", "")
 
             # DAG 실행 상세 정보 조회
-            run_detail = airflow_client.get_dag_run_detail(schedule_id, run_id)
+            run_detail = airflow_client.get_dag_run_detail(
+                schedule_id,
+                run_id,
+                fields=["dag_run_id", "state", "start_date", "end_date"]
+            )
 
             # 태스크 인스턴스 목록 조회
-            task_instances = airflow_client.get_task_instances(schedule_id, run_id)
+            task_instances = airflow_client.get_task_instances(
+                schedule_id,
+                run_id,
+                fields=["task_id", "state", "start_date", "end_date", "duration", "try_number"]
+            )
 
             # job_id 목록 추출
             job_ids = []
@@ -328,8 +342,12 @@ class ScheduleService:
             raise e
 
     @staticmethod
-    def get_dag_runs_by_date(dags: List[Dict[str, Any]], target_date: str) -> Dict[str, Any]:
+    def get_dag_runs_by_date(target_date: str) -> Dict[str, Any]:
         """특정 날짜의 DAG 실행 내역 + 실행 예정(PENDING) DAG 반환"""
+        dags = airflow_client.get_all_dags(
+            fields=["dag_id", "dag_display_name", "description", "owners", "is_paused", "tags"]
+        ).get("dags", [])
+
         result = {
             "date": target_date,
             "success": [],
@@ -386,7 +404,13 @@ class ScheduleService:
                 # 실행 이력 확인
                 already_added_as_pending = False
                 try:
-                    dag_runs = airflow_client.get_dag_runs(dag_id, start_date=start, end_date=end, limit=100)
+                    dag_runs = airflow_client.get_dag_runs(
+                        dag_id,
+                        start_date=start,
+                        end_date=end,
+                        limit=100,
+                        fields=["dag_run_id", "state", "start_date", "end_date"]
+                    )
 
                     # 실행 기록이 있는 경우
                     if dag_runs:
@@ -506,7 +530,7 @@ class ScheduleService:
                 "owners",
                 "schedule_interval",
                 "next_dagrun_data_interval_end",
-                "tags"  # 태그 추가
+                "tags"
             ]
 
             # 페이지네이션 계산
