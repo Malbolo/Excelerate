@@ -40,7 +40,7 @@ export interface Schedule {
     status: 'success' | 'failed';
   };
   next_run: null | {
-    data_interval_end: string;
+    scheduled_time: string;
   };
 }
 
