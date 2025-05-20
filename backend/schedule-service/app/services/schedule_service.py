@@ -8,16 +8,95 @@ from app.core.log_config import logger
 from app.services.airflow_client import airflow_client
 from app.utils import date_utils, cron_utils, log_utils
 from app.core import auth
-
-
-# DB 관련 import 제거
-# from app.db.database import SessionLocal
-# from app.crud import schedule_crud
-# from app.models.schedule_models import ScheduleJob
-
+from app.schemas.schedule_schema import (
+    ScheduleCreateRequest,
+    ScheduleUpdateRequest
+)
+from app.services.dag_service import DagService
 
 class ScheduleService:
     """스케줄 조회 및 관리 서비스 클래스"""
+
+    @staticmethod
+    def create_schedule(
+            schedule_request: ScheduleCreateRequest,
+            user_name: str,
+            user_id: int
+    ) -> Dict[str, Any]:
+        """스케줄 생성 서비스"""
+        # 1. frequency를 cron 표현식으로 변환
+        cron_expression = cron_utils.convert_frequency_to_cron(
+            schedule_request.frequency,
+            schedule_request.execution_time,
+            schedule_request.start_date
+        )
+
+        # 2. 작업 목록 정렬
+        sorted_jobs = sorted(schedule_request.jobs, key=lambda job: job.order)
+        job_ids = [job.id for job in sorted_jobs]
+
+        # 3. Airflow DAG 생성
+        dag_id = DagService.create_dag(
+            name=schedule_request.title,
+            description=schedule_request.description,
+            cron_expression=cron_expression,
+            job_ids=job_ids,
+            owner=user_name,
+            start_date=schedule_request.start_date,
+            end_date=schedule_request.end_date,
+            success_emails=schedule_request.success_emails,
+            failure_emails=schedule_request.failure_emails,
+            execution_time=schedule_request.execution_time,
+            user_id=user_id
+        )
+
+        # 4. 응답 데이터 구성
+        return {
+            "schedule_id": dag_id,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+
+    @staticmethod
+    def update_schedule(
+            schedule_id: str,
+            schedule_request: ScheduleUpdateRequest,
+            user_name: str,
+            user_id: int
+    ) -> Dict[str, Any]:
+        """스케줄 업데이트 서비스"""
+        # 1. frequency를 cron 표현식으로 변환
+        cron_expression = cron_utils.convert_frequency_to_cron(
+            schedule_request.frequency,
+            schedule_request.execution_time,
+            schedule_request.start_date
+        )
+
+        # 2. 작업 목록 정렬
+        sorted_jobs = sorted(schedule_request.jobs, key=lambda job: job.order)
+        job_ids = [job.id for job in sorted_jobs]
+
+        # 3. DAG 업데이트
+        DagService.update_dag(
+            dag_id=schedule_id,
+            name=schedule_request.title,
+            description=schedule_request.description,
+            cron_expression=cron_expression,
+            job_ids=job_ids,
+            owner=user_name,
+            start_date=schedule_request.start_date,
+            end_date=schedule_request.end_date,
+            success_emails=schedule_request.success_emails,
+            failure_emails=schedule_request.failure_emails,
+            execution_time=schedule_request.execution_time,
+            user_id=user_id
+        )
+
+        # 4. 응답 데이터 구성
+        return {
+            "schedule_id": schedule_id,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "message": "스케줄이 업데이트되었습니다."
+        }
 
     @staticmethod
     def get_schedule_detail(schedule_id: str, user_id: int = None) -> Dict[str, Any]:
@@ -710,3 +789,86 @@ class ScheduleService:
                 "schedules": [],
                 "total": 0
             }
+
+    @staticmethod
+    def get_schedule_runs(
+            schedule_id: str,
+            page: int = 1,
+            size: int = 10,
+            start_date: Optional[str] = None,
+            end_date: Optional[str] = None
+    ) -> Dict[str, Any]:
+        # 현재 컨트롤러에 있는 로직을 여기로 이동
+        dag_runs = airflow_client.get_dag_runs(
+            schedule_id,
+            limit=page * size,
+            start_date=start_date,
+            end_date=end_date,
+            fields=["dag_run_id", "state", "start_date", "end_date"]
+        )
+
+        dag_detail = airflow_client.get_dag_detail(
+            schedule_id,
+            fields=["dag_id", "name", "dag_display_name"]
+        )
+
+        # 페이징 처리
+        total = len(dag_runs)
+        start_idx = (page - 1) * size
+        end_idx = start_idx + size
+        paged_runs = dag_runs[start_idx:end_idx]
+
+        # 응답 데이터 구성
+        run_list = []
+        for run in paged_runs:
+            run_list.append({
+                "run_id": run.get("dag_run_id"),
+                "status": run.get("state"),
+                "start_time": run.get("start_date"),
+                "end_time": run.get("end_date"),
+                "duration": (
+                        datetime.fromisoformat(run.get("end_date").replace("Z", "+00:00")) -
+                        datetime.fromisoformat(run.get("start_date").replace("Z", "+00:00"))
+                ).total_seconds() if run.get("end_date") and run.get("start_date") else None
+            })
+
+        return {
+            "schedule_id": schedule_id,
+            "title": dag_detail.get("name", schedule_id),
+            "runs": run_list,
+            "page": page,
+            "size": size,
+            "total": total
+        }
+
+    @staticmethod
+    def toggle_schedule(schedule_id: str) -> Dict[str, Any]:
+        dag_detail = airflow_client.get_dag_detail(
+            schedule_id,
+            fields=["is_paused"]
+        )
+
+        current_state = dag_detail.get("is_paused", False)
+        new_state = not current_state
+
+        airflow_client.toggle_dag_pause(schedule_id, new_state)
+
+        status_message = "일시 중지됨" if new_state else "활성화됨"
+
+        return {
+            "schedule_id": schedule_id,
+            "is_paused": new_state,
+            "message": f"스케줄이 {status_message}입니다."
+        }
+
+    @staticmethod
+    def execute_schedule(schedule_id: str) -> Dict[str, Any]:
+        result = airflow_client.trigger_dag(schedule_id)
+
+        return {
+            "schedule_id": schedule_id,
+            "run_id": result.get("dag_run_id"),
+            "status": result.get("state"),
+            "execution_date": result.get("execution_date"),
+            "message": "스케줄이 실행되었습니다."
+        }
