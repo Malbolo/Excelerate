@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request, Query, Path
 from fastapi.responses import JSONResponse
 from app.utils.redis_client import redis_client, get_logs_from_redis, get_logs_data_from_redis
-from app.utils.dummy import dummy_log
 from typing import Optional
 from datetime import datetime, date
 import math
@@ -24,18 +23,18 @@ async def get_logs_data(
     pattern = f"logs:*:{log_id}"
     matches = list(redis_client.scan_iter(match=pattern, count=1000))
     if not matches:
-        return JSONResponse(status_code=200, content={
+        return JSONResponse(status_code=404, content={
             "result": "success",
-            "data":   dummy_log
+            "data":   "No Matching Log Data",
         })
 
     # 2) 첫번째 매칭된 키로 조회
     redis_key = matches[0]
     logs = get_logs_data_from_redis(redis_key)
     if not logs:
-        return JSONResponse(status_code=200, content={
+        return JSONResponse(status_code=404, content={
             "result": "success",
-            "data":   dummy_log
+            "data":   "No Matching Log Data",
         })
     
     # 3) input 필터링: system과 마지막 human만 남기기

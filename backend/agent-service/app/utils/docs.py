@@ -17,23 +17,6 @@ class RootDocs:
         }
     }
 
-class QueryDocs:
-    base = {
-        "res": {
-            200: {
-                "description": "쿼리 응답",
-                "content": {
-                    "application/json": {
-                        "example": {
-                            "message": "대답이 텍스트로 표시됩니다."
-                        }
-                    }
-                },
-            },
-            400: {"description": "잘못된 요청"}
-        }
-    }
-
 class DataDocs:
     base = {
         "res": {

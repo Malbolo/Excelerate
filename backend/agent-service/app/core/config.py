@@ -26,9 +26,6 @@ class Settings(BaseSettings):
     # OpenAI 설정
     OPENAI_API_KEY: str
 
-    # Tavily 설정
-    TAVILY_API_KEY: str
-
     # Milvus 설정
     MILVUS_HOST: str
     MILVUS_PORT: str
