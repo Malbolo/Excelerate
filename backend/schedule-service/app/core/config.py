@@ -7,14 +7,6 @@ class Settings(BaseSettings):
     APP_NAME: str = "Schedule Service"
     APP_VERSION: str = "1.0.0"
 
-    # 데이터베이스 설정
-    DB_USER: str
-    DB_PASSWORD: str
-    DB_HOST: str
-    DB_PORT: str
-    DB_NAME: str
-    DATABASE_URL: Optional[str] = None
-
     # Airflow 설정
     AIRFLOW__CORE__DAGS_FOLDER: str
     AIRFLOW_DAGS_PATH: str
@@ -48,9 +40,6 @@ class Settings(BaseSettings):
 
     def __init__(self, **data):
         super().__init__(**data)
-        # DATABASE_URL이 직접 설정되지 않은 경우 다른 DB 설정으로부터 구성
-        if not self.DATABASE_URL and self.DB_USER:
-            self.DATABASE_URL = f"mysql+pymysql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}?charset=utf8mb4"
 
         # REDIS_URL이 직접 설정되지 않은 경우 다른 Redis 설정으로부터 구성
         if not self.REDIS_URL and self.REDIS_HOST:
