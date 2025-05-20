@@ -2,18 +2,93 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 import os
 import ulid
-from sqlalchemy.orm import Session
+import json
 
 from app.core.config import settings
 from app.core.log_config import logger
 from app.services.airflow_client import airflow_client
 from app.utils import date_utils, cron_utils, log_utils
 from app.core import auth
-from app.db import database
-from app.crud import schedule_crud
 
 class DagService:
     """DAG 관련 서비스 클래스"""
+
+    @staticmethod
+    def _prepare_dag_code(
+            dag_id: str,
+            name: str,
+            description: str,
+            cron_expression: str,
+            job_ids: List[str],
+            owner: str,
+            start_date: datetime,
+            end_date: Optional[datetime] = None,
+            success_emails: List[str] = None,
+            failure_emails: List[str] = None,
+            execution_time: str = None,
+            user_id: int = None,
+            is_update: bool = False
+    ) -> str:
+        """DAG 코드 준비 (생성 및 업데이트에 공통으로 사용)"""
+        # Job 상세 정보 조회
+        job_details = DagService._get_job_basic_info(job_ids, user_id)
+
+        # 시작일과 종료일 문자열로 변환
+        start_date_str = start_date.strftime("%Y-%m-%d")
+        end_date_str = end_date.strftime("%Y-%m-%d") if end_date else "None"
+
+        # 태그 생성
+        tags = [
+            f'owner:{owner}',
+            f'start_date:{start_date_str}',
+            f'title:{name}',
+            f'description:{description}',
+            f'frequency:{cron_utils.convert_cron_to_frequency(cron_expression)}',
+            f'execution_time:{execution_time or ""}',
+            f'cron_expression:{cron_expression}'
+        ]
+
+        # 업데이트/생성 시간 태그 추가
+        timestamp = datetime.now().isoformat()
+        if is_update:
+            tags.append(f'updated_at:{timestamp}')
+        else:
+            tags.append(f'created_at:{timestamp}')
+
+        # 이메일 설정 태그 추가
+        if success_emails:
+            tags.append(f'success_emails:{",".join(success_emails)}')
+        if failure_emails:
+            tags.append(f'failure_emails:{",".join(failure_emails)}')
+
+        # 종료일 태그 추가
+        if end_date:
+            tags.append(f'end_date:{end_date_str}')
+
+        # 작업 정보 태그 추가
+        jobs_info = []
+        for idx, job_id in enumerate(job_ids):
+            jobs_info.append({
+                "job_id": job_id,
+                "order": idx
+            })
+
+        # 작업 정보 JSON으로 직렬화
+        jobs_json = json.dumps(jobs_info)
+        tags.append(f'jobs:{jobs_json}')
+
+        # 사용자 ID 태그 추가
+        if user_id:
+            tags.append(f'user_id:{user_id}')
+
+        # 태그 문자열로 변환
+        tags_str = str(tags)
+
+        # DAG 코드 생성
+        return DagService._generate_dag_code(
+            dag_id, owner, start_date, end_date, success_emails, failure_emails,
+            description, cron_expression, tags_str, job_details, name
+        )
 
     @staticmethod
     def create_dag(
@@ -28,65 +103,27 @@ class DagService:
             failure_emails: List[str] = None,
             execution_time: str = None,
             user_id: int = None,
-            db: Session = None,
     ) -> str:
         """새로운 DAG를 생성합니다."""
-        close_db = False
-        if db is None:
-            db = next(database.get_db())
-            close_db = True
-
         try:
             # DAG ID는 고유해야 함
             dag_id = ulid.ULID()
 
-            # Job Service에서 job 정보 가져오기
-            job_details = DagService._get_job_basic_info(job_ids, user_id)
-
-            # 시작일과 종료일 문자열로 변환
-            start_date_str = start_date.strftime("%Y-%m-%d")
-            end_date_str = end_date.strftime("%Y-%m-%d") if end_date else "None"
-
-            # 태그 및 설명 설정
-            tags = [f'owner:{owner}', f'start_date:{start_date_str}', f'title:{name}']
-            if end_date:
-                tags.append(f'end_date:{end_date_str}')
-            tags_str = str(tags)
-
-            # DAG 코드 생성
-            dag_code = DagService._generate_dag_code(
-                dag_id, owner, start_date, end_date, success_emails, failure_emails,
-                description, cron_expression, tags_str, job_details, name
+            # DAG 코드 준비
+            dag_code = DagService._prepare_dag_code(
+                dag_id, name, description, cron_expression, job_ids, owner,
+                start_date, end_date, success_emails, failure_emails,
+                execution_time, user_id, is_update=False
             )
 
             # DAG 파일 저장
             DagService._save_dag_file(dag_id, dag_code)
-
-            schedule_data = {
-                "title": name,
-                "description": description,
-                "cron_expression": cron_expression,
-                "frequency": cron_utils.convert_cron_to_frequency(cron_expression),
-                "execution_time": execution_time,
-                "start_date": start_date,
-                "end_date": end_date,
-                "success_emails": success_emails or [],
-                "failure_emails": failure_emails or [],
-                "owner": owner,
-                "job_ids": job_ids
-            }
-
-            schedule_crud.create_schedule(db, id=dag_id, data=schedule_data, user_id=user_id)
 
             return str(dag_id)
 
         except Exception as e:
             logger.error(f"Error creating DAG: {str(e)}")
             raise Exception(f"DAG 생성에 실패했습니다: {str(e)}")
-
-        finally:
-            if close_db:
-                db.close()
 
     @staticmethod
     def update_dag(
@@ -102,72 +139,24 @@ class DagService:
             failure_emails: List[str] = None,
             execution_time: str = None,
             user_id: int = None,
-            db: Session = None
     ) -> bool:
-        """
-        기존 DAG 업데이트 - Airflow에서는 삭제 후 재생성, DB에서는 업데이트
-        """
-        close_db = False
-        if db is None:
-            db = next(database.get_db())
-            close_db = True
-
+        """기존 DAG 업데이트 - 삭제 후 재생성 방식"""
         try:
-            # 1. Airflow에서만 DAG 삭제 (DB는 유지)
+            # 1. Airflow에서 DAG 삭제 (파일만 삭제)
             try:
-                DagService.delete_dag(dag_id, db, delete_from_db=False)
+                DagService.delete_dag(dag_id)
             except Exception as e:
                 logger.warning(f"Error during DAG cleanup: {str(e)}")
 
-            # 2. Job 상세 정보 조회
-            job_details = DagService._get_job_basic_info(job_ids, user_id)
-
-            # 3. 새 DAG 파일 생성 (기존 ID 유지)
-            # 시작일과 종료일 문자열로 변환
-            start_date_str = start_date.strftime("%Y-%m-%d")
-            end_date_str = end_date.strftime("%Y-%m-%d") if end_date else "None"
-
-            # 태그 및 설명 설정
-            tags = [f'owner:{owner}', f'start_date:{start_date_str}', f'title:{name}']
-            if end_date:
-                tags.append(f'end_date:{end_date_str}')
-            tags_str = str(tags)
-
-            # DAG 코드 생성
-            dag_code = DagService._generate_dag_code(
-                dag_id, owner, start_date, end_date, success_emails, failure_emails,
-                description, cron_expression, tags_str, job_details, name
+            # 2. 동일한 ID로 DAG 코드 준비
+            dag_code = DagService._prepare_dag_code(
+                dag_id, name, description, cron_expression, job_ids, owner,
+                start_date, end_date, success_emails, failure_emails,
+                execution_time, user_id, is_update=True
             )
 
-            # DAG 파일 저장
+            # 3. DAG 파일 저장
             DagService._save_dag_file(dag_id, dag_code)
-
-            # 4. DB에서 스케줄 정보 업데이트 (삭제하지 않음)
-            frequency = cron_utils.convert_cron_to_frequency(cron_expression)
-
-            # CRUD 함수 사용하여 업데이트
-            updated = schedule_crud.update_schedule(
-                db,
-                id=dag_id,
-                data={
-                    "job_ids": job_ids,
-                    "start_date": start_date,
-                    "end_date": end_date,
-                    "success_emails": success_emails,
-                    "failure_emails": failure_emails,
-                    "title": name,
-                    "description": description,
-                    "cron_expression": cron_expression,
-                    "frequency": frequency,
-                    "execution_time": execution_time,
-                    "owner": owner
-                }
-            )
-
-            if not updated:
-                logger.warning(f"Failed to update schedule in DB: {dag_id}")
-            else:
-                logger.info(f"Updated schedule in DB: {dag_id}")
 
             return True
 
@@ -175,25 +164,14 @@ class DagService:
             logger.error(f"Error updating DAG: {str(e)}")
             raise Exception(f"Failed to update DAG: {str(e)}")
 
-        finally:
-            if close_db and db is not None:
-                db.close()
-
     @staticmethod
-    def delete_dag(dag_id: str, db: Session = None, delete_from_db: bool = True) -> bool:
+    def delete_dag(dag_id: str) -> bool:
         """
-        DAG 삭제
+        DAG 삭제 - DB 의존성 제거 버전
 
         Args:
             dag_id: 삭제할 DAG ID
-            db: 데이터베이스 세션
-            delete_from_db: DB에서도 삭제할지 여부
         """
-        close_db = False
-        if db is None and delete_from_db:
-            db = next(database.get_db())
-            close_db = True
-
         try:
             # API로 DAG 삭제
             airflow_client.delete_dag(dag_id)
@@ -210,21 +188,10 @@ class DagService:
             except Exception as file_error:
                 logger.warning(f"Failed to delete DAG files: {str(file_error)}")
 
-            # DB에서 스케줄 삭제
-            if delete_from_db:
-                try:
-                    schedule_crud.delete_schedule(db, dag_id)
-                    logger.info(f"Deleted schedule from DB: {dag_id}")
-                except Exception as db_error:
-                    logger.warning(f"Failed to delete schedule from DB: {str(db_error)}")
-
             return True
         except Exception as e:
             logger.error(f"Failed to delete DAG: {str(e)}")
             return False
-        finally:
-            if close_db and db is not None:
-                db.close()
 
     @staticmethod
     def _get_job_basic_info(job_ids: List[str], user_id: int) -> List[Dict[str, Any]]:
