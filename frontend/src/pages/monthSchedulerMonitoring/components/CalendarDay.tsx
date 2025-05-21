@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { ChevronRight } from 'lucide-react';
 
+import StatusIcon from '@/components/StatusIcon';
 import useInternalRouter from '@/hooks/useInternalRouter';
 import { cn } from '@/lib/utils';
 
@@ -55,23 +56,23 @@ const CalendarDay: React.FC<CalendarDayProps> = ({ day, month, year, isCurrentMo
       </span>
 
       {hasData && (
-        <div className='mt-1 flex flex-1 flex-col items-start justify-center gap-1 pl-1 text-[0.7rem] leading-tight sm:text-xs'>
+        <div className='mt-1 flex flex-1 flex-wrap items-start gap-0.5 pl-1 text-[0.7rem] leading-tight sm:text-xs'>
           {pending > 0 && (
             <div className='flex items-center gap-1 rounded-full bg-yellow-50 px-2.5 py-1 text-yellow-700 ring-1 ring-yellow-200'>
+              <StatusIcon status='pending' />
               <span>{pending}</span>
-              <span>Pending</span>
             </div>
           )}
           {success > 0 && (
             <div className='flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-green-700 ring-1 ring-green-200'>
+              <StatusIcon status='success' />
               <span>{success}</span>
-              <span>Success</span>
             </div>
           )}
           {fail > 0 && (
             <div className='flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-red-700 ring-1 ring-red-200'>
+              <StatusIcon status='failed' />
               <span>{fail}</span>
-              <span>Failed</span>
             </div>
           )}
         </div>
