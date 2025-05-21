@@ -72,7 +72,9 @@ const CodePanel = ({ code, errorMsg }: CodePanelProps) => {
       {errorMsg && (
         <div className='text-destructive bg-destructive/10 mx-2 mb-4 flex items-center gap-2 rounded-lg p-2 px-4'>
           <TriangleAlert className='h-4 w-4 shrink-0' />
-          <p className='text-sm'>{errorMsg.message}</p>
+          <div className='min-w-0 flex-1'>
+            <p className='text-sm break-words whitespace-pre-wrap'>{errorMsg.message}</p>
+          </div>
         </div>
       )}
       <Editor
