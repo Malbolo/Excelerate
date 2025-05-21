@@ -104,15 +104,15 @@ const MainPage: React.FC = () => {
               <CommandList />
             </div>
 
-            <div className='relative flex flex-col gap-2'>
+            <div className='flex flex-col gap-2'>
               {notice && (
-                <div className='text-accent-foreground absolute -top-10 left-0 z-20 flex w-full items-center gap-2 rounded-lg bg-[#F0F7FF] p-2 px-4'>
+                <div className='text-accent-foreground z-20 flex w-full items-center gap-2 rounded-lg bg-[#F0F7FF] p-2 px-4'>
                   <Megaphone className='h-4 w-4 shrink-0' />
                   <p className='text-sm'>{notice}</p>
                 </div>
               )}
               <div className='flex gap-2'>
-                <div className='relative flex-1'>
+                <div className='relative z-20 flex-1'>
                   <Textarea
                     value={inputCommand}
                     onChange={e => setInputCommand(e.target.value)}
