@@ -156,7 +156,7 @@ const LLMPlaygroundPage = () => {
   const isTestButtonDisabled = !systemPrompt && fewShots.every(fs => !fs.human && !fs.ai) && !userInput;
 
   return (
-    <section className='flex h-screen flex-1 flex-col bg-gray-100'>
+    <section className='bg-gradient flex h-screen flex-1 flex-col'>
       <PlaygroundHeader
         llmCategories={llmCategories}
         selectedCategory={selectedCategory}

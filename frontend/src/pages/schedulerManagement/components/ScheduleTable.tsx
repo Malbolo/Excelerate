@@ -5,7 +5,7 @@ import ScheduleRow from './ScheduleRow';
 
 const ScheduleTable = ({ schedules }: { schedules: Schedule[] }) => {
   return (
-    <div className='card-gradient rounded-md border'>
+    <div className='card-gradient rounded-md'>
       <Table>
         <TableHeader>
           <TableRow>

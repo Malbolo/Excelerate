@@ -178,12 +178,12 @@ const SchedulerFilterBar = () => {
 
   return (
     <div className='flex w-full flex-wrap items-center gap-2 md:gap-3'>
-      <div className='xs:w-auto w-full flex-shrink-0 sm:w-auto md:w-[130px]'>
+      <div className='flex-1'>
         <label htmlFor='st-type' className='sr-only'>
           Search Type
         </label>
         <Select value={currentSearchType} onValueChange={handleSearchTypeChange}>
-          <SelectTrigger id='st-type'>
+          <SelectTrigger id='st-type' className='w-full'>
             <SelectValue placeholder='Type' />
           </SelectTrigger>
           <SelectContent>
@@ -196,7 +196,7 @@ const SchedulerFilterBar = () => {
         </Select>
       </div>
 
-      <div className='xs:w-auto xs:order-none order-first w-full flex-grow sm:order-none sm:w-auto'>
+      <div className='flex-2'>
         <label htmlFor='st-query' className='sr-only'>
           Search Query
         </label>
@@ -217,14 +217,14 @@ const SchedulerFilterBar = () => {
         </Button>
       </div>
 
-      <div className='mx-1 hidden h-6 border-l border-slate-300 md:block'></div>
+      <div className='mx-1 hidden h-6 border-l md:block'></div>
 
-      <div className='xs:w-auto w-full flex-shrink-0 sm:w-auto md:w-[160px]'>
+      <div className='flex-1'>
         <label htmlFor='st-frequency' className='sr-only'>
           Frequency
         </label>
         <Select value={currentFrequency} onValueChange={handleFrequencyChange}>
-          <SelectTrigger id='st-frequency'>
+          <SelectTrigger id='st-frequency' className='w-full'>
             <SelectValue placeholder='Frequency' />
           </SelectTrigger>
           <SelectContent>
@@ -237,12 +237,12 @@ const SchedulerFilterBar = () => {
         </Select>
       </div>
 
-      <div className='xs:w-auto w-full flex-shrink-0 sm:w-auto md:w-[140px]'>
+      <div className='flex-1'>
         <label htmlFor='st-status' className='sr-only'>
           Status
         </label>
         <Select value={currentStatus} onValueChange={handleStatusChange}>
-          <SelectTrigger id='st-status'>
+          <SelectTrigger id='st-status' className='w-full'>
             <SelectValue placeholder='Status' />
           </SelectTrigger>
           <SelectContent>
@@ -255,12 +255,12 @@ const SchedulerFilterBar = () => {
         </Select>
       </div>
 
-      <div className='xs:w-auto w-full flex-shrink-0 sm:w-auto md:w-[140px]'>
+      <div className='flex-1'>
         <label htmlFor='st-size' className='sr-only'>
           Items per page
         </label>
         <Select value={currentSize} onValueChange={handleSizeChange}>
-          <SelectTrigger id='st-size'>
+          <SelectTrigger id='st-size' className='w-full'>
             <SelectValue placeholder='Items/page' />
           </SelectTrigger>
           <SelectContent>
@@ -274,7 +274,7 @@ const SchedulerFilterBar = () => {
       </div>
 
       <div className='xs:w-auto w-full flex-shrink-0 sm:w-auto'>
-        <Button variant='ghost' onClick={handleClearAllFilters} className='w-full text-slate-600 hover:text-slate-800'>
+        <Button variant='outline' onClick={handleClearAllFilters}>
           Clear All
         </Button>
       </div>

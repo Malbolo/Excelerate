@@ -1,4 +1,4 @@
-import { ArrowLeftIcon, Send } from 'lucide-react';
+import { ArrowLeftIcon, ArrowUpToLine } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -35,18 +35,13 @@ const PlaygroundHeader = ({
 }: PlaygroundHeaderProps) => {
   const { goBack } = useInternalRouter();
   return (
-    <header className='sticky top-0 z-10 flex h-14 items-center justify-between border-b bg-white px-4 shadow-sm'>
+    <header className='sticky top-1.5 z-10 flex h-14 items-center justify-between px-4'>
       <div className='flex items-center gap-3'>
-        <Button
-          variant='ghost'
-          size='sm'
-          onClick={() => goBack()}
-          className='flex items-center gap-1.5 text-gray-700 hover:bg-gray-200'
-        >
+        <Button variant='ghost' size='sm' onClick={() => goBack()} className='flex items-center gap-1.5'>
           <ArrowLeftIcon className='h-4 w-4' />
           Back
         </Button>
-        <h1 className='text-md font-semibold text-gray-800'>LLM Playground</h1>
+        <h1 className='text-lg font-bold'>LLM Playground</h1>
       </div>
       <div className='flex items-center gap-2.5'>
         <Select value={selectedCategory} onValueChange={onCategoryChange}>
@@ -83,13 +78,8 @@ const PlaygroundHeader = ({
             </SelectGroup>
           </SelectContent>
         </Select>
-        <Button
-          onClick={onSubmitParameters}
-          size='sm'
-          className='bg-blue-600 text-white hover:bg-blue-700'
-          disabled={isSubmitDisabled}
-        >
-          <Send className='mr-1.5 h-4 w-4' />
+        <Button onClick={onSubmitParameters} size='sm' disabled={isSubmitDisabled}>
+          <ArrowUpToLine className='h-4 w-4' />
           Load Template
         </Button>
       </div>

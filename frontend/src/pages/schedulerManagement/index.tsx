@@ -37,7 +37,7 @@ const SchedulerManagementPage = () => {
   const { schedules, total_pages } = data;
 
   return (
-    <div className='flex h-full w-full flex-col space-y-6 p-4 sm:p-6 md:p-8'>
+    <div className='bg-gradient flex h-full w-full flex-col space-y-6 p-4 sm:p-6 md:p-8'>
       <header className='flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center'>
         <div>
           <h1 className='text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl'>Scheduler Management</h1>
@@ -54,7 +54,7 @@ const SchedulerManagementPage = () => {
 
       <SchedulerFilterBar />
 
-      <div className='bg-card overflow-x-auto rounded-lg border shadow-sm'>
+      <div className='bg-card overflow-x-auto rounded-lg border'>
         <Suspense fallback={<SchedulerManagementSkeleton />}>
           <ScheduleTable schedules={schedules} />
         </Suspense>
