@@ -120,13 +120,9 @@ class AirflowClient:
 
         return self._get(f"dags/{dag_id}/dagRuns/{run_id}", params)
 
-    def get_task_instances(self, dag_id: str, run_id: str, fields: List[str] = None) -> List[Dict[str, Any]]:
+    def get_task_instances(self, dag_id: str, run_id: str) -> List[Dict[str, Any]]:
         """특정 DAG 실행의 태스크 인스턴스 목록 조회"""
-        params = {}
-        if fields:
-            params["fields"] = fields
-
-        response = self._get(f"dags/{dag_id}/dagRuns/{run_id}/taskInstances", params)
+        response = self._get(f"dags/{dag_id}/dagRuns/{run_id}/taskInstances")
         return response.get("task_instances", [])
 
     def get_task_logs(self, schedule_id: str, run_id: str, task_id: str, try_number: Optional[int] = None) -> str:

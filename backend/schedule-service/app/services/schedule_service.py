@@ -307,8 +307,7 @@ class ScheduleService:
             # 태스크 인스턴스 목록 조회
             task_instances = airflow_client.get_task_instances(
                 schedule_id,
-                run_id,
-                fields=["task_id", "state", "start_date", "end_date", "duration", "try_number"]
+                run_id
             )
 
             # job_id 목록 추출
