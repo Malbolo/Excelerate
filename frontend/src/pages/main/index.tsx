@@ -95,8 +95,8 @@ const MainPage: React.FC = () => {
       <ResizablePanelGroup direction='horizontal'>
         <ResizablePanel>
           <div className='mx-auto flex h-screen w-full grow-0 flex-col justify-between gap-4 p-8'>
-            <div className='@container flex flex-1 flex-col gap-4 overflow-hidden'>
-              <div className='flex w-full flex-col @md:flex-row'>
+            <div className='@container/main-container flex flex-1 flex-col gap-4 overflow-hidden'>
+              <div className='flex w-full flex-col @md/main-container:flex-row'>
                 <TemplateList />
                 <SourceData />
               </div>
@@ -104,9 +104,9 @@ const MainPage: React.FC = () => {
               <CommandList />
             </div>
 
-            <div className='flex flex-col gap-2'>
+            <div className='relative flex flex-col gap-2'>
               {notice && (
-                <div className='text-accent-foreground flex w-full items-center gap-2 rounded-lg bg-[#F0F7FF] p-2 px-4'>
+                <div className='text-accent-foreground absolute -top-10 left-0 z-20 flex w-full items-center gap-2 rounded-lg bg-[#F0F7FF] p-2 px-4'>
                   <Megaphone className='h-4 w-4 shrink-0' />
                   <p className='text-sm'>{notice}</p>
                 </div>

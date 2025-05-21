@@ -24,7 +24,8 @@ interface DataPanelProps {
 const DataPanel = memo<DataPanelProps>(({ data, columns, downloadToken }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  if (!data) return <div className='flex h-full items-center justify-center'>No data</div>;
+  if (!data)
+    return <div className='text-muted-foreground flex h-full items-center justify-center text-sm'>No data</div>;
 
   return (
     <div className='flex h-[90vh] flex-col'>
@@ -63,7 +64,8 @@ interface CodePanelProps {
 // 코드를 보여주는 패널, AI Agent 호출 후 코드 확인 시 사용
 const CodePanel = ({ code, errorMsg }: CodePanelProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  if (!code) return <div className='flex h-full items-center justify-center'>No code</div>;
+  if (!code)
+    return <div className='text-muted-foreground flex h-full items-center justify-center text-sm'>No code</div>;
 
   return (
     <div className='h-full py-2'>
@@ -114,7 +116,8 @@ const TracePanel = () => {
   const { logs } = useStreamStore();
   const [selectedLog, setSelectedLog] = useState<Log | null>(null);
 
-  if (!logs || logs.length === 0) return <div className='flex h-full items-center justify-center'>No Log</div>;
+  if (!logs || logs.length === 0)
+    return <div className='text-muted-foreground flex h-full items-center justify-center text-sm'>No Log</div>;
 
   return (
     <div className='h-full'>

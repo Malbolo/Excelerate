@@ -24,6 +24,7 @@ import { useSourceStore } from '@/store/useSourceStore';
 import { useStreamStore } from '@/store/useStreamStore';
 import { DataFrameRow } from '@/types/dataframe';
 
+import MainGuide from './MainGuide';
 import SaveJobDialog from './SaveJobDialog';
 
 const CommandList = ({ job }: { job?: JobManagement }) => {
@@ -133,18 +134,24 @@ const CommandList = ({ job }: { job?: JobManagement }) => {
           <SaveJobDialog job={job} />
         </div>
       </div>
-      <div className='flex flex-1 flex-col gap-2 overflow-x-hidden overflow-y-auto'>
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext
-            items={commandList.map((command, idx) => `${command.content}-${idx}`)}
-            strategy={verticalListSortingStrategy}
-          >
-            {commandList.map((command, index) => (
-              <Command key={`${command.content}-${index}`} command={command} index={index} />
-            ))}
-          </SortableContext>
-        </DndContext>
-      </div>
+      {commandList.length > 0 ? (
+        <div className='flex flex-1 flex-col gap-2 overflow-x-hidden overflow-y-auto'>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext
+              items={commandList.map((command, idx) => `${command.content}-${idx}`)}
+              strategy={verticalListSortingStrategy}
+            >
+              {commandList.map((command, index) => (
+                <Command key={`${command.content}-${index}`} command={command} index={index} />
+              ))}
+            </SortableContext>
+          </DndContext>
+        </div>
+      ) : (
+        <div className='relative flex-1 py-4'>
+          <MainGuide currentStep={sourceDataUrl ? 2 : 1} />
+        </div>
+      )}
     </section>
   );
 };
