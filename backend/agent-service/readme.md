@@ -1,3 +1,13 @@
+## 목차
+- [Excelerate Agent Server](#excelerate-agent-server)
+- [주요 기능](#주요-기능)
+- [기술 스택](#기술-스택)
+- [프로젝트 디렉토리 구조](#프로젝트-디렉토리-구조)
+- [엔드포인트 구조](#엔드포인트-구조)
+- [프로젝트 초기 설정](#프로젝트-초기-설정)
+- [로깅 메커니즘](#로깅-메커니즘)
+- [그래프 구조](#그래프-구조)
+
 ## Excelerate Agent Server
 
 Excel을 자동화하는 에이전트를 제공하는 FastAPI 서버입니다. LLM을 활용해 DataFrame 조작 코드 생성, Excel 템플릿 삽입, 데이터 로드, 로그 스트리밍 등을 수행합니다.
@@ -24,15 +34,19 @@ Excel을 자동화하는 에이전트를 제공하는 FastAPI 서버입니다. L
 
 - Python 3.10+
 
-- FastAPI, Uvicorn
+- FastAPI 0.115.12
+
+- Uvicorn 0.34.2
 
 - Redis
 
 - MinIO
 
-- LangChain
+- Milvus 2.4.17
 
-- LangGraph
+- LangChain 0.3.24
+
+- LangGraph 0.3.34
 
 ## 프로젝트 디렉토리 구조
 
@@ -41,7 +55,7 @@ agent-service
 ├─ app
 │  ├─ api
 │  │  └─ v1
-│  │     └─ endpoints
+│  │     └─ endpoints                 # 컨트롤러 디렉토리
 │  │        ├─ chatprompt.py
 │  │        ├─ code_gen.py
 │  │        ├─ data_load.py
@@ -49,46 +63,67 @@ agent-service
 │  │        ├─ log.py
 │  │        ├─ template.py
 │  │        └─ __init__.py
-│  ├─ core
+│  ├─ core                            # 환경 변수, 인증 설정
 │  │  ├─ auth.py
 │  │  ├─ config.py
 │  │  └─ __init__.py
-│  ├─ main.py
-│  ├─ models
+│  ├─ models                          # Pydantic Model 정의
 │  │  ├─ chatprompt.py
 │  │  ├─ log.py
 │  │  ├─ query.py
 │  │  ├─ structure.py
 │  │  └─ __init__.py
-│  ├─ services
+│  ├─ services                        # 서비스 디렉토리
 │  │  ├─ chatprompt_service.py
-│  │  ├─ code_gen
+│  │  ├─ code_gen                         # Code Generator 관련 서비스
 │  │  │  ├─ graph.py
 │  │  │  ├─ graph_image
 │  │  │  │  └─ output.png
 │  │  │  ├─ graph_util.py
 │  │  │  ├─ merge_utils.py
 │  │  │  └─ readme.md
-│  │  ├─ data_load
+│  │  ├─ data_load                        # Data Loader 관련 서비스
 │  │  │  ├─ datachain.py
 │  │  │  ├─ data_util.py
 │  │  │  └─ makerag.py
-│  │  ├─ template.py
+│  │  ├─ template.py                      # 템플릿 관련 서비스
 │  │  └─ __init__.py
-│  └─ utils
-│     ├─ api_utils.py
-│     ├─ depend.py
-│     ├─ docs.py
-│     ├─ memory_logger.py
-│     ├─ minio_client.py
-│     ├─ promptmaker.md
-│     ├─ redis_chatprompt.py
-│     ├─ redis_client.py
-│     └─ __init__.py
+│  ├─ utils                           # docs, 의존성, 함수, logger, db 연결 등 util 모음
+│  │  ├─ api_utils.py
+│  │  ├─ depend.py
+│  │  ├─ docs.py
+│  │  ├─ memory_logger.py
+│  │  ├─ minio_client.py
+│  │  ├─ promptmaker.md
+│  │  ├─ redis_chatprompt.py
+│  │  ├─ redis_client.py
+│  │  └─ __init__.py
+│  └─ main.py                         # FastAPI Server Application
 ├─ Dockerfile
 ├─ readme.md
 └─ requirements.txt
 ```
+
+## 엔드포인트 구조
+모든 엔드포인트는 prefix로 `/api/agent`를 가지며, 각 라우터마다 추가적인 prefix를 갖는다.
+
+#### data_load `/data`
+자연어로 데이터를 불러오거나 (Data Loader) RAG를 위해 공장 정보를 milvus에 저장하는 등 제조 시스템 관련 역할을 수행
+
+#### code_gen `/code`
+사용자의 명령어를 받아 코드와 데이터 프레임, 엑셀 파일을 생성하는 Agent (Code Generator)
+
+#### template `/template`
+엑셀 작업에 사용할 템플릿을 조회/추가/삭제/미리보기/다운로드
+
+#### download `/download`
+Code Generator로 인해 생성된 엑셀 파일을 다운로드 하는 API 제공공
+
+#### log `/logs`
+Agent 동작 시 생성된 로그/로그 목록을 조회하거나, 실시간 로그 스트림이 가능한 SSE API 제공공
+
+#### chatprompt `/prompts`
+각 Agent에서 사용 될 ChatTemplatePrompts를 등록/조회/수정/삭제하고, 플레이 그라운드에서 A/B 테스트할 때 사용할 API 제공
 
 ## 프로젝트 초기 설정
 1. 공장 정보 vector DB 등록
@@ -234,4 +269,8 @@ save_logs_to_redis(log_id, answer["logs"], metadata={
     ]
 }
 ```
+
+## 그래프 구조
+
+<img src="./app/services/code_gen/graph_image/output.png" alt="graph" width="600" />
 
