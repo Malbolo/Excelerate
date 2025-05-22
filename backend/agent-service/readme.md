@@ -271,6 +271,5 @@ save_logs_to_redis(log_id, answer["logs"], metadata={
 ```
 
 ## 그래프 구조
-
+- Code Generator
 <img src="./app/services/code_gen/graph_image/output.png" alt="graph" width="600" />
-
