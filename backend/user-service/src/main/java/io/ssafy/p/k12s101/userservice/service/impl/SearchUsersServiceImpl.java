@@ -20,6 +20,9 @@ public class SearchUsersServiceImpl implements SearchUsersService {
 
     private final UserRepository userRepository;
 
+    /**
+     * 사용자 목록을 조회 후, 페이지네이션을 수행합니다.
+     */
     @Override
     @Transactional(readOnly = true)
     public SearchUsersResult handle(SearchUsersCommand command) {

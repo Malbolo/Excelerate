@@ -17,11 +17,13 @@ public class ChangeUserPasswordServiceImpl implements ChangeUserPasswordService 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    // 사용자 비밀번호 변경 로직을 수행합니다.
     @Override
     @Transactional
     public void handle(ChangeUserPasswordCommand command) {
         User user = userRepository.findByIdOrElseThrow(command.userId());
 
+        // 변경 전/후 비밀번호가 동일하다면 에러 발생.
         if (!passwordEncoder.matches(command.currentPassword(), user.getPassword())) {
             throw new InvalidPasswordException();
         }
