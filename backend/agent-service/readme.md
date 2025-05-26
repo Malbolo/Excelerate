@@ -4,6 +4,7 @@
 - [기술 스택](#기술-스택)
 - [프로젝트 디렉토리 구조](#프로젝트-디렉토리-구조)
 - [엔드포인트 구조](#엔드포인트-구조)
+- [환경변수 설정](#환경변수-설정)
 - [프로젝트 초기 설정](#프로젝트-초기-설정)
 - [로깅 메커니즘](#로깅-메커니즘)
 - [그래프 구조](#그래프-구조)
@@ -124,6 +125,33 @@ Agent 동작 시 생성된 로그/로그 목록을 조회하거나, 실시간 �
 
 #### chatprompt `/prompts`
 각 Agent에서 사용 될 ChatTemplatePrompts를 등록/조회/수정/삭제하고, 플레이 그라운드에서 A/B 테스트할 때 사용할 API 제공
+
+## 환경변수 설정
+``` bash
+ALLOWED_ORIGINS=["http://localhost:8080"]
+ENV=PROD
+LANGSMITH_TRACING=true
+LANGSMITH_ENDPOINT=https://api.smith.langchain.com
+LANGSMITH_API_KEY=lsv2_pt_a0f...
+LANGSMITH_PROJECT=lang...
+OPENAI_API_KEY=sk-proj-ENC...
+MILVUS_HOST=<YOUR_MILVUS_HOST>
+MILVUS_PORT=19530
+MILVUS_COLLECTION=factory_catalog
+FILESYSTEM_URL=<YOUR_FILESYSTEM_URL>
+MINIO_ENDPOINT=<YOUR_MINIO_ENDPOINT>
+MINIO_ACCESS_KEY=<YOUR_ACCESS_KEY>
+MINIO_SECRET_KEY=<YOUR_SECRET_KEY>
+MINIO_BUCKET_NAME=factory-data
+MINIO_USE_SSL=false
+TOKEN_SECRET_KEY=....
+REDIS_HOST=....
+REDIS_PORT=6379
+REDIS_DB=0
+```
+
+LangSmith를 사용하지 않을 경우 app/core/config에서 해당 설정 제거
+
 
 ## 프로젝트 초기 설정
 1. 공장 정보 vector DB 등록
