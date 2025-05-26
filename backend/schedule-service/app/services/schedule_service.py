@@ -616,18 +616,24 @@ class ScheduleService:
 
             # 상태 필터링 설정
             paused_param = None
+            only_active = True
             if status == "active":
                 paused_param = False
+                only_active = True
             elif status == "paused":
                 paused_param = True
-            # status가 "all"인 경우 paused_param은 None 유지
+                only_active = False  # 일시정지된 DAG도 포함하기 위해
+            elif status == "all":
+                paused_param = None
+                only_active = False
+                # status가 "all"인 경우 paused_param은 None 유지
 
             # Airflow API 호출 시 사용할 파라미터
             api_params = {
                 "limit": 1000,  # 충분히 많은 수를 가져온 후 필터링
                 "fields": needed_fields,
                 "order_by": "-dag_id",  # ULID 역순 (최신순)
-                "only_active": True
+                "only_active": only_active
             }
 
             # 상태 필터링이 있는 경우에만 paused 매개변수 추가
