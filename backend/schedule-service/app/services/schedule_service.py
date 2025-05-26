@@ -644,6 +644,29 @@ class ScheduleService:
             dags_response = airflow_client.get_all_dags(**api_params)
             all_dags = dags_response.get("dags", [])
 
+            # 디버깅 로그 추가
+            logger.info(f"=== API 파라미터: {api_params}")
+            logger.info(f"=== 전체 DAG 수: {len(all_dags)}")
+            for dag in all_dags:
+                logger.info(
+                    f"DAG: {dag.get('dag_id')}, is_paused: {dag.get('is_paused')}, display_name: {dag.get('dag_display_name')}")
+
+            # 특별히 is_paused=True인 DAG들 확인
+            paused_dags = [dag for dag in all_dags if dag.get('is_paused') == True]
+            logger.info(f"=== 일시정지된 DAG 수: {len(paused_dags)}")
+            for dag in paused_dags:
+                logger.info(f"Paused DAG: {dag.get('dag_id')}, {dag.get('dag_display_name')}")
+
+            # 테스트: only_active=False로 다시 호출해보기
+            test_params = api_params.copy()
+            test_params["only_active"] = False
+            test_params.pop("paused", None)  # paused 파라미터 제거
+            test_response = airflow_client.get_all_dags(**test_params)
+            test_dags = test_response.get("dags", [])
+            logger.info(f"=== only_active=False일 때 전체 DAG 수: {len(test_dags)}")
+            for dag in test_dags:
+                logger.info(f"Test DAG: {dag.get('dag_id')}, is_paused: {dag.get('is_paused')}")
+
             # 메모리에서 필터링
             filtered_dags = all_dags
 
