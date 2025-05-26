@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react';
 
-// useEffect 제거
 import { useSearchParams } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
@@ -39,11 +38,15 @@ const getInitialFilterState = (searchParams: URLSearchParams) => {
     query = titleParam;
   }
 
+  // 'status'의 기본값은 'active'이지만, 'all'이 URL에 명시적으로 있으면 'all'을 사용합니다.
+  const statusParam = searchParams.get('status');
+  const initialStatus = statusParam === 'all' ? 'all' : statusParam || STATUSES[0].value;
+
   return {
     searchQuery: query,
     searchType: type,
     frequency: searchParams.get('frequency') || FREQUENCIES[0].value,
-    status: searchParams.get('status') || STATUSES[0].value,
+    status: initialStatus,
     size: searchParams.get('size') || SIZES[0],
   };
 };
@@ -63,22 +66,42 @@ const SchedulerFilterBar = () => {
       const currentRawParams = new URLSearchParams(searchParams);
       const nextParams = new URLSearchParams();
 
+      // 기존 파라미터 중 새로 설정되지 않고 'all'이 아닌 값들을 유지
       currentRawParams.forEach((value, key) => {
         if (key === 'page') return;
         if (!(key in newParamValues) && value && value !== 'all') {
-          nextParams.set(key, value);
+          // 'status'가 'all'인 경우는 유지해야 하므로, 아래 루프에서 처리하도록 여기서 제외
+          if (key !== 'status' || value !== 'all') {
+            nextParams.set(key, value);
+          }
         }
       });
 
+      // 새로운 파라미터 값 적용
       for (const key in newParamValues) {
         const value = newParamValues[key];
-        if (value === undefined || value === '' || value === 'all') {
+
+        if (value === undefined || value === '') {
           nextParams.delete(key);
+        } else if (value === 'all') {
+          // 'frequency'가 'all'이면 삭제 (빈 문자열 처리)
+          if (key === 'frequency') {
+            nextParams.delete(key);
+          }
+          // 'status'가 'all'이면 'all'로 설정
+          else if (key === 'status') {
+            nextParams.set(key, value as string);
+          }
+          // 그 외의 'all'은 삭제
+          else {
+            nextParams.delete(key);
+          }
         } else {
           nextParams.set(key, value as string);
         }
       }
 
+      // 페이지 파라미터 처리
       const existingPage = currentRawParams.get('page');
       const hasOtherFilters = Array.from(nextParams.keys()).some(k => k !== 'page');
 
@@ -105,6 +128,7 @@ const SchedulerFilterBar = () => {
         }
       }
 
+      // 최종 URL 설정
       const keys = Array.from(nextParams.keys());
       if (keys.length === 0) {
         setSearchParams({}, { replace: true });
@@ -154,21 +178,22 @@ const SchedulerFilterBar = () => {
     updateUrlParams({ size: newSize }, true);
   };
 
+  // handleClearAllFilters 수정: status를 'all'로 설정하고, frequency도 'all'로 설정하여
+  // updateUrlParams에서 각각 'all'과 빈 문자열로 처리되도록 함
   const handleClearAllFilters = () => {
-    const defaultState = getInitialFilterState(new URLSearchParams()); // 깨끗한 초기 상태
-    setCurrentSearchQuery(defaultState.searchQuery);
-    setCurrentSearchType(defaultState.searchType);
-    setCurrentFrequency(defaultState.frequency);
-    setCurrentStatus(defaultState.status);
-    setCurrentSize(defaultState.size);
+    setCurrentSearchQuery('');
+    setCurrentSearchType(SEARCH_TYPES[0].value);
+    setCurrentFrequency(FREQUENCIES[0].value); // 'all'
+    setCurrentStatus('all'); // 'all'로 설정
+    setCurrentSize(SIZES[0]);
 
     updateUrlParams(
       {
-        title: undefined, // title 파라미터 제거
-        owner: undefined, // owner 파라미터 제거
-        frequency: FREQUENCIES[0].value, // 'all' (기본값, updateUrlParams에서 처리)
-        status: STATUSES[0].value, // 'all' (기본값, updateUrlParams에서 처리)
-        size: SIZES[0], // 기본 사이즈 (updateUrlParams에서 처리)
+        title: undefined,
+        owner: undefined,
+        frequency: 'all', // 'all' -> updateUrlParams에서 삭제됨
+        status: 'all', // 'all' -> updateUrlParams에서 'all'로 설정됨
+        size: SIZES[0], // 기본 사이즈 (삭제되지 않음)
       },
       true,
     );
@@ -178,6 +203,7 @@ const SchedulerFilterBar = () => {
 
   return (
     <div className='flex w-full flex-wrap items-center gap-2 md:gap-3'>
+      {/* Search Type Select */}
       <div className='flex-1'>
         <label htmlFor='st-type' className='sr-only'>
           Search Type
@@ -196,6 +222,7 @@ const SchedulerFilterBar = () => {
         </Select>
       </div>
 
+      {/* Search Input */}
       <div className='flex-2'>
         <label htmlFor='st-query' className='sr-only'>
           Search Query
@@ -211,6 +238,7 @@ const SchedulerFilterBar = () => {
         />
       </div>
 
+      {/* Search Button */}
       <div className='xs:w-auto w-full flex-shrink-0 sm:w-auto'>
         <Button onClick={handleSearchSubmit} variant='default' className='w-full'>
           Search
@@ -219,6 +247,7 @@ const SchedulerFilterBar = () => {
 
       <div className='mx-1 hidden h-6 border-l md:block'></div>
 
+      {/* Frequency Select */}
       <div className='flex-1'>
         <label htmlFor='st-frequency' className='sr-only'>
           Frequency
@@ -237,6 +266,7 @@ const SchedulerFilterBar = () => {
         </Select>
       </div>
 
+      {/* Status Select */}
       <div className='flex-1'>
         <label htmlFor='st-status' className='sr-only'>
           Status
@@ -255,6 +285,7 @@ const SchedulerFilterBar = () => {
         </Select>
       </div>
 
+      {/* Size Select */}
       <div className='flex-1'>
         <label htmlFor='st-size' className='sr-only'>
           Items per page
@@ -273,6 +304,7 @@ const SchedulerFilterBar = () => {
         </Select>
       </div>
 
+      {/* Clear All Button */}
       <div className='xs:w-auto w-full flex-shrink-0 sm:w-auto'>
         <Button variant='outline' onClick={handleClearAllFilters}>
           Clear All

@@ -30,7 +30,7 @@ const SchedulerManagementPage = () => {
     title: titleParam || undefined,
     owner: ownerParam || undefined,
     frequency: frequencyParam === 'all' ? undefined : frequencyParam,
-    status: statusParam === 'all' ? undefined : statusParam,
+    status: statusParam || undefined,
   };
 
   const { data } = useGetScheduleList(apiParams);
