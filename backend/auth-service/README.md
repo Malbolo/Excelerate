@@ -2,7 +2,7 @@
 
 # 디렉터리 구조
 
-auth-service/
+auth-service/  
 └── [main.py](http://main.py) 
 
 ---
