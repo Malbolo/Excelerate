@@ -8,7 +8,7 @@ Main 페이지에서 사용자가 생성하는 job에 대한 생성, Job Managem
 
 # 디렉토리 구조
 
-job-service/
+job-service/ \n
 └── app/
 ├── api/         # 라우터 (엔드포인트 정의)
 ├── core/        # 공통 유틸리티
