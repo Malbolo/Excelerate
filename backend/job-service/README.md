@@ -8,15 +8,15 @@ Main 페이지에서 사용자가 생성하는 job에 대한 생성, Job Managem
 
 # 디렉토리 구조
 
-job-service/ \n
-└── app/
-├── api/         # 라우터 (엔드포인트 정의)
-├── core/        # 공통 유틸리티
-├── crud/        # 데이터베이스 조작 함수
-├── db/          # DB 연결 설정
-├── models/      # 모델(엔티티) 정의
-├── schemas/     # Pydantic 스키마 (요청/응답 객체)
-└── services/    # 비즈니스 로직 (api와 crud 사이 역할)
+job-service/  
+└── app/  
+├── api/         # 라우터 (엔드포인트 정의)  
+├── core/        # 공통 유틸리티  
+├── crud/        # 데이터베이스 조작 함수  
+├── db/          # DB 연결 설정  
+├── models/      # 모델(엔티티) 정의  
+├── schemas/     # Pydantic 스키마 (요청/응답 객체)  
+└── services/    # 비즈니스 로직 (api와 crud 사이 역할)  
 
 ---
 
