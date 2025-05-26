@@ -24,12 +24,14 @@ public class UserController {
     private final ChangeUserPasswordService changeUserPasswordService;
     private final CheckEmailDuplicationService checkEmailDuplicationService;
 
+    // 사용자 회원가입
     @PostMapping
     public ResponseEntity<SuccessResponse<Void>> register(@RequestBody RegisterUserCommand command) {
         registerUserService.handle(command);
         return ResponseEntity.ok(SuccessResponse.success());
     }
 
+    // 이메일 중복 검사
     @GetMapping("/check-email")
     public ResponseEntity<SuccessResponse<CheckEmailDuplicationResponse>> checkEmail(@RequestParam String email) {
         boolean available = checkEmailDuplicationService.handle(email);
@@ -37,18 +39,21 @@ public class UserController {
         return ResponseEntity.ok(SuccessResponse.success(result));
     }
 
+    // 로그인
     @PostMapping("/login")
     public ResponseEntity<SuccessResponse<LoginUserResult>> login(@RequestBody LoginUserCommand command) {
         LoginUserResult result = loginUserService.handle(command);
         return ResponseEntity.ok(SuccessResponse.success(result));
     }
 
+    // 사용자 정보 조회
     @GetMapping("/me/profile")
     public ResponseEntity<SuccessResponse<FindUserProfileResult>> getProfile(@RequestHeader("X-User-Id") Long userId) {
         FindUserProfileResult result = findUserProfileService.handle(userId);
         return ResponseEntity.ok(SuccessResponse.success(result));
     }
 
+    // 사용자 정보 수정
     @PatchMapping("/me/profile")
     public HttpEntity<SuccessResponse<Void>> updateProfile(
         @RequestHeader("X-User-Id") Long userId,
@@ -63,6 +68,7 @@ public class UserController {
         return ResponseEntity.ok(SuccessResponse.success());
     }
 
+    // 사용자 비밀번호 변경
     @PatchMapping("/me/password")
     public ResponseEntity<SuccessResponse<Void>> changePassword(
         @RequestHeader("X-User-Id") Long userId,
@@ -77,6 +83,7 @@ public class UserController {
         return ResponseEntity.ok(SuccessResponse.success());
     }
 
+    // 사용자 목록 조회
     @GetMapping
     public ResponseEntity<?> searchUsers(
         @RequestParam(defaultValue = "1") int page,

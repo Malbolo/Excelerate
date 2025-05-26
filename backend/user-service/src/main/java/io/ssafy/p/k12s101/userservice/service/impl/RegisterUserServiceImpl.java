@@ -18,6 +18,9 @@ public class RegisterUserServiceImpl implements RegisterUserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    /**
+     * 사용자 회원가입을 수행합니다.
+     */
     @Override
     @Transactional
     public void handle(RegisterUserCommand command) {

@@ -14,6 +14,10 @@ public class FindUserProfileServiceImpl implements FindUserProfileService {
 
     private final UserRepository userRepository;
 
+    /**
+     * 사용자 정보를 조회합니다.
+     * 이름, 이메일, 부서, 권한을 반환합니다.
+     */
     @Override
     @Transactional(readOnly = true)
     public FindUserProfileResult handle(Long userId) {

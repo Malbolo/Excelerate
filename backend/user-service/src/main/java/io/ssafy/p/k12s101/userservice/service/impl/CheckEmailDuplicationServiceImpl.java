@@ -12,6 +12,10 @@ public class CheckEmailDuplicationServiceImpl implements CheckEmailDuplicationSe
 
     private final UserRepository userRepository;
 
+    /**
+     * 동일한 이메일의 회원이 있다면 false를 반환합니다.
+     * 없다면 true를 반환합니다.
+     */
     @Override
     @Transactional(readOnly = true)
     public boolean handle(String email) {

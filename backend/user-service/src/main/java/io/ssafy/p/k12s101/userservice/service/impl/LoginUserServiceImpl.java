@@ -20,6 +20,11 @@ public class LoginUserServiceImpl implements LoginUserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    /**
+     * 로그인을 수행합니다.
+     * 비밀번호가 올바르지 않다면 에러가 발생됩니다.
+     * 사용자 정보를 JWT 토큰에 담아 반환합니다.
+     */
     @Override
     @Transactional(readOnly = true)
     public LoginUserResult handle(LoginUserCommand command) {

@@ -3,6 +3,7 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 
+# SourceData의 각 값들은 nullable 합니다.
 class SourceData(BaseModel):
     factory_name: Optional[str] = None
     system_name: Optional[str] = None
