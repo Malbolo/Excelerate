@@ -6,30 +6,30 @@
 
 # 디렉터리 구조
 
-src/main/java/io/ssafy/p/k12s101/userservice
-├── UserServiceApplication.java
-├── common // 공통 모듈
-│   ├── config
-│   ├── exception
-│   ├── interceptor
-│   └── util
-├── controller
-│   ├── UserController.java
-│   └── dto
-├── domain // 엔티티 관련
-│   ├── User.java
-│   ├── UserRepository.java
-│   └── UserRole.java
-└── service // 비즈니스 로직
-      ├── ChangeUserPasswordService.java
-      ├── CheckEmailDuplicationService.java
-      ├── FindUserProfileService.java
-      ├── LoginUserService.java
-      ├── RegisterUserService.java
-      ├── SearchUsersService.java
-      ├── UpdateUserProfileService.java
-      ├── dto
-      └── impl
+src/main/java/io/ssafy/p/k12s101/userservice  
+├── UserServiceApplication.java  
+├── common // 공통 모듈  
+│   ├── config  
+│   ├── exception  
+│   ├── interceptor  
+│   └── util  
+├── controller  
+│   ├── UserController.java  
+│   └── dto  
+├── domain // 엔티티 관련  
+│   ├── User.java  
+│   ├── UserRepository.java  
+│   └── UserRole.java  
+└── service // 비즈니스 로직  
+      ├── ChangeUserPasswordService.java  
+      ├── CheckEmailDuplicationService.java  
+      ├── FindUserProfileService.java  
+      ├── LoginUserService.java  
+      ├── RegisterUserService.java  
+      ├── SearchUsersService.java  
+      ├── UpdateUserProfileService.java  
+      ├── dto  
+      └── impl  
 
 ---
 
