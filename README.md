@@ -11,3 +11,6 @@
 [User Service README 보기](backend/user-service/README.md)
 
 [Schedule Service README 보기](backend/schedule-service/README.md)
+
+## 배포 가이드
+[배포 및 운영 가이드](exec/배포 및 운영 가이드.pdf)
