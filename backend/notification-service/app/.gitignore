@@ -1,0 +1,11 @@
+.env
+test_main.http
+
+*.pyc
+__pycache__/
+
+.venv
+
+.idea
+
+

@@ -1,0 +1,12 @@
+replicaCount: 1
+
+image:
+  repository: k12s101ss/auth-service
+  pullPolicy: Always
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 8080
+
+envFromSecret: auth-service-secret

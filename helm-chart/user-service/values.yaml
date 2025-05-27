@@ -1,0 +1,21 @@
+replicaCount: 1
+
+image:
+  repository: k12s101ss/user-service
+  pullPolicy: Always
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: true
+  host: k12s101.p.ssafy.io
+  path: /api/users
+  pathType: Prefix
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    traefik.ingress.kubernetes.io/router.middlewares: auth-service-forward-auth@kubernetescrd
+
+envFromSecret: user-service-secret

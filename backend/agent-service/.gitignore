@@ -1,0 +1,71 @@
+# 깃 컨벤션
+.gitmessage.txt
+
+# 기본 Python 관련 예외처리
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+*.pyc
+
+# pytest 관련 예외처리
+.pytest_cache/
+
+# 가상 환경(Virtual Environment) # 자기 가상환경 명에 맞게 세팅
+venv/
+.venv/
+**/venv/
+**/.venv/
+
+# 환경 변수 & 설정 파일 (보안 관련)
+.env
+.env.*
+*.secrets
+config.json
+config.yaml
+config.ini
+
+# FastAPI + Uvicorn 로그 파일
+logs/
+*.log
+*.out
+*.err
+*.pid
+
+# Jupyter Notebook 관련
+.ipynb_checkpoints/
+
+# MyPy, Pylint, Pyright 등 Python 린트 도구 관련
+.mypy_cache/
+.pylint.d/
+.pyrightcache/
+.pytest_cache/
+.tox/
+.coverage
+nosetests.xml
+coverage.xml
+*.cover
+*.pyc
+
+# IDE 관련 (VSCode, PyCharm)
+.vscode/
+.idea/
+*.iml
+
+# Git 관련 무시 파일
+.gitattributes
+
+# Docker 관련
+.dockerignore
+docker-compose.override.yml
+
+# 기타 불필요한 파일
+.DS_Store
+Thumbs.db
+.idea
+.idea.*
+
+# 테스트 디렉토리
+test
+.test
