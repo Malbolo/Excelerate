@@ -188,7 +188,7 @@ LangSmith를 사용하지 않을 경우 app/core/config에서 해당 설정 제�
 
 
 2. Agent 별 ChatPrompt 등록
-`POST` `/api/agent/prompts` API를 사용해 utils 폴더 내의 promptmaker.md에 있는 내용을 서버의 Redis에 등록합니다.
+`POST` `/api/agent/prompts` API를 사용해 utils/chatprompt 폴더 내의 promptmaker.md에 있는 내용을 서버의 Redis에 등록합니다.
 총 6개의 프롬프트를 등록하시면 됩니다.
 
 Code Generator
@@ -200,6 +200,8 @@ Code Generator
 Data Loader
 - Extract DataCall Params
 - Transform Date Params
+
+따로 등록하지 않아도 디폴트 템플릿이 불러와져 사용되지만, PlayGround 기능을 사용하기 위해선 따로 등록해야 변수의 값이 채워져 불러와집니다.
 
 
 ## 로깅 메커니즘
