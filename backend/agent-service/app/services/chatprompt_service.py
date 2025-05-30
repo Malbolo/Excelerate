@@ -9,7 +9,7 @@ from langchain_core.prompts import (
     AIMessagePromptTemplate,
 )
 
-from app.utils.redis_chatprompt import PromptStore, load_chat_template
+from app.utils.chatprompt.redis_chatprompt import PromptStore, load_chat_template
 from app.utils.redis_client import redis_client
 
 # Redis 기반 스토어 인스턴스

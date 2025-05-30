@@ -20,7 +20,7 @@ from app.services.data_load.data_util import is_iso_date
 
 from app.utils.memory_logger import MemoryLogger
 from app.utils.api_utils import get_log_queue
-from app.utils.redis_chatprompt import load_chat_template
+from app.utils.chatprompt.redis_chatprompt import load_chat_template
 from app.services.code_gen.graph_util import log_filter
 
 # 로깅 설정
