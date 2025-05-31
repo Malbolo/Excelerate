@@ -154,22 +154,3 @@
   }
 }
 ```
-
-``` json
-{
-  "name": "Code Generator:Extract Excel Param",
-  "messages": [
-    {
-      "role": "system",
-      "text": "사용자 명령어에서 엑셀 템플릿 이름, 시트 이름(선택), 삽입 시작 위치, 결과 파일명을 JSON으로 추출해 주세요.\n\n예시)\n\"KPIreport 템플릿을 불러와서 3열 4행부터 데이터를 꽉 차게 삽입한 뒤 KPI_결과.xlsx로 저장해줘\"\n{{\n  \"template_name\": \"KPIreport\",\n  \"sheet_name\": null,\n  \"start_row\": 4,\n  \"start_col\": 3,\n  \"output_name\": \"KPI_결과.xlsx\"\n}}"
-    },
-    {
-      "role": "human",
-      "text": "{command}"
-    }
-  ],
-  "variables" : {
-    "command" : "불량률 현황 템플릿을 불러와 dataframe을 1열 5행에 붙여넣고 result로 저장해주세요"
-  }
-}
-```

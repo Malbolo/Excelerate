@@ -9,7 +9,7 @@ from langchain_core.prompts import (
     AIMessagePromptTemplate,
 )
 
-from app.utils.redis_chatprompt import PromptStore, load_chat_template
+from app.utils.chatprompt.redis_chatprompt import PromptStore, load_chat_template
 from app.utils.redis_client import redis_client
 
 # Redis 기반 스토어 인스턴스
@@ -29,12 +29,33 @@ def list_grouped_prompts() -> Dict[str, List[str]]:
 
 def get_prompt_json(agent: str, template_name: str) -> Dict[str, Any]:
     key = f"{agent}:{template_name}"
+
     data = store.load(key)
     if data is None:
-        raise HTTPException(404, "Prompt not found")
+        # Redis에 프롬프트가 없으면 ChatPromptTemplate 폴백
+        prompt = load_chat_template(key)
 
-    msgs = data["messages"]
-    variables = data["variables"]
+        # ChatPromptTemplate 내부 메시지 리스트 꺼내기
+        raw_msgs: List[Dict[str,str]] = []
+        for m in getattr(prompt, "prompt_messages", getattr(prompt, "messages", [])):
+            if isinstance(m, SystemMessagePromptTemplate):
+                role = "system"
+            elif isinstance(m, HumanMessagePromptTemplate):
+                role = "human"
+            elif isinstance(m, AIMessagePromptTemplate):
+                role = "ai"
+            else:
+                continue
+            
+            text = getattr(m, "template", None) or m.prompt.template
+            raw_msgs.append({"role": role, "text": text})
+
+        msgs = raw_msgs
+        variables = {var: "" for var in prompt.input_variables}
+    else:
+        # 원래 로직 유지
+        msgs      = data.get("messages", [])
+        variables = data.get("variables", {})
 
     if msgs is None:
         raise HTTPException(404, "Prompt not found")

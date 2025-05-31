@@ -27,7 +27,7 @@ from app.services.code_gen.merge_utils import merge_code_snippets
 
 from app.utils.memory_logger import MemoryLogger
 from app.utils.api_utils import get_log_queue, get_df_queue
-from app.utils.redis_chatprompt import load_chat_template
+from app.utils.chatprompt.redis_chatprompt import load_chat_template
 
 load_dotenv()
 
