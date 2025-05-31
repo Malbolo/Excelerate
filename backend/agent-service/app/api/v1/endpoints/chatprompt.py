@@ -7,7 +7,7 @@ from app.models.chatprompt import PromptSchema, InvokeRequest, InvokeTemplateReq
 
 from app.utils.docs import ChatDocs
 from app.utils.redis_client import redis_client
-from app.utils.redis_chatprompt import PromptStore
+from app.utils.chatprompt.redis_chatprompt import PromptStore
 
 from app.services.chatprompt_service import (
     list_grouped_prompts,
