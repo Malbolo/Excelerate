@@ -31,3 +31,26 @@ def get_user_info(user_id: str):
         }
     else:
         return None
+    
+class CurrentUser:
+    def __init__(self, user_id: str, user_name: str):
+        self.id = user_id
+        self.name = user_name
+
+
+def get_current_user(request: Request) -> CurrentUser:
+    """
+    FastAPI Dependency: 요청 헤더에서 사용자 정보를 추출하여 CurrentUser 객체로 반환합니다.
+    헤더에 x-user-id가 없거나, 조회가 실패하면 user_id와 user_name을 "guest"로 설정합니다.
+    """
+    try:
+        user_id = get_user_id_from_header(request) or "guest"
+        profile = get_user_info(user_id)
+        if profile and isinstance(profile, dict):
+            user_name = profile.get("name") or "guest"
+        else:
+            user_name = "guest"
+    except:
+        user_id = "guest"
+        user_name = "guest"
+    return CurrentUser(user_id, user_name)
