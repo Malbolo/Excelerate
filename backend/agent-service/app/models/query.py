@@ -17,3 +17,8 @@ class DataRequest(BaseModel):
 
 class RagRequest(BaseModel):
     data: List[dict] = None
+
+class RagSearch(BaseModel):
+    query: str = None
+    filters: Optional[List[str]] = None
+    k: Optional[int] = 5
