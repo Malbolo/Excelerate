@@ -20,6 +20,7 @@ debugpy
 decorator
 distlib
 distro
+docx2txt
 dulwich
 executing
 fastapi
@@ -92,6 +93,7 @@ pydantic
 pydantic-settings
 pydantic_core
 Pygments
+pypdf
 pyproject_hooks
 python-dateutil
 python-dotenv

@@ -191,7 +191,7 @@ class FileAPIClient:
         except Exception as e:
             logger.error(f"검증 중 오류 발생: {e}")
             data_guide = self._available_params()
-            raise HTTPException(status_code=400, detail=f"Data fetch failed: {e}\n\n{data_guide}")
+            raise HTTPException(status_code=400, detail=f"데이터 호출 실패: {e}\n\n{data_guide}")
 
     def _transform_date_field(self, start_expr: str, end_expr: str, q, queue):       
         queue.put_nowait({"type":"notice","content":f"날짜 표현을 ISO-7801으로 변환 중"})

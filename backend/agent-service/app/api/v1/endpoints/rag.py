@@ -10,7 +10,7 @@ from typing import List, Dict, Any
 from app.core.auth import get_current_user
 from app.models.query import RagSearch
 from app.services.rag_service import (
-    ingest_documents,
+    insert_documents,
     list_documents,
     get_document,
     delete_document,
@@ -19,8 +19,8 @@ from app.services.rag_service import (
 
 router = APIRouter()
 
-@router.post("/ingest", response_model=Any)
-async def ingest_rag(
+@router.post("/insert", response_model=Any)
+async def insert_rag(
     file: UploadFile = File(...),
     current_user=Depends(get_current_user),
 ):
@@ -28,7 +28,7 @@ async def ingest_rag(
     사용자로부터 업로드된 단일 파일( .txt, .pdf, .md, .docx )을 받아서 RAG 인덱싱을 시작합니다.
     1) 임시 경로에 파일 저장
     2) 확장자에 따라 text_utils.load_* 함수를 호출
-    3) ingest_documents 호출
+    3) insert_documents 호출
     """
     # 1) 확장자 확인
     original_filename = file.filename or "unknown"
@@ -48,11 +48,11 @@ async def ingest_rag(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"파일 저장 실패: {e}")
 
-    # 3) ingest_documents 호출을 위한 data_list 구성
-    #    {"type": ext, "path": tmp_path} 하나짜리 리스트를 넘김
-    data_entry = {"type": ext, "path": tmp_path}
+    # 3) insert_documents 호출을 위한 data_list 구성
+    #    {"type": ext, "path": tmp_path, "filename": original_filename} 하나짜리 리스트를 넘김
+    data_entry = {"type": ext, "path": tmp_path, "filename": original_filename}
     try:
-        job_id = ingest_documents(current_user.id, [data_entry])
+        job_id = insert_documents(current_user.id, [data_entry])
     except HTTPException as e:
         raise e
     finally:

@@ -9,6 +9,11 @@ from fastapi import HTTPException
 from pymilvus import connections, utility, Collection, DataType, FieldSchema, CollectionSchema
 
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain.prompts.chat import (
+    ChatPromptTemplate,
+    SystemMessagePromptTemplate,
+    HumanMessagePromptTemplate,
+)
 
 from app.core.config import settings
 from app.models.query import RagSearch
@@ -63,7 +68,7 @@ _RAG_COLLECTION = get_or_init_rag_collection()
 # ─────────────────────────────────────────────────────────────────────────────
 # 2) 문서(단일 JSON or 텍스트) → 청크로 분해 → Milvus 업로드
 # ─────────────────────────────────────────────────────────────────────────────
-def ingest_documents(user_id: str, data_list: List[Dict[str, Any]]) -> str:
+def insert_documents(user_id: str, data_list: List[Dict[str, Any]]) -> str:
     """
     - data_list: List of dict. 각 dict는 'type'과 'path' 또는 'content'를 포함합니다.
       예시: 
@@ -87,7 +92,7 @@ def ingest_documents(user_id: str, data_list: List[Dict[str, Any]]) -> str:
     for raw_doc in data_list:
         # 2.1) doc_id 발급
         doc_id = str(uuid.uuid4())
-        file_name = os.path.basename(file_path)
+        file_name = raw_doc.get("filename")  # 선택적, 없으면 None
 
         # 2.2) “실제 텍스트” 얻기: text_utils의 load_*/parse_* 호출
         doc_type = raw_doc.get("type")
@@ -148,8 +153,8 @@ def list_documents(user_id: str) -> List[Dict[str, Any]]:
     milvus_col = _RAG_COLLECTION
     expr = f'user_id == "{user_id}"'
 
-    # doc_id와 file_name 필드를 같이 가져옵니다 (limit=0 → 모두)
-    res = milvus_col.query(expr=expr, output_fields=["doc_id", "file_name"], limit=0)
+    # doc_id와 file_name 필드를 같이 가져옵니다
+    res = milvus_col.query(expr=expr, output_fields=["doc_id", "file_name"], limit=10000)
 
     # Milvus가 청크 단위로 리턴하므로, 중복된 doc_id마다 file_name이 같다는 가정 하에 집계
     unique = {}
@@ -192,7 +197,7 @@ def get_document(user_id: str, doc_id: str) -> Dict[str, Any]:
     file_name = docs[0]["file_name"]
 
     # 전체 청크 개수
-    all_chunks = milvus_col.query(expr=expr, output_fields=["chunk_id"], limit=0)
+    all_chunks = milvus_col.query(expr=expr, output_fields=["chunk_id"], limit=10000)
     chunk_count = len(all_chunks)
 
     return {
@@ -251,7 +256,7 @@ def search_documents(user_id: str, request_data: RagSearch) -> Dict[str, Any]:
         param=search_params,
         limit=k,
         expr=expr,
-        output_fields=["doc_id", "text"],    # ★ 반드시 이 두 필드를 리턴받아야 함
+        output_fields=["doc_id", "file_name", "text"],
     )
     hits = results[0]  # top-k 결과
 
@@ -259,24 +264,40 @@ def search_documents(user_id: str, request_data: RagSearch) -> Dict[str, Any]:
     retrieved_snippets = []
     for hit in hits:
         text_val = hit.entity.get("text") or ""
-        snippet = {"text": text_val, "doc_id": hit.entity.get("doc_id"), "distance": hit.distance}
+        snippet = {"text": text_val, "file_name": hit.entity.get("file_name"), "doc_id": hit.entity.get("doc_id"), "distance": hit.distance}
         retrieved_snippets.append(snippet)
 
     # 4) LLM 호출: ChatOpenAI + 간단한 PromptTemplate
-    llm = ChatOpenAI(model_name="gpt-4.1-mini", temperature=0)
+    llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0)
     context = "\n\n".join([s["text"] for s in retrieved_snippets])
-    prompt = f"""
-You are a helpful assistant. Use the following document snippets to answer the user question:
+    system_template = SystemMessagePromptTemplate.from_template(
+        """\
+당신은 지식 검색을 위한 AI 어시스턴트입니다.
+RAG를 통해 추출된 문서를 기반으로 사용자의 Question에 답변하세요.
+RAG에 대한 설명은 할 필요 없습니다.
+인삿말이나 불필요한 서론은 생략하고 검색 결과를 바탕으로 오직 명확하고 간결하게 답변만 제공하세요."""
+    )
 
+    # (2) user(사용자) 메시지: 실제 문맥(context_text)과 질문(query_text)을 함께 삽입
+    human_template = HumanMessagePromptTemplate.from_template(
+        """\
+RAG 결과:
 {context}
 
-Question: {query_text}
-"""
-    llm_response = llm.invoke(prompt)  # .invoke() 예시
+질문: {query}"""
+    )
+
+    # (3) ChatPromptTemplate을 “시스템 + 사용자” 메시지 순서로 조립
+    chat_prompt = ChatPromptTemplate.from_messages(
+        [system_template, human_template]
+    )
+
+    rag_llm = chat_prompt | llm
+    llm_response = rag_llm.invoke({"context": context, "query": query_text})  # .invoke() 예시
     answer = llm_response.content
 
-    # 5) 결과 반환: answer + sources (doc_id 리스트 + distance)
-    sources = [{"doc_id": s["doc_id"], "distance": s["distance"]} for s in retrieved_snippets]
+    # 5) 결과 반환: answer + sources (doc_id 리스트 + file_name + distance)
+    sources = [{"doc_id": s["doc_id"], "file_name": s["file_name"], "distance": s["distance"]} for s in retrieved_snippets]
 
     return {"query": query_text, "answer": answer, "sources": sources}
 
