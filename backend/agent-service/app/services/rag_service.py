@@ -34,6 +34,13 @@ def get_or_init_rag_collection(collection_name: str = "rag_chunks"):
     - embedding dim은 settings.EMBEDDING_DIM (예: 1536 혹은 768) 로 가정
     """
     connections.connect(alias="default", host=settings.MILVUS_HOST, port=settings.MILVUS_PORT)
+
+    # 2) (배포용) 기존 컬렉션 드롭
+    if utility.has_collection(collection_name):
+        utility.drop_collection(collection_name)
+        # 한 번만 실행되기를 원한다면, 로그를 남겨 두세요.
+        print(f"기존 컬렉션 '{collection_name}'을 삭제했습니다.")
+
     if not utility.has_collection(collection_name):
         # 컬렉션이 없다면 새로 생성
         fields = [
@@ -51,7 +58,7 @@ def get_or_init_rag_collection(collection_name: str = "rag_chunks"):
         col.create_index(field_name="embedding", 
                          index_params={
                             "index_type": "HNSW",
-                            "metric_type": "L2",
+                            "metric_type": "COSINE",
                             "params": { "M": 16, "efConstruction": 200}
                         })
         col.load()
@@ -221,9 +228,36 @@ def delete_document(user_id: str, doc_id: str) -> None:
     milvus_col.delete(expr=expr)
     return None
 
+# ─────────────────────────────────────────────────────────────────────────────
+# 6) RAG 검색용 ChatPromptTemplate 생성
+# ─────────────────────────────────────────────────────────────────────────────
+def get_rag_prompt() -> ChatPromptTemplate:
+    system_template = SystemMessagePromptTemplate.from_template(
+        """\
+당신은 지식 검색을 위한 AI 어시스턴트입니다.
+RAG를 통해 추출된 문서를 기반으로 사용자의 Question에 답변하세요.
+RAG에 대한 설명은 할 필요 없습니다.
+인삿말이나 불필요한 서론은 생략하고 검색 결과를 바탕으로 오직 명확하고 간결하게 답변만 제공하세요."""
+    )
+
+    # (2) user(사용자) 메시지: 실제 문맥(context_text)과 질문(query_text)을 함께 삽입
+    human_template = HumanMessagePromptTemplate.from_template(
+        """\
+RAG 결과:
+{context}
+
+질문: {query}"""
+    )
+
+    # (3) ChatPromptTemplate을 “시스템 + 사용자” 메시지 순서로 조립
+    chat_prompt = ChatPromptTemplate.from_messages(
+        [system_template, human_template]
+    )
+
+    return chat_prompt
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 6) RAG 검색 및 LLM 호출
+# 7) RAG 검색 및 LLM 호출
 # ─────────────────────────────────────────────────────────────────────────────
 def search_documents(user_id: str, request_data: RagSearch) -> Dict[str, Any]:
     """
@@ -249,7 +283,7 @@ def search_documents(user_id: str, request_data: RagSearch) -> Dict[str, Any]:
         or_clauses = " OR ".join([f'doc_id == "{did}"' for did in filter_docs])
         expr = f'{expr} && ({or_clauses})'
 
-    search_params = {"metric_type": "L2", "params": { "M": 16, "efConstruction": 200}}
+    search_params = {"metric_type": "COSINE", "params": {"nprobe": 10}}
     results = milvus_col.search(
         data=[query_vector],
         anns_field="embedding",
@@ -264,40 +298,20 @@ def search_documents(user_id: str, request_data: RagSearch) -> Dict[str, Any]:
     retrieved_snippets = []
     for hit in hits:
         text_val = hit.entity.get("text") or ""
-        snippet = {"text": text_val, "file_name": hit.entity.get("file_name"), "doc_id": hit.entity.get("doc_id"), "distance": hit.distance}
+        similarity = hit.distance * 100  # cosine distance를 similarity로 변환 (0~100)
+        snippet = {"text": text_val, "file_name": hit.entity.get("file_name"), "doc_id": hit.entity.get("doc_id"), "similarity": similarity}
         retrieved_snippets.append(snippet)
 
     # 4) LLM 호출: ChatOpenAI + 간단한 PromptTemplate
     llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0)
     context = "\n\n".join([s["text"] for s in retrieved_snippets])
-    system_template = SystemMessagePromptTemplate.from_template(
-        """\
-당신은 지식 검색을 위한 AI 어시스턴트입니다.
-RAG를 통해 추출된 문서를 기반으로 사용자의 Question에 답변하세요.
-RAG에 대한 설명은 할 필요 없습니다.
-인삿말이나 불필요한 서론은 생략하고 검색 결과를 바탕으로 오직 명확하고 간결하게 답변만 제공하세요."""
-    )
-
-    # (2) user(사용자) 메시지: 실제 문맥(context_text)과 질문(query_text)을 함께 삽입
-    human_template = HumanMessagePromptTemplate.from_template(
-        """\
-RAG 결과:
-{context}
-
-질문: {query}"""
-    )
-
-    # (3) ChatPromptTemplate을 “시스템 + 사용자” 메시지 순서로 조립
-    chat_prompt = ChatPromptTemplate.from_messages(
-        [system_template, human_template]
-    )
-
+    chat_prompt = get_rag_prompt()
     rag_llm = chat_prompt | llm
     llm_response = rag_llm.invoke({"context": context, "query": query_text})  # .invoke() 예시
     answer = llm_response.content
 
-    # 5) 결과 반환: answer + sources (doc_id 리스트 + file_name + distance)
-    sources = [{"doc_id": s["doc_id"], "file_name": s["file_name"], "distance": s["distance"]} for s in retrieved_snippets]
+    # 5) 결과 반환: answer + sources (doc_id 리스트 + file_name + similarity)
+    sources = [{"doc_id": s["doc_id"], "file_name": s["file_name"], "similarity": s["similarity"]} for s in retrieved_snippets]
 
     return {"query": query_text, "answer": answer, "sources": sources}
 

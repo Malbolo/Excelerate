@@ -258,7 +258,7 @@ class FileAPIClient:
         # 로그 스트리밍
         q.put_nowait({"type": "log", "content": log})
 
-        if entities.start_date is "":
+        if entities.start_date == "":
             raise HTTPException(status_code=400, detail=f"데이터 호출을 위해선 start_date가 필요합니다. 질의에 날짜를 포함해주세요.\n ex) '2025년 2월부터', '지난달 부터' 등")
 
         # 2) date가 ISO 포맷이 아니면 → LLM으로 코드 생성 후 exec
