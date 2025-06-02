@@ -103,6 +103,41 @@ class FileAPIClient:
 
         logger.error(f"Milvus 연결 모두 실패 ({max_retries}회 시도)")
         return None
+    
+    def _available_params(self) -> str:
+        guide = "유효한 파라미터 목록:\n\n"
+        if not self.retriever:
+            guide += "Milvus 연결이 없습니다. 검색 기능이 제한됩니다.\n"
+            return guide
+        try:
+            # 1) 호출 직전에 k 값을 충분히 크게 설정
+            self.retriever.search_kwargs["k"] = 10
+            # 2) factory_info 문서 가져오기 (이제 최대 10개까지 가져옴)
+            docs = list(self.retriever.invoke("factory_info"))
+            self.retriever.search_kwargs["k"] = 2 # 원래 k 값으로 복원
+            if not docs:
+                guide += "등록된 factory_info 문서가 없습니다.\n"
+                return guide
+            
+            for doc in docs:
+                metadata = doc.metadata
+                factory_name = metadata.get("factory_name", "알 수 없음")
+                factory_id = metadata.get("factory_id", "알 수 없음")
+                metric_list = metadata.get("metric_list", "").split(",")
+                product_list = metadata.get("product_list", "").split(",")
+                guide += f"Factory: {factory_name} (ID: {factory_id})\n"
+                guide += f"  - 지원 Metric: {', '.join(metric_list) if metric_list else '없음'}\n"
+                guide += f"  - 지원 Product: {', '.join(product_list) if product_list else '없음'}\n\n"
+            guide += "사용법 예시:\n"
+            guide += "  - '2025년 2월부터' : 시작 날짜를 지정합니다.\n"
+            guide += "  - '2025년 2월부터 3월까지' : 시작 및 종료 날짜를 지정합니다.\n"
+            guide += "  - '공장 A의 metric X' : 특정 공장과 메트릭을 지정합니다.\n"
+            guide += "ex) 2025년 2월부터 3월까지 공장 A의 metric X 데이터 가져와\n"
+        except Exception as e:
+            logger.error(f"파라미터 목록 추출 중 오류 발생: {e}")
+            guide += "파라미터 목록을 가져오는 중 오류가 발생했습니다. Milvus 연결을 확인해주세요."
+
+        return guide
 
     def extract_params_chain(self):
         # Entity extractor chain
@@ -148,14 +183,15 @@ class FileAPIClient:
             valid_prods = fact_doc.metadata.get("product_list", "").split(",")
 
             if q.factory_id not in valid_ids:
-                raise ValueError(f"{q.factory_name}의 factory_id '{q.factory_id}'가 유효하지 않습니다.")
+                raise  ValueError(f"{q.factory_name}의 factory_id '{q.factory_id}'가 유효하지 않습니다.")
             if q.metric not in valid_metrics:
-                raise ValueError(f"{q.factory_name}는 metric '{q.metric}'을 지원하지 않습니다.")
+                raise  ValueError(f"{q.factory_name}는 metric '{q.metric}'을 지원하지 않습니다.")
             if q.product_code and q.product_code not in valid_prods:
-                raise ValueError(f"{q.factory_name}에는 product_code '{q.product_code}'가 없습니다.")
+                raise  ValueError(f"{q.factory_name}에는 product_code '{q.product_code}'가 없습니다.")
         except Exception as e:
             logger.error(f"검증 중 오류 발생: {e}")
-            raise HTTPException(status_code=400, detail=f"Data fetch failed: {e}")
+            data_guide = self._available_params()
+            raise HTTPException(status_code=400, detail=f"Data fetch failed: {e}\n\n{data_guide}")
 
     def _transform_date_field(self, start_expr: str, end_expr: str, q, queue):       
         queue.put_nowait({"type":"notice","content":f"날짜 표현을 ISO-7801으로 변환 중"})
@@ -222,8 +258,8 @@ class FileAPIClient:
         # 로그 스트리밍
         q.put_nowait({"type": "log", "content": log})
 
-        if entities.start_date is None:
-            raise HTTPException(status_code=400, detail=f"Start date is required")
+        if entities.start_date is "":
+            raise HTTPException(status_code=400, detail=f"데이터 호출을 위해선 start_date가 필요합니다. 질의에 날짜를 포함해주세요.\n\n ex) '2025년 2월부터', '지난달 부터' 등")
 
         # 2) date가 ISO 포맷이 아니면 → LLM으로 코드 생성 후 exec
         if not is_iso_date(entities.start_date) or (entities.end_date and not is_iso_date(entities.end_date)):
@@ -241,7 +277,8 @@ class FileAPIClient:
             raw = self.fetch_data(url)
         except Exception as e:
             logger.warning(f"API 호출 실패: {e}")
-            raise HTTPException(status_code=404, detail=f"Data fetch failed: {e}")
+            data_guide = self._available_params()
+            raise HTTPException(status_code=404, detail=f"API 호출에 실패했습니다. URL: {url}, 에러: {str(e)}\n\n존재하지 않는 파라미터 입니다. 유효한 파라미터는 다음과 같습니다.\n\n{data_guide}")
 
         dataframe = pd.DataFrame(raw["data"])
         q.put_nowait({"type": "data", "content": dataframe.to_dict(orient="records")})

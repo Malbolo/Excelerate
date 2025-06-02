@@ -35,6 +35,7 @@ def get_or_init_rag_collection(collection_name: str = "rag_chunks"):
             FieldSchema(name="chunk_id", dtype=DataType.INT64, is_primary=True, auto_id=True),
             FieldSchema(name="user_id", dtype=DataType.VARCHAR, max_length=64),
             FieldSchema(name="doc_id", dtype=DataType.VARCHAR, max_length=36),
+            FieldSchema(name="file_name", dtype=DataType.VARCHAR, max_length=256),
             FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=2048),
             FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=1536),
             FieldSchema(name="created_at", dtype=DataType.INT64)  # timestamp 용(선택)
@@ -86,6 +87,7 @@ def ingest_documents(user_id: str, data_list: List[Dict[str, Any]]) -> str:
     for raw_doc in data_list:
         # 2.1) doc_id 발급
         doc_id = str(uuid.uuid4())
+        file_name = os.path.basename(file_path)
 
         # 2.2) “실제 텍스트” 얻기: text_utils의 load_*/parse_* 호출
         doc_type = raw_doc.get("type")
@@ -123,11 +125,12 @@ def ingest_documents(user_id: str, data_list: List[Dict[str, Any]]) -> str:
         #      스키마 순서: [chunk_id(auto), user_id, doc_id, text, embedding, created_at]
         user_ids = [user_id] * len(chunks)
         doc_ids = [doc_id] * len(chunks)
+        file_names = [file_name or ""] * len(chunks)
         texts = chunks
         vectors = embeddings
         timestamps = [int(os.path.getmtime(raw_doc.get("path"))) if raw_doc.get("path") and os.path.exists(raw_doc.get("path")) else 0 for _ in range(len(chunks))]
 
-        entities = [user_ids, doc_ids, texts, vectors, timestamps]
+        entities = [user_ids, doc_ids, file_names, texts, vectors, timestamps]
         milvus_col.insert(entities)
 
     # 3) Job ID 반환
@@ -139,20 +142,27 @@ def ingest_documents(user_id: str, data_list: List[Dict[str, Any]]) -> str:
 # ─────────────────────────────────────────────────────────────────────────────
 def list_documents(user_id: str) -> List[Dict[str, Any]]:
     """
-    - Milvus에서 user_id == 해당 user_id인 모든 벡터 레코드를 가져온 뒤,
-      고유 doc_id 목록만 추출하여 반환
-    - 예시 반환: [{"doc_id": "xxx", "status": "indexed"}, ...]
+    - Milvus에서 user_id 필터링 후 고유 doc_id 및 file_name 목록 반환
+    - 반환 예시: [{"doc_id":"xxx", "file_name":"hello.txt", "status":"indexed"}, ...]
     """
     milvus_col = _RAG_COLLECTION
     expr = f'user_id == "{user_id}"'
 
-    # Milvus 2.x query: output_fields=["doc_id"], limit=0 로 모든 레코드를 가져옴
-    res = milvus_col.query(expr=expr, output_fields=["doc_id"], limit=0)
-    unique_doc_ids = sorted({r["doc_id"] for r in res})
+    # doc_id와 file_name 필드를 같이 가져옵니다 (limit=0 → 모두)
+    res = milvus_col.query(expr=expr, output_fields=["doc_id", "file_name"], limit=0)
+
+    # Milvus가 청크 단위로 리턴하므로, 중복된 doc_id마다 file_name이 같다는 가정 하에 집계
+    unique = {}
+    for r in res:
+        did = r["doc_id"]
+        fname = r["file_name"]
+        # 이미 등록된 doc_id는 건너뛰어 첫 번째 file_name만 저장
+        if did not in unique:
+            unique[did] = fname
 
     result = []
-    for did in unique_doc_ids:
-        result.append({"doc_id": did, "status": "indexed"})
+    for did, fname in unique.items():
+        result.append({"doc_id": did, "file_name": fname, "status": "indexed"})
     return result
 
 
@@ -161,30 +171,37 @@ def list_documents(user_id: str) -> List[Dict[str, Any]]:
 # ─────────────────────────────────────────────────────────────────────────────
 def get_document(user_id: str, doc_id: str) -> Dict[str, Any]:
     """
-    - user_id + doc_id로 Milvus에서 해당 문서(=여러 청크)의 metadata 조회
-    - 반환 예시:
-      {
-        "doc_id": "...",
-        "chunk_count": N,
-        "preview": "...(첫 번째 청크 텍스트)...",
-        "status": "indexed"
-      }
+    - user_id+doc_id 필터 → Milvus에서 해당 문서(=여러 청크)의 metadata 조회
+    - 반환 예시: {
+    #     "doc_id": "...",
+    #     "file_name": "hello.txt",
+    #     "chunk_count": N,
+    #     "preview": "...첫 번째 청크...",
+    #     "status": "indexed"
+    # }
     """
     milvus_col = _RAG_COLLECTION
     expr = f'user_id == "{user_id}" && doc_id == "{doc_id}"'
 
-    # 첫 번째 청크 텍스트(Preview)
-    docs = milvus_col.query(expr=expr, output_fields=["text"], limit=1)
+    # 첫 번째 청크의 텍스트(Preview)와 file_name 동시에 가져오기
+    docs = milvus_col.query(expr=expr, output_fields=["text", "file_name"], limit=1)
     if not docs:
         raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다.")
 
     preview = docs[0]["text"]
+    file_name = docs[0]["file_name"]
 
-    # 전체 청크 개수 집계
+    # 전체 청크 개수
     all_chunks = milvus_col.query(expr=expr, output_fields=["chunk_id"], limit=0)
     chunk_count = len(all_chunks)
 
-    return {"doc_id": doc_id, "chunk_count": chunk_count, "preview": preview, "status": "indexed"}
+    return {
+        "doc_id": doc_id,
+        "file_name": file_name,
+        "chunk_count": chunk_count,
+        "preview": preview,
+        "status": "indexed",
+    }
 
 
 # ─────────────────────────────────────────────────────────────────────────────
