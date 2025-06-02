@@ -35,12 +35,6 @@ def get_or_init_rag_collection(collection_name: str = "rag_chunks"):
     """
     connections.connect(alias="default", host=settings.MILVUS_HOST, port=settings.MILVUS_PORT)
 
-    # 2) (배포용) 기존 컬렉션 드롭
-    if utility.has_collection(collection_name):
-        utility.drop_collection(collection_name)
-        # 한 번만 실행되기를 원한다면, 로그를 남겨 두세요.
-        print(f"기존 컬렉션 '{collection_name}'을 삭제했습니다.")
-
     if not utility.has_collection(collection_name):
         # 컬렉션이 없다면 새로 생성
         fields = [
