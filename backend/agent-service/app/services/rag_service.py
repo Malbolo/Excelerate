@@ -153,10 +153,10 @@ def list_documents(user_id: str) -> List[Dict[str, Any]]:
     """
     milvus_col = _RAG_COLLECTION
     # expr = f'user_id == "{user_id}"'
+    expr = ""  # 모든 사용자 문서 조회
 
     # doc_id와 file_name 필드를 같이 가져옵니다
-    # res = milvus_col.query(expr=expr, output_fields=["doc_id", "file_name"], limit=10000)
-    res = milvus_col.query(output_fields=["doc_id", "file_name"], limit=10000)
+    res = milvus_col.query(expr=expr, output_fields=["doc_id", "file_name"], limit=10000)
 
     # Milvus가 청크 단위로 리턴하므로, 중복된 doc_id마다 file_name이 같다는 가정 하에 집계
     unique = {}
