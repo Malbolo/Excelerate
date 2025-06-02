@@ -163,7 +163,11 @@ async def stream_logs(request: Request, stream_id: str):
 
             # 한 줄씩 yield → ASGI 레벨에서 바로 전송 시도
             yield f"event: {data_type}\n"
-            yield f"data: {data_content}\n\n"
+            for line in data_content.split("\n"):
+                # 빈 줄이라도 'data: '만 붙여서 보내야 개행이 유지됩니다.
+                yield f"data: {line}\n"
+            # 한 이벤트가 끝났음을 알리기 위해 빈 줄 한 번 추가
+            yield "\n"
 
     headers = {
         "Cache-Control":       "no-cache",

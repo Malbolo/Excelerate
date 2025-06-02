@@ -191,7 +191,7 @@ class FileAPIClient:
         except Exception as e:
             logger.error(f"검증 중 오류 발생: {e}")
             data_guide = self._available_params()
-            raise HTTPException(status_code=400, detail=f"데이터 호출 실패: {e}\n{data_guide}")
+            raise HTTPException(status_code=400, detail=f"데이터 호출 실패: {e}\n\n{data_guide}")
 
     def _transform_date_field(self, start_expr: str, end_expr: str, q, queue):       
         queue.put_nowait({"type":"notice","content":f"날짜 표현을 ISO-7801으로 변환 중"})
@@ -278,7 +278,7 @@ class FileAPIClient:
         except Exception as e:
             logger.warning(f"API 호출 실패: {e}")
             data_guide = self._available_params()
-            raise HTTPException(status_code=404, detail=f"API 호출에 실패했습니다. URL: {url}, 에러: {str(e)}\n존재하지 않는 파라미터 입니다. 유효한 파라미터는 다음과 같습니다.\n{data_guide}")
+            raise HTTPException(status_code=404, detail=f"API 호출에 실패했습니다. URL: {url}, 에러: {str(e)}\n존재하지 않는 파라미터 입니다. 유효한 파라미터는 다음과 같습니다.\n\n{data_guide}")
 
         dataframe = pd.DataFrame(raw["data"])
         q.put_nowait({"type": "data", "content": dataframe.to_dict(orient="records")})

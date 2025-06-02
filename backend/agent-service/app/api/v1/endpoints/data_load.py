@@ -70,7 +70,7 @@ async def command_code(
         log_id = log_id.split(':')[-1] # 일관성 있게 uid만 반환
 
     except HTTPException as e:
-        q.put_nowait({"type": "notice", "content": "데이터 호출 중에 에러가 발생했습니다.\n" + str(e.detail)})
+        q.put_nowait({"type": "notice", "content": "데이터 호출 중에 에러가 발생했습니다.\n\n" + str(e.detail)})
         # service에서 던진 HTTPException(400, 502 등)은 그대로 propagate
         raise
     except Exception as e:
