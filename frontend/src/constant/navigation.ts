@@ -1,4 +1,4 @@
-import { Briefcase, CalendarClock, Home, MonitorPlay, Play, Workflow } from 'lucide-react';
+import { Briefcase, CalendarClock, FileSearch, Home, MonitorPlay, Play, Workflow } from 'lucide-react';
 
 const ADMIN_NAV_ITEMS = [
   { label: 'Main', to: '/', icon: Home },
@@ -12,6 +12,7 @@ const ADMIN_NAV_ITEMS = [
   },
   { label: 'Agent Monitoring', to: '/agent-monitoring', icon: Workflow },
   { label: 'Play Ground', to: '/playground', icon: Play },
+  { label: 'RAG Studio', to: '/rag-studio', icon: FileSearch },
 ];
 
 const USER_NAV_ITEMS = [

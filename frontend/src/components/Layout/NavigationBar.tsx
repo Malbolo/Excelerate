@@ -31,14 +31,14 @@ const NavigationBar = () => {
       <Button
         variant='ghost'
         size='icon'
-        className={cn(isCollapsed ? 'absolute top-4 right-5' : 'absolute top-4 right-4')}
+        className={cn(isCollapsed ? 'absolute top-3 right-5' : 'absolute top-3 right-4')}
         onClick={toggleCollapse}
         title={isCollapsed ? 'Expand ' : 'Collapse'}
       >
         {isCollapsed ? <ChevronsRight className='h-5 w-5' /> : <ChevronsLeft className='h-5 w-5' />}
       </Button>
 
-      <div className='mt-12 mb-10 flex flex-col items-center justify-center gap-3 px-4'>
+      <div className='mt-10 mb-8 flex flex-col items-center justify-center gap-3 px-4'>
         <img src={logo} alt='Samsung Logo' width={isCollapsed ? 40 : 150} height={isCollapsed ? 6 : 23} />
         {!isCollapsed && (
           <div className='flex items-center gap-1'>

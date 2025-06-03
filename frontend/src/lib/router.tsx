@@ -15,6 +15,7 @@ import MainPage from '@/pages/main';
 import MainJobEditPage from '@/pages/mainJobEdit';
 import MonthSchedulePage from '@/pages/monthSchedulerMonitoring';
 import PlayGroundPage from '@/pages/playGround';
+import RagStudio from '@/pages/ragStudio';
 import ScheduleDetail from '@/pages/scheduleDetail';
 import SchedulerManagementPage from '@/pages/schedulerManagement';
 import TemplateManagementPage from '@/pages/templateManagement';
@@ -67,6 +68,18 @@ const routes = [
     ),
     errorElement: <ErrorBoundary />,
     name: 'PlayGround',
+  },
+  {
+    path: '/rag-studio',
+    element: (
+      <Layout>
+        <Suspense fallback={<Loading />}>
+          <RagStudio />
+        </Suspense>
+      </Layout>
+    ),
+    errorElement: <ErrorBoundary />,
+    name: 'RAGStudio',
   },
   {
     path: '/',

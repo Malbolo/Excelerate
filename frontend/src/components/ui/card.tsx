@@ -6,10 +6,7 @@ function Card({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       data-slot='card'
-      className={cn(
-        'card-gradient hover:border-primary/70 text-card-foreground hover:box-shadow flex flex-col gap-6 rounded-lg border py-4',
-        className,
-      )}
+      className={cn('card-gradient text-card-foreground flex flex-col gap-6 rounded-lg border py-4', className)}
       {...props}
     />
   );
