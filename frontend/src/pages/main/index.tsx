@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { Textarea } from '@/components/ui/textarea';
 import { createSortableColumns } from '@/lib/createSortableColumns';
+import { cn } from '@/lib/utils';
 import CommandList from '@/pages/main/components/CommandList';
 import MainSideBar from '@/pages/main/components/MainSideBar';
 import SourceData from '@/pages/main/components/SourceData';
@@ -94,7 +95,9 @@ const MainPage: React.FC = () => {
     <div className='bg-gradient relative mx-auto flex h-screen w-full'>
       <ResizablePanelGroup direction='horizontal'>
         <ResizablePanel>
-          <div className='mx-auto flex h-screen w-full grow-0 flex-col justify-between gap-4 p-8'>
+          <div
+            className={cn('mx-auto flex h-screen w-full grow-0 flex-col justify-between gap-4 p-8', notice && 'gap-0')}
+          >
             <div className='@container/main-container flex flex-1 flex-col gap-4 overflow-hidden'>
               <div className='flex w-full flex-col @md/main-container:flex-row'>
                 <TemplateList />
@@ -108,7 +111,7 @@ const MainPage: React.FC = () => {
               {notice && (
                 <div className='text-accent-foreground z-20 flex w-full items-center gap-2 rounded-lg bg-[#F0F7FF] p-2 px-4'>
                   <Megaphone className='h-4 w-4 shrink-0' />
-                  <p className='text-sm'>{notice}</p>
+                  <p className='text-sm break-words whitespace-pre-wrap'>{notice}</p>
                 </div>
               )}
               <div className='flex gap-2'>
