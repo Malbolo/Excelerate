@@ -152,7 +152,8 @@ def list_documents(user_id: str) -> List[Dict[str, Any]]:
     - 반환 예시: [{"doc_id":"xxx", "file_name":"hello.txt", "status":"indexed"}, ...]
     """
     milvus_col = _RAG_COLLECTION
-    expr = f'user_id == "{user_id}"'
+    # expr = f'user_id == "{user_id}"'
+    expr = ""  # 모든 사용자 문서 조회
 
     # doc_id와 file_name 필드를 같이 가져옵니다
     res = milvus_col.query(expr=expr, output_fields=["doc_id", "file_name"], limit=10000)
@@ -187,7 +188,8 @@ def get_document(user_id: str, doc_id: str) -> Dict[str, Any]:
     # }
     """
     milvus_col = _RAG_COLLECTION
-    expr = f'user_id == "{user_id}" && doc_id == "{doc_id}"'
+    # expr = f'user_id == "{user_id}" && doc_id == "{doc_id}"'
+    expr = f'doc_id == "{doc_id}"'
 
     # 첫 번째 청크의 텍스트(Preview)와 file_name 동시에 가져오기
     docs = milvus_col.query(expr=expr, output_fields=["text", "file_name"], limit=1)
@@ -218,7 +220,8 @@ def delete_document(user_id: str, doc_id: str) -> None:
     - Milvus에서 user_id==... AND doc_id==... 조건을 만족하는 모든 청크 레코드를 삭제합니다.
     """
     milvus_col = _RAG_COLLECTION
-    expr = f'user_id == "{user_id}" && doc_id == "{doc_id}"'
+    # expr = f'user_id == "{user_id}" && doc_id == "{doc_id}"'
+    expr = f'doc_id == "{doc_id}"'
     milvus_col.delete(expr=expr)
     return None
 
@@ -272,7 +275,8 @@ def search_documents(user_id: str, request_data: RagSearch) -> Dict[str, Any]:
     # 2) Milvus 유사도 검색
     filter_docs = request_data.filters    # Optional[List[str]]
     k = request_data.k or 5
-    expr = f'user_id == "{user_id}"'
+    # expr = f'user_id == "{user_id}"'
+    expr = ""
     if filter_docs:
         or_clauses = " OR ".join([f'doc_id == "{did}"' for did in filter_docs])
         expr = f'{expr} && ({or_clauses})'
