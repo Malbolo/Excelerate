@@ -11,18 +11,20 @@ import DeleteDocumentDialog from './DeleteDocumentDialog';
 const DocumentManagement = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
   const [documentNameToDelete, setDocumentNameToDelete] = useState<string | null>(null);
+  const [documentIdToDelete, setDocumentIdToDelete] = useState<string | null>(null);
 
   const { data: documents } = useGetRagDocuments();
   const deleteRagDocumentmutate = useDeleteRagDocument();
 
-  const openDeleteDialog = (docName: string) => {
+  const openDeleteDialog = (docId: string, docName: string) => {
+    setDocumentIdToDelete(docId);
     setDocumentNameToDelete(docName);
     setIsDeleteDialogOpen(true);
   };
 
   const handleConfirmDelete = async () => {
-    if (documentNameToDelete) {
-      deleteRagDocumentmutate(documentNameToDelete);
+    if (documentIdToDelete) {
+      deleteRagDocumentmutate(documentIdToDelete);
     }
   };
 
@@ -32,10 +34,10 @@ const DocumentManagement = () => {
   };
 
   return (
-    <div className='overflow-hidden'>
+    <div className='h-full overflow-hidden'>
       <Card className='h-full overflow-y-auto'>
-        <CardContent>
-          <ul>
+        <CardContent className='h-full'>
+          <ul className='h-full'>
             {documents.map(document => (
               <li
                 className='group hover:text-accent-foreground flex items-center gap-3 rounded-lg p-1'
@@ -46,7 +48,7 @@ const DocumentManagement = () => {
                 <Button
                   variant='ghost'
                   size='icon'
-                  onClick={() => openDeleteDialog(document.file_name)}
+                  onClick={() => openDeleteDialog(document.doc_id, document.file_name)}
                   className='ml-auto text-red-500 hover:bg-red-100 hover:text-red-700'
                   aria-label={`Delete template ${document.file_name}`}
                 >

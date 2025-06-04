@@ -4,7 +4,7 @@ import RagManagement from './components/RagManagement';
 const RagStudio = () => {
   return (
     <div className='bg-gradient flex h-screen w-full gap-5 p-8'>
-      <ChatInterface documents={[]} />
+      <ChatInterface />
       <RagManagement />
     </div>
   );

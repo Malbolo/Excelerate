@@ -9,6 +9,36 @@ interface GetRagDocumentsResponse {
   status: string;
 }
 
+interface RagSearchRequest {
+  query: string;
+  k: number;
+}
+
+interface RagSearchResponse {
+  query: string;
+  answer: string;
+  sources: RagSource[];
+}
+
+export interface RagSource {
+  doc_id: string;
+  file_name: string;
+  similarity: number;
+}
+
+const ragSearch = async (request: RagSearchRequest) => {
+  const { data, error, success } = await api<RagSearchResponse>(`/api/agent/rag/search`, {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
+
+  if (!success) {
+    throw new Error(error);
+  }
+
+  return data;
+};
+
 const getRagDocuments = async () => {
   const { data, error, success } = await api<GetRagDocumentsResponse[]>('/api/agent/rag/list');
 
@@ -48,6 +78,17 @@ const deleteRagDocument = async (docId: string) => {
   }
 
   return;
+};
+
+export const useRagSearch = () => {
+  const { mutateAsync } = useMutation({
+    mutationFn: ragSearch,
+    onError: error => {
+      toast.error(error.message);
+    },
+  });
+
+  return mutateAsync;
 };
 
 export const useGetRagDocuments = () => {
