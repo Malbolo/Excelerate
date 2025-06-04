@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: user-service
+
+  jackson:
+    property-naming-strategy: ${NAMING_STRATEGY:SNAKE_CASE}
+
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DB:userdb}?autoReconnect=true&useUnicode=true&serverTimezone=Asia/Seoul
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: ${HIBERNATE_DDL_AUTO:update}
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQL8Dialect
+
+jwt:
+  secret: ${JWT_SECRET:abcdefghijklmnop}
+  expiration-seconds: ${JWT_EXPIRATION_SECONDS:3600}

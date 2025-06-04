@@ -1,0 +1,22 @@
+replicaCount: 1
+
+image:
+  repository: k12s101ss/job-service
+  pullPolicy: Always
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 8000
+
+envFromSecret: job-service-secret
+
+ingress:
+  enabled: true
+  host: k12s101.p.ssafy.io
+  paths:
+    - path: /api/jobs
+      pathType: Prefix
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    traefik.ingress.kubernetes.io/router.middlewares: auth-service-forward-auth@kubernetescrd

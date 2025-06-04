@@ -21,7 +21,7 @@ pipeline {
               targets << 'frontend'
             } else if (path.startsWith('backend/')) {
               def subdir = path.split('/')[1]
-              if (['agent-service', 'storage-service', 'notification-service'].contains(subdir)) {
+              if (['agent-service', 'storage-service', 'notification-service', 'user-service', 'auth-service', 'job-service', 'schedule-service'].contains(subdir)) {
                 targets << "backend-${subdir}"
               }
             }
@@ -70,16 +70,22 @@ pipeline {
               } else if (target.startsWith('backend-')) {
                 def serviceName = target.replace('backend-', '')
                 contextPath = "backend/${serviceName}"
-                imageName = "k12s101ss/backend-${serviceName}"
+                imageName = "k12s101ss/${serviceName}"
+              }
 
-                dir(contextPath) {
-                  sh """
-                    echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
-                    docker build -t ${imageName}:${imageTag} -t ${imageName}:latest .
-                    docker push ${imageName}:${imageTag}
-                    docker push ${imageName}:latest
-                  """
+              echo "Building and pushing ${imageName}"
+
+              dir(contextPath) {
+                if (target == 'backend-user-service') {
+                  sh './gradlew clean build -x test'
                 }
+
+                sh """
+                  echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
+                  docker build -t ${imageName}:${imageTag} -t ${imageName}:latest .
+                  docker push ${imageName}:${imageTag}
+                  docker push ${imageName}:latest
+                """
               }
             }
           }
